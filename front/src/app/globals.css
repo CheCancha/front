@@ -1,10 +1,11 @@
 @import "tailwindcss";
 
 /* @import 'tw-animate-css'; */
-
+/* <link href="https://api.fontshare.com/v2/css?f[]=lora@400,401,500,600,601,700,701,1,2&f[]=satoshi@300,301,400,401,500,501,700,701,900,901,1,2&display=swap" rel="stylesheet"> */
+/*  */
 @theme {
   --color-foreground: #030203;
-  --color-background: #e9dfd3;
+  --color-background: #fff;
 
   --color-brand-blue: #54c3fe;
   --color-brand-orange: #ff4e02;
@@ -23,14 +24,14 @@
 }
 
 .dark {
-  --color-foreground: #e9dfd3;
+  --color-foreground: #fff;
   --color-background: #030203;
 
   --color-paragraph: #9c9c9c;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--color-background);
+  color: var(--color-foreground);
   font-family: var(--font-satoshi);
 }
