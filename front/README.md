@@ -1,36 +1,66 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+Arquitectura utilizada: FSD. Feature-Sliced-Design
 
-## Getting Started
 
-First, run the development server:
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+El dashboard se divide en secciones lógicas, accesibles a través de una barra de navegación lateral (sidebar).
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+1. Vista General / Hoy (/dashboard)
+Es la primera pantalla que ve el gestor. Ofrece un resumen de la actividad del día para tomar decisiones rápidas.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Métricas Clave del Día:
+Reservas de Hoy: Número total de reservas para el día actual.
+Ocupación: Porcentaje de horas reservadas sobre las horas disponibles.
+Ingresos del Día: Suma de los precios de las reservas del día.
+Timeline de Próximos Turnos: Una lista visual de las próximas 3-4 reservas, mostrando:
+Hora de inicio.
+Cancha reservada.
+Nombre del cliente.
+Estado del pago (ej: "Seña Pagada", "Pendiente").
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Acceso Rápido: Un botón grande para "Crear Nueva Reserva" (para las que se toman por teléfono).
 
-## Learn More
+2. Calendario / Grilla (/dashboard/calendar)
+Una vista completa del calendario para tener una perspectiva semanal o mensual.
 
-To learn more about Next.js, take a look at the following resources:
+Vista Semanal: Muestra todas las canchas en columnas y las horas en filas, similar a Google Calendar.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Bloques de Reserva: Cada reserva es un bloque de color con la información esencial.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Creación Manual: El gestor puede hacer clic en un espacio vacío para crear una nueva reserva manualmente.
 
-## Deploy on Vercel
+Filtros: Poder filtrar la vista por cancha específica.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+3. Reservas (/dashboard/bookings)
+Un listado detallado de todas las reservas (pasadas y futuras).
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Tabla de Reservas: Con columnas para Fecha, Hora, Cliente, Cancha, Precio y Estado del Pago.
+
+Buscador y Filtros: Herramientas para buscar un cliente específico o filtrar por rango de fechas.
+
+Acciones por Reserva: Posibilidad de marcar una reserva como "Completada" o "Cancelada".
+
+4. Mi Complejo (/dashboard/settings)
+El centro de configuración. Aquí es donde el gestor personaliza su negocio. Esta sección tendría sub-pestañas:
+
+Canchas:
+
+Un listado de sus canchas actuales.
+
+Un formulario para añadir una nueva cancha (nombre, deporte, precio por hora).
+
+Opciones para editar o desactivar canchas existentes.
+
+Horarios:
+
+Una interfaz visual para definir los horarios de apertura y cierre para cada día de la semana, tal como lo definimos en el schema.prisma.
+
+Datos Generales: Formulario para editar el nombre, dirección y ciudad del complejo.
+
+Pagos: Una sección para que el gestor conecte su cuenta de Mercado Pago, ingresando sus credenciales.
+
+5. Clientes (/dashboard/customers)
+Un CRM básico para gestionar la relación con los jugadores.
+
+Listado de Clientes: Una tabla con todos los usuarios que han reservado al menos una vez.
+
+Perfil del Cliente: Al hacer clic en un cliente, se puede ver su historial de reservas, frecuencia y gasto total.

@@ -1,12 +1,12 @@
 "use client";
-import React from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
-import { motion } from 'framer-motion';
+import React from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { motion } from "framer-motion";
 
 export const CTASection = () => {
   return (
-    <motion.section 
+    <motion.section
       className="relative py-20 bg-foreground text-white"
       initial={{ opacity: 0 }}
       whileInView={{ opacity: 1 }}
@@ -29,13 +29,14 @@ export const CTASection = () => {
           ¿Listo para tu próximo partido?
         </h2>
         <p className="text-lg mb-8 max-w-2xl mx-auto">
-          Unite a la comunidad CheCancha y llevá tu juego a otro nivel. La cancha te espera.
+          Unite a la comunidad CheCancha y llevá tu juego a otro nivel. La
+          cancha te espera.
         </p>
-        <Link 
-          href="/buscar" 
-          className="inline-block bg-brand-orange text-white font-bold py-3 px-10 rounded-full text-lg hover:bg-opacity-90 transition-transform transform hover:scale-105 shadow-lg"
+        <Link
+          href="/buscar"
+          className="inline-block bg-brand-orange text-white font-bold py-3 px-10 rounded-full text-lg hover:opacity-90 transition-transform transform"
         >
-          Buscar mi cancha ahora
+          Ir a Reservar
         </Link>
       </div>
     </motion.section>

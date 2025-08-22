@@ -7,21 +7,23 @@ import { useState } from "react";
 import {
   DatePicker,
   TimePicker,
-} from "../../../shared/components/ui/DateTimePicker";
+} from "../../../../../shared/components/ui/DateTimePicker";
 import { ChevronDownIcon } from "@heroicons/react/20/solid";
 import { Volleyball } from "lucide-react";
+import { cn } from "@/lib/utils"; // Importamos cn para las clases condicionales
 
 const HeroSection: FC = () => {
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [time, setTime] = useState("");
+  const [sport, setSport] = useState(""); // 1. Estado para el deporte seleccionado
 
   return (
     <div className="w-full h-[80vh] min-h-[600px] my-16 flex items-center justify-center text-background bg-background">
-      {/* 1. Contenedor para la Imagen de Fondo */}
+      {/* Contenedor para la Imagen de Fondo */}
       <div className="relative top-0 left-0 w-full h-full rounded-xl overflow-hidden max-w-7xl">
         <Image
           src="/paddle.webp"
-          alt="Jugadores de fútbol en acción"
+          alt="Jugadores de pádel en acción"
           fill
           className="object-cover"
           priority
@@ -29,11 +31,10 @@ const HeroSection: FC = () => {
           placeholder="blur"
           blurDataURL="/paddle.webp"
         />
-        {/* Overlay oscuro para mejorar la legibilidad del texto */}
         <div className="absolute top-0 left-0 w-full h-full bg-foreground/70 "></div>
       </div>
 
-      {/* 2. Contenido del Hero */}
+      {/* Contenido del Hero */}
       <div className="absolute z-10 w-full max-w-4xl mx-auto text-center px-4 ">
         <h1 className="font-lora text-5xl md:text-7xl font-medium leading-tight mb-4">
           Encontrá tu cancha, reservá tu partido.
@@ -43,7 +44,7 @@ const HeroSection: FC = () => {
           deporte favorito en tu ciudad.
         </p>
 
-        {/* 3. Barra de Búsqueda Compleja */}
+        {/* Barra de Búsqueda Compleja */}
         <div className="bg-background text-neutral-900 rounded-lg p-4 max-w-5xl mx-auto">
           <form className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-3 items-center">
             {/* Input: Ciudad */}
@@ -60,10 +61,15 @@ const HeroSection: FC = () => {
             <div className="relative w-full">
               <Volleyball className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-600" />
               <select
-                className="w-full pl-10 pr-4 py-3 border border-neutral-400 rounded-md focus:ring-2 focus:ring-neutral-950 outline-none cursor-pointer"
-                defaultValue=""
+                // 2. Aplicamos clases condicionales
+                className={cn(
+                  "w-full pl-10 pr-4 py-3 border border-neutral-400 rounded-md focus:ring-2 focus:ring-neutral-950 outline-none cursor-pointer appearance-none",
+                  !sport ? "text-neutral-600" : "text-neutral-900"
+                )}
+                value={sport}
+                onChange={(e) => setSport(e.target.value)}
               >
-                <option value="" disabled className="text-neutral-600">
+                <option value="" disabled>
                   Deporte
                 </option>
                 <option value="futbol">Fútbol</option>

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import "../globals.css";
+import "./globals.css";
 import { SmoothScroller } from "@/shared/components/ui/SmoothScroller";
 
 export const metadata: Metadata = {

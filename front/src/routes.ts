@@ -4,4 +4,7 @@ export const routes = {
     register: '/register',
     clubs: '/clubs',
     canchas: '/canchas',   
+    inscriptions: '/inscriptions',
+
+    profile: '/profile',
 }
