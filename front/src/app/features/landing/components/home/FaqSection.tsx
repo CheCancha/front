@@ -26,7 +26,6 @@ const faqData = [
   },
 ];
 
-// Componente para cada item del acordeón
 const AccordionItem = ({
   question,
   answer,

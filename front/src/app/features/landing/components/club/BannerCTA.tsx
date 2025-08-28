@@ -2,7 +2,7 @@
 import React from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { ButtonPrimary, ButtonGhost } from '@/shared/components/ui/Buttons'; // Asegúrate que la ruta sea correcta
+import { ButtonPrimary, ButtonGhost } from '@/shared/components/ui/Buttons'; 
 
 const images = [
   { src: "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?q=80&w=870&auto=format&fit=crop", alt: "Fútbol" },
@@ -11,7 +11,6 @@ const images = [
 ];
 
 export const BannerCTA = () => {
-  // Número de WhatsApp en formato internacional sin el '+'
   const whatsappNumber = "5493491699012";
   const whatsappMessage = "Hola! Quisiera saber más sobre CheCancha para mi complejo deportivo.";
 

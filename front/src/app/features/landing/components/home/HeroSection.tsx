@@ -10,12 +10,12 @@ import {
 } from "../../../../../shared/components/ui/DateTimePicker";
 import { ChevronDownIcon } from "@heroicons/react/20/solid";
 import { Volleyball } from "lucide-react";
-import { cn } from "@/lib/utils"; // Importamos cn para las clases condicionales
+import { cn } from "@/lib/utils"; 
 
 const HeroSection: FC = () => {
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [time, setTime] = useState("");
-  const [sport, setSport] = useState(""); // 1. Estado para el deporte seleccionado
+  const [sport, setSport] = useState("");
 
   return (
     <div className="w-full h-[80vh] min-h-[600px] my-16 flex items-center justify-center text-background bg-background">
@@ -61,7 +61,6 @@ const HeroSection: FC = () => {
             <div className="relative w-full">
               <Volleyball className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-600" />
               <select
-                // 2. Aplicamos clases condicionales
                 className={cn(
                   "w-full pl-10 pr-4 py-3 border border-neutral-400 rounded-md focus:ring-2 focus:ring-neutral-950 outline-none cursor-pointer appearance-none",
                   !sport ? "text-neutral-600" : "text-neutral-900"

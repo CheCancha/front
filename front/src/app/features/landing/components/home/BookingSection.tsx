@@ -97,7 +97,7 @@ export const BookingSection = () => {
               <Step
                 key={step.title}
                 {...step}
-                isLast={index === steps.length - 1} // Pasamos la prop para saber si es el último
+                isLast={index === steps.length - 1}
               />
             ))}
           </div>

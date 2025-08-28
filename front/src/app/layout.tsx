@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { SmoothScroller } from "@/shared/components/ui/SmoothScroller";
+import Providers from "@/app/provider";
 
 export const metadata: Metadata = {
   title: {
@@ -71,7 +72,9 @@ export default function RootLayout({
       </head>
       <body className={`antialiased`}>
         <SmoothScroller />
-        {children}
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   );

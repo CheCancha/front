@@ -1,6 +1,4 @@
-// src/lib/auth.ts
-
-import { PrismaAdapter } from "@auth/prisma-adapter";
+import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { type NextAuthOptions, type DefaultSession } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
@@ -46,7 +44,6 @@ export const authOptions: NextAuthOptions = {
           where: { phone: normalizedPhone },
         });
 
-        // Verificamos que el usuario exista y tenga una contraseña (no es un usuario de Google)
         if (!user || !user.hashedPassword) return null;
 
         const passwordMatch = await bcrypt.compare(
@@ -85,5 +82,6 @@ export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
   pages: {
     signIn: "/login",
+    error: "/login", 
   },
 };

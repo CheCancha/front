@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -43,6 +43,7 @@ type LoginValues = z.infer<typeof loginSchema>;
 
 export const LoginForm = () => {
   const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -52,15 +53,16 @@ export const LoginForm = () => {
   });
 
   const onSubmit = async (data: LoginValues) => {
+    setError(null);
     const result = await signIn("credentials", {
       redirect: false,
       phone: data.phone,
       password: data.password,
     });
     if (result?.error) {
-      alert("Credenciales incorrectas.");
+      setError("El teléfono o la contraseña son incorrectos.");
     } else {
-      router.push(routes.home);
+      router.push(routes.public.canchas);
       router.refresh();
     }
   };
@@ -74,7 +76,7 @@ export const LoginForm = () => {
         <p className="mt-2 text-paragraph">
           ¿Aún no tenés una?{" "}
           <Link
-            href={routes.register}
+            href={routes.auth.registro}
             className="font-medium text-brand-orange hover:underline"
           >
             Registrate acá
@@ -94,6 +96,8 @@ export const LoginForm = () => {
           register={register("password")}
           error={errors.password?.message}
         />
+        
+        {error && <p className="text-sm text-red-600">{error}</p>}
 
         <ButtonPrimary type="submit" className="w-full" disabled={isSubmitting}>
           {isSubmitting ? "Ingresando..." : "Ingresar"}
@@ -112,7 +116,7 @@ export const LoginForm = () => {
       </div>
 
       <button
-        onClick={onclick}
+        onClick={() => signIn("google", { callbackUrl: routes.public.canchas })}
         className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-gray-300 rounded-md bg-white text-gray-800 font-roboto font-medium text-sm hover:bg-gray-50 transition-colors"
         style={{ fontFamily: "'Roboto', sans-serif" }}
       >
@@ -133,6 +137,7 @@ type RegisterValues = z.infer<typeof registerSchema>;
 
 export const RegisterForm = () => {
   const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -142,11 +147,39 @@ export const RegisterForm = () => {
   });
 
   const onSubmit = async (data: RegisterValues) => {
-    // Aquí iría la lógica de fetch a tu API /api/register
-    console.log("Datos de registro:", data);
-    alert("Lógica de registro pendiente");
-    router.push(routes.login);
-    // Si el registro es exitoso, iniciar sesión y redirigir
+    setError(null);
+    try {
+      const response = await fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Algo salió mal');
+      }
+
+      const result = await signIn('credentials', {
+        redirect: false,
+        phone: data.phone,
+        password: data.password,
+      });
+
+      if (result?.error) {
+        router.push(routes.auth.ingreso);
+      } else {
+        router.push(routes.public.canchas);
+        router.refresh();
+      }
+
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Ocurrió un error inesperado");
+      }
+    }
   };
 
   return (
@@ -184,6 +217,8 @@ export const RegisterForm = () => {
           register={register("password")}
           error={errors.password?.message}
         />
+
+        {error && <p className="text-sm text-red-600">{error}</p>}
 
         <ButtonPrimary type="submit" className="w-full" disabled={isSubmitting}>
           {isSubmitting ? "Creando cuenta..." : "Crear Cuenta"}

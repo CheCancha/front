@@ -13,7 +13,7 @@ datasource db {
 enum Role {
   USER
   MANAGER // Dueño de un complejo
-  ADMIN 
+  ADMIN
 }
 
 enum Sport {
@@ -25,10 +25,9 @@ enum Sport {
 }
 
 enum BookingStatus {
-  PENDIENTE 
-  CONFIRMADO 
-  COMPLETADO 
-  CANCELADO  
+  CONFIRMADO // Seña pagada, turno reservado.
+  COMPLETADO // Turno jugado y 100% pagado.
+  CANCELADO  // Turno cancelado por el usuario o el gestor.
 }
 
 // --- MODELOS DE LA BASE DE DATOS ---
@@ -42,12 +41,10 @@ model User {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
-  // Campos para NextAuth (Google, etc.)
-  email          String?   @unique
-  image          String?
-  accounts       Account[]
+  email    String?   @unique
+  image    String?
+  accounts Account[]
 
-  // Relaciones
   managedComplex Complex?  @relation("ManagedBy")
   bookings       Booking[]
 }
@@ -72,65 +69,86 @@ model Account {
 }
 
 model Complex {
-  id          String    @id @default(cuid())
-  name        String
-  address     String
-  city        String
+  id        String    @id @default(cuid())
+  name      String
+  address   String
+  city      String
   
-  // Relaciones
-  manager     User      @relation("ManagedBy", fields: [managerId], references: [id])
-  managerId   String    @unique
-  courts      Court[]
-  schedule    Schedule?
+  manager   User      @relation("ManagedBy", fields: [managerId], references: [id])
+  managerId String    @unique
+  courts    Court[]
+  schedule  Schedule?
 }
 
 model Court {
-  id          String  @id @default(cuid())
-  name        String  // Ej: "Cancha 1 - Fútbol 5"
+  id          String @id @default(cuid())
+  name        String 
   sport       Sport
-  pricePerHour Int    // Precio en centavos
-  
-  // Relaciones
-  complex     Complex   @relation(fields: [complexId], references: [id])
-  complexId   String
-  bookings    Booking[]
+  pricePerHour Int   
+
+  depositAmount Int  
+
+  complex   Complex @relation(fields: [complexId], references: [id])
+  complexId String
+  bookings  Booking[]
 }
 
 model Schedule {
-  id          String @id @default(cuid())
+  id             String @id @default(cuid())
   
-  mondayOpen    Int?
-  mondayClose   Int?
-  tuesdayOpen   Int?
-  tuesdayClose  Int?
-  wednesdayOpen Int?
+  mondayOpen     Int?
+  mondayClose    Int?
+  tuesdayOpen    Int?
+  tuesdayClose   Int?
+  wednesdayOpen  Int?
   wednesdayClose Int?
-  thursdayOpen  Int?
-  thursdayClose Int?
-  fridayOpen    Int?
-  fridayClose   Int?
-  saturdayOpen  Int?
-  saturdayClose Int?
-  sundayOpen    Int?
-  sundayClose   Int?
+  thursdayOpen   Int?
+  thursdayClose  Int?
+  fridayOpen     Int?
+  fridayClose    Int?
+  saturdayOpen   Int?
+  saturdayClose  Int?
+  sundayOpen     Int?
+  sundayClose    Int?
 
-  complex     Complex @relation(fields: [complexId], references: [id])
-  complexId   String  @unique
+  complex   Complex @relation(fields: [complexId], references: [id])
+  complexId String  @unique
 }
 
 model Booking {
-  id          String        @id @default(cuid())
-  date        DateTime
-  startTime   Int
-  totalPrice  Int
-  status      BookingStatus @default(PENDIENTE)
-  createdAt   DateTime      @default(now())
+  id        String   @id @default(cuid())
+  date      DateTime
+  startTime Int
+  
+  totalPrice       Int           // Precio total del turno (Ej: 16000)
+  depositPaid      Int           // Monto de la seña que ya se pagó (Ej: 4000)
+  remainingBalance Int           // Saldo pendiente (Ej: 12000)
 
-  // Relaciones
-  court       Court  @relation(fields: [courtId], references: [id])
-  courtId     String
-  user        User   @relation(fields: [userId], references: [id])
-  userId      String
+  status    BookingStatus @default(CONFIRMADO)
+  createdAt DateTime      @default(now())
+
+  court   Court  @relation(fields: [courtId], references: [id])
+  courtId String
+  user    User   @relation(fields: [userId], references: [id])
+  userId  String
 
   @@unique([courtId, date, startTime])
+}
+
+
+model InscriptionRequest {
+  id          String @id @default(cuid())
+  ownerName   String
+  ownerPhone  String
+  ownerEmail  String
+  complexName String
+  address     String
+  city        String
+  province    String
+  sports      String
+  selectedPlan String
+
+  // Estado para gestionar el flujo de aprobación
+  status      String   @default("PENDIENTE") // PENDIENTE, APROBADO, RECHAZADO
+  createdAt   DateTime @default(now())
 }
