@@ -1,13 +1,13 @@
 "use client";
 
 import React, { useState } from 'react';
-import { cn } from "@/lib/utils"; 
+import { cn } from "@/lib/utils";
+import MPButton from '@/app/features/dashboard/components/MPButton';
 
 // --- Componente para el Editor de Horarios ---
 const daysOfWeek = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 const timeSlots = Array.from({ length: 16 }, (_, i) => `${i + 8}:00`.padStart(5, '0'));
 
-// Estado inicial de ejemplo: Lunes a Viernes de 9 a 22, Sábados por la mañana.
 const initialSchedule: Record<string, string[]> = {
   "Lunes": ["09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00", "22:00"],
   "Martes": ["09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00", "22:00"],
@@ -79,10 +79,10 @@ const ScheduleEditor = () => {
 };
 
 
-export default function SettingsPage() {
+export default function SettingsPage({ params }: { params: { complexId: string } }) {
   return (
     <div className="space-y-8">
-       {/* --- Encabezado --- */}
+        {/* --- Encabezado --- */}
         <header>
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Ajustes del Club</h1>
             <p className="text-gray-600 mt-1">Configura los horarios, precios y políticas de tu club.</p>
@@ -91,7 +91,7 @@ export default function SettingsPage() {
         {/* --- Formulario de Ajustes --- */}
         <div className="bg-white p-8 rounded-lg border shadow-sm">
             <form className="space-y-8 divide-y divide-gray-200">
-                {/* Sección de Horarios (MODIFICADA) */}
+                {/* Sección de Horarios */}
                 <div className="pt-8 first:pt-0">
                     <h3 className="text-lg font-semibold leading-6 text-gray-900">Horarios de Apertura</h3>
                     <p className="mt-1 text-sm text-gray-500">Selecciona los días y las horas en que tu club está disponible para reservas.</p>
@@ -131,24 +131,8 @@ export default function SettingsPage() {
                     </div>
                 </div>
 
-                {/* Sección de Pagos */}
-                <div className="pt-8">
-                    <h3 className="text-lg font-semibold leading-6 text-gray-900">Pagos y Cobranzas</h3>
-                    <p className="mt-1 text-sm text-gray-500">Conecta tu cuenta de Mercado Pago para aceptar señas y pagos online.</p>
-                    <div className="mt-6">
-                        <div className="flex items-center gap-4 p-4 border-2 border-dashed rounded-lg">
-                            <img src="https://logospng.org/download/mercado-pago/logo-mercado-pago-256.png" alt="Mercado Pago Logo" className="h-10"/>
-                            <div className="flex-1">
-                                <p className="font-medium">Estado: No conectado</p>
-                                <p className="text-sm text-gray-500">Aún no puedes recibir pagos online.</p>
-                            </div>
-                            <button type="button" className="bg-[#009EE3] text-white font-semibold py-2 px-4 rounded-lg hover:bg-[#0089cc] transition-colors">
-                                Conectar con Mercado Pago
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
+                {/* 2. REEMPLAZAMOS EL HTML POR EL COMPONENTE */}
+                <MPButton />
 
                 <div className="pt-8 flex justify-end">
                     <button type="button" className="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50">Cancelar</button>

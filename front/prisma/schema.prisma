@@ -69,24 +69,30 @@ model Account {
 }
 
 model Complex {
-  id        String    @id @default(cuid())
-  name      String
-  address   String
-  city      String
-  
-  manager   User      @relation("ManagedBy", fields: [managerId], references: [id])
-  managerId String    @unique
+  id      String   @id @default(cuid())
+  name    String
+  address String
+  city    String
+
+  manager   User     @relation("ManagedBy", fields: [managerId], references: [id])
+  managerId String   @unique
   courts    Court[]
   schedule  Schedule?
+
+  // --- CAMPOS PARA MERCADO PAGO CONNECT (AÑADIDOS AQUÍ) ---
+  mp_access_token  String?
+  mp_refresh_token String?
+  mp_public_key    String?
+  mp_user_id       String?
+  mp_connected_at  DateTime?
 }
 
 model Court {
-  id          String @id @default(cuid())
-  name        String 
-  sport       Sport
-  pricePerHour Int   
-
-  depositAmount Int  
+  id            String  @id @default(cuid())
+  name          String
+  sport         Sport
+  pricePerHour  Int
+  depositAmount Int
 
   complex   Complex @relation(fields: [complexId], references: [id])
   complexId String
@@ -94,8 +100,7 @@ model Court {
 }
 
 model Schedule {
-  id             String @id @default(cuid())
-  
+  id             String  @id @default(cuid())
   mondayOpen     Int?
   mondayClose    Int?
   tuesdayOpen    Int?
@@ -116,13 +121,12 @@ model Schedule {
 }
 
 model Booking {
-  id        String   @id @default(cuid())
-  date      DateTime
-  startTime Int
-  
-  totalPrice       Int           // Precio total del turno (Ej: 16000)
-  depositPaid      Int           // Monto de la seña que ya se pagó (Ej: 4000)
-  remainingBalance Int           // Saldo pendiente (Ej: 12000)
+  id               String        @id @default(cuid())
+  date             DateTime
+  startTime        Int
+  totalPrice       Int
+  depositPaid      Int
+  remainingBalance Int
 
   status    BookingStatus @default(CONFIRMADO)
   createdAt DateTime      @default(now())
@@ -135,20 +139,18 @@ model Booking {
   @@unique([courtId, date, startTime])
 }
 
-
 model InscriptionRequest {
-  id          String @id @default(cuid())
-  ownerName   String
-  ownerPhone  String
-  ownerEmail  String
-  complexName String
-  address     String
-  city        String
-  province    String
-  sports      String
+  id           String   @id @default(cuid())
+  ownerName    String
+  ownerPhone   String
+  ownerEmail   String
+  complexName  String
+  address      String
+  city         String
+  province     String
+  sports       String
   selectedPlan String
-
-  // Estado para gestionar el flujo de aprobación
-  status      String   @default("PENDIENTE") // PENDIENTE, APROBADO, RECHAZADO
-  createdAt   DateTime @default(now())
+  status       String   @default("PENDIENTE")
+  createdAt    DateTime @default(now())
 }
+
