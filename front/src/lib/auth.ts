@@ -7,18 +7,21 @@ import bcrypt from "bcrypt";
 import { Role } from "@prisma/client";
 import { normalizePhoneNumber } from "@/lib/utils";
 
+// 1. AMPLIAMOS LA DECLARACIÓN DE TIPOS PARA INCLUIR complexId
 declare module "next-auth" {
   interface Session {
-    user: { id: string; role: Role } & DefaultSession["user"];
+    user: { id: string; role: Role; complexId?: string | null } & DefaultSession["user"];
   }
   interface User {
     role: Role;
+    complexId?: string | null;
   }
 }
 declare module "next-auth/jwt" {
   interface JWT {
     id: string;
     role: Role;
+    complexId?: string | null;
   }
 }
 
@@ -40,8 +43,14 @@ export const authOptions: NextAuthOptions = {
         
         const normalizedPhone = normalizePhoneNumber(credentials.phone);
 
+        // 2. AHORA BUSCAMOS AL USUARIO Y SU COMPLEJO ASOCIADO
         const user = await db.user.findUnique({
           where: { phone: normalizedPhone },
+          include: {
+            managedComplex: { // Incluimos la relación del complejo
+              select: { id: true },
+            },
+          },
         });
 
         if (!user || !user.hashedPassword) return null;
@@ -52,12 +61,14 @@ export const authOptions: NextAuthOptions = {
         );
         if (!passwordMatch) return null;
 
+        // 3. DEVOLVEMOS EL complexId JUNTO CON LOS DEMÁS DATOS
         return {
           id: user.id,
           name: user.name,
           email: user.email,
           image: user.image,
           role: user.role,
+          complexId: user.managedComplex?.id || null,
         };
       },
     }),
@@ -67,12 +78,18 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id;
         token.role = user.role;
+        // 4. AÑADIMOS EL complexId AL TOKEN
+        token.complexId = user.complexId;
       }
       return token;
     },
     session({ session, token }) {
-      session.user.id = token.id;
-      session.user.role = token.role;
+      if (session.user) {
+        session.user.id = token.id;
+        session.user.role = token.role;
+        // 5. AÑADIMOS EL complexId A LA SESIÓN FINAL
+        session.user.complexId = token.complexId;
+      }
       return session;
     },
   },

@@ -1,24 +1,40 @@
-// import { MetadataRoute } from 'next';
-// import { sportsData } from './(pages)/deportes/sports-data';
+import { MetadataRoute } from 'next'
 
-// export default function sitemap(): MetadataRoute.Sitemap {
-//   const baseUrl = 'https://www.catclub.com.ar';
+export default function sitemap(): MetadataRoute.Sitemap {
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://tu-dominio.com'
 
-//   // Rutas estáticas
-//   const staticRoutes = [
-//     { url: baseUrl, lastModified: new Date(), priority: 1.0 },
-//     { url: `${baseUrl}/nosotros`, lastModified: new Date(), priority: 0.8 },
-//     { url: `${baseUrl}/deportes`, lastModified: new Date(), priority: 0.8 },
-//     { url: `${baseUrl}/instalaciones`, lastModified: new Date(), priority: 0.8 },
-//     { url: `${baseUrl}/contacto`, lastModified: new Date(), priority: 0.7 },
-//   ];
-
-//   // Rutas dinámicas para deportes
-//   const sportRoutes = sportsData.map((sport) => ({
-//     url: `${baseUrl}/deportes/${sport.slug}`,
-//     lastModified: new Date(),
-//     priority: 0.9,
-//   }));
-
-//   return [...staticRoutes, ...sportRoutes];
-// }
+  return [
+    {
+      url: baseUrl,
+      lastModified: new Date(),
+      changeFrequency: 'yearly',
+      priority: 1,
+    },
+    {
+      url: `${baseUrl}/auth/registro`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/auth/ingreso`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
+    // Agrega más rutas públicas de tu aplicación aquí
+    // Por ejemplo:
+    // {
+    //   url: `${baseUrl}/sobre-nosotros`,
+    //   lastModified: new Date(),
+    //   changeFrequency: 'monthly',
+    //   priority: 0.5,
+    // },
+    // {
+    //   url: `${baseUrl}/contacto`,
+    //   lastModified: new Date(),
+    //   changeFrequency: 'monthly',
+    //   priority: 0.5,
+    // },
+  ]
+}

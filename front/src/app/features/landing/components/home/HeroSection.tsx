@@ -4,6 +4,7 @@ import type { FC } from "react";
 import Image from "next/image";
 import { MapPinIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   DatePicker,
   TimePicker,
@@ -11,11 +12,27 @@ import {
 import { ChevronDownIcon } from "@heroicons/react/20/solid";
 import { Volleyball } from "lucide-react";
 import { cn } from "@/lib/utils"; 
+import { format } from 'date-fns';
 
 const HeroSection: FC = () => {
+  const router = useRouter();
+  const [city, setCity] = useState("Tostado");
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [time, setTime] = useState("");
   const [sport, setSport] = useState("");
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const params = new URLSearchParams();
+
+    if (city) params.set("city", city);
+    if (sport) params.set("sport", sport);
+    if (date) params.set("date", format(date, 'yyyy-MM-dd'));
+    if (time) params.set("time", time);
+    
+    // Redirigimos al usuario a la página de resultados con los parámetros
+    router.push(`/courts?${params.toString()}`);
+  };
 
   return (
     <div className="w-full h-[80vh] min-h-[600px] my-16 flex items-center justify-center text-background bg-background">
@@ -46,13 +63,16 @@ const HeroSection: FC = () => {
 
         {/* Barra de Búsqueda Compleja */}
         <div className="bg-background text-neutral-900 rounded-lg p-4 max-w-5xl mx-auto">
-          <form className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-3 items-center">
+          <form onSubmit={handleSearch} className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-3 items-center">
             {/* Input: Ciudad */}
             <div className="relative w-full">
               <MapPinIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-600" />
               <input
                 type="text"
                 placeholder="Ciudad"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                required
                 className="w-full pl-10 pr-4 py-3 border border-neutral-400 rounded-md focus:ring-2 focus:ring-neutral-950 outline-none"
               />
             </div>
@@ -68,12 +88,12 @@ const HeroSection: FC = () => {
                 value={sport}
                 onChange={(e) => setSport(e.target.value)}
               >
-                <option value="" disabled>
-                  Deporte
-                </option>
-                <option value="futbol">Fútbol</option>
-                <option value="padel">Pádel</option>
-                <option value="basquet">Básquet</option>
+                <option value="" disabled>Deporte</option>
+                <option value="FUTBOL">Fútbol</option>
+                <option value="PADEL">Pádel</option>
+                <option value="BASQUET">Básquet</option>
+                <option value="TENIS">Tenis</option>
+                <option value="VOLEY">Vóley</option>
               </select>
               <ChevronDownIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-600 pointer-events-none" />
             </div>

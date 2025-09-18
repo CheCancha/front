@@ -5,7 +5,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { routes } from "@/routes";
 import { useSession, signOut } from "next-auth/react";
-// import { useNotificationStore } from "@/app/store/notificationStore"; // <-- Importamos el store de Zustand
 import {
   UserCircle,
   Search,
@@ -15,17 +14,31 @@ import {
 } from "lucide-react";
 
 const Navbar: React.FC = () => {
-  // 1. Hook de NextAuth para la sesión (AUTENTICACIÓN)
   const { data: session, status } = useSession();
-
-  // 2. Hook de Zustand para el estado de la UI (NOTIFICACIONES)
-  // const { count: notificationCount } = useNotificationStore();
-
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const user = session?.user;
   const isLoggedIn = status === "authenticated";
   const isAuthLoading = status === "loading";
+
+  // --- LÓGICA DE ENLACE DINÁMICO ---
+  const getDashboardUrl = () => {
+    if (!user) return routes.public.home; // Fallback
+
+    switch (user.role) {
+      case "ADMIN":
+        return "/admin"; // Ruta directa para el admin
+      case "MANAGER":
+        // Si es manager y tiene un complexId, va a su dashboard. Si no, a la página de creación.
+        return user.complexId 
+          ? routes.app.dashboard(user.complexId) 
+          : "/dashboard/create-complex";
+      case "USER":
+        return routes.app.perfil;
+      default:
+        return routes.public.home;
+    }
+  };
 
   if (isAuthLoading) {
     return (
@@ -60,16 +73,6 @@ const Navbar: React.FC = () => {
             <div className="ml-10 flex items-center space-x-6">
               {isLoggedIn ? (
                 <>
-                  {/* Ejemplo de uso de Zustand: Icono de Notificaciones */}
-                  {/* <button className="relative text-gray-600 hover:text-black">
-                    <Bell size={22} />
-                    {notificationCount > 0 && (
-                      <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
-                        {notificationCount}
-                      </span>
-                    )}
-                  </button> */}
-
                   <Link
                     href={routes.public.canchas}
                     className="flex items-center gap-2 text-gray-600 hover:text-black font-medium py-2 px-4 rounded-md transition duration-300 border border-gray-200 bg-white hover:bg-gray-50"
@@ -90,20 +93,21 @@ const Navbar: React.FC = () => {
                       </div>
                     </button>
                     {isMenuOpen && (
-                      <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-30 border">
+                      <div className="absolute right-0 mt-5 w-48 bg-white rounded-md shadow-sm py-1 z-30 border">
+                        {/* EL LINK AHORA USA LA URL DINÁMICA */}
                         <Link
-                          href={routes.app.dashboardBase}
+                          href={getDashboardUrl()}
                           className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         >
                           <LayoutDashboard size={16} />
-                          Mi Dashboard
+                          Mi Panel
                         </Link>
                         <button
                           onClick={() => {
                             signOut({ callbackUrl: routes.public.home });
                             setIsMenuOpen(false);
                           }}
-                          className="w-full text-left flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                          className="w-full text-left flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 cursor-pointer"
                         >
                           <LogOut size={16} />
                           Cerrar Sesión

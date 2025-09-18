@@ -8,30 +8,6 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-// --- ENUMS PARA CHECANCHA ---
-
-enum Role {
-  USER
-  MANAGER // Dueño de un complejo
-  ADMIN
-}
-
-enum Sport {
-  FUTBOL
-  PADEL
-  TENIS
-  BASQUET
-  VOLEY
-}
-
-enum BookingStatus {
-  CONFIRMADO // Seña pagada, turno reservado.
-  COMPLETADO // Turno jugado y 100% pagado.
-  CANCELADO  // Turno cancelado por el usuario o el gestor.
-}
-
-// --- MODELOS DE LA BASE DE DATOS ---
-
 model User {
   id             String    @id @default(cuid())
   name           String?
@@ -40,13 +16,11 @@ model User {
   hashedPassword String?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
-
-  email    String?   @unique
-  image    String?
-  accounts Account[]
-
-  managedComplex Complex?  @relation("ManagedBy")
+  email          String?   @unique
+  image          String?
+  accounts       Account[]
   bookings       Booking[]
+  managedComplex Complex?  @relation("ManagedBy")
 }
 
 model Account {
@@ -55,48 +29,61 @@ model Account {
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
+  refresh_token     String?
+  access_token      String?
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @db.Text
+  id_token          String?
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
 
 model Complex {
-  id      String   @id @default(cuid())
-  name    String
-  address String
-  city    String
+  id                  String    @id @default(cuid())
+  name                String
+  address             String
+  city                String
+  province            String
+  managerId           String    @unique
+  onboardingCompleted Boolean   @default(false)
+  slotDurationMinutes Int?
+  openHour            Int?
+  closeHour           Int?
+  courtCount          Int?
+  mp_access_token     String?
+  mp_refresh_token    String?
+  mp_public_key       String?
+  mp_user_id          String?
+  mp_connected_at     DateTime?
+  manager             User      @relation("ManagedBy", fields: [managerId], references: [id])
+  courts              Court[]
+  images              Image[]
+  schedule            Schedule?
+}
 
-  manager   User     @relation("ManagedBy", fields: [managerId], references: [id])
-  managerId String   @unique
-  courts    Court[]
-  schedule  Schedule?
-
-  // --- CAMPOS PARA MERCADO PAGO CONNECT (AÑADIDOS AQUÍ) ---
-  mp_access_token  String?
-  mp_refresh_token String?
-  mp_public_key    String?
-  mp_user_id       String?
-  mp_connected_at  DateTime?
+model Image {
+  id        String   @id @default(uuid())
+  url       String
+  path      String   
+  complex   Complex  @relation(fields: [complexId], references: [id])
+  complexId String
+  isPrimary Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Court {
-  id            String  @id @default(cuid())
+  id            String    @id @default(cuid())
   name          String
   sport         Sport
   pricePerHour  Int
   depositAmount Int
-
-  complex   Complex @relation(fields: [complexId], references: [id])
-  complexId String
-  bookings  Booking[]
+  complexId     String
+  bookings      Booking[]
+  complex       Complex   @relation(fields: [complexId], references: [id])
 }
 
 model Schedule {
@@ -115,9 +102,8 @@ model Schedule {
   saturdayClose  Int?
   sundayOpen     Int?
   sundayClose    Int?
-
-  complex   Complex @relation(fields: [complexId], references: [id])
-  complexId String  @unique
+  complexId      String  @unique
+  complex        Complex @relation(fields: [complexId], references: [id])
 }
 
 model Booking {
@@ -127,14 +113,12 @@ model Booking {
   totalPrice       Int
   depositPaid      Int
   remainingBalance Int
-
-  status    BookingStatus @default(CONFIRMADO)
-  createdAt DateTime      @default(now())
-
-  court   Court  @relation(fields: [courtId], references: [id])
-  courtId String
-  user    User   @relation(fields: [userId], references: [id])
-  userId  String
+  status           BookingStatus @default(PENDIENTE)
+  createdAt        DateTime      @default(now())
+  courtId          String
+  userId           String
+  court            Court         @relation(fields: [courtId], references: [id])
+  user             User          @relation(fields: [userId], references: [id])
 
   @@unique([courtId, date, startTime])
 }
@@ -154,3 +138,23 @@ model InscriptionRequest {
   createdAt    DateTime @default(now())
 }
 
+enum Role {
+  USER
+  MANAGER
+  ADMIN
+}
+
+enum Sport {
+  FUTBOL
+  PADEL
+  TENIS
+  BASQUET
+  VOLEY
+}
+
+enum BookingStatus {
+  CONFIRMADO
+  COMPLETADO
+  CANCELADO
+  PENDIENTE
+}

@@ -59,11 +59,34 @@ export const LoginForm = () => {
       phone: data.phone,
       password: data.password,
     });
+    
     if (result?.error) {
       setError("El teléfono o la contraseña son incorrectos.");
     } else {
-      router.push(routes.public.canchas);
-      router.refresh();
+      // Después del login exitoso, verificar el rol y complejo del usuario
+      try {
+        const response = await fetch('/api/auth/redirect-after-login', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (response.ok) {
+          const { redirectUrl } = await response.json();
+          router.push(redirectUrl);
+          router.refresh();
+        } else {
+          // Fallback: redirigir a canchas si falla la verificación
+          router.push(routes.public.canchas);
+          router.refresh();
+        }
+      } catch (error) {
+        console.error('Error al determinar redirección:', error);
+        // Fallback: redirigir a canchas
+        router.push(routes.public.canchas);
+        router.refresh();
+      }
     }
   };
 
@@ -116,7 +139,7 @@ export const LoginForm = () => {
       </div>
 
       <button
-        onClick={() => signIn("google", { callbackUrl: routes.public.canchas })}
+        onClick={() => signIn("google", { callbackUrl: "/api/auth/redirect-after-login" })}
         className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-gray-300 rounded-md bg-white text-gray-800 font-roboto font-medium text-sm hover:bg-gray-50 transition-colors"
         style={{ fontFamily: "'Roboto', sans-serif" }}
       >
@@ -169,8 +192,29 @@ export const RegisterForm = () => {
       if (result?.error) {
         router.push(routes.auth.ingreso);
       } else {
-        router.push(routes.public.canchas);
-        router.refresh();
+        // Después del registro exitoso, también verificar redirección
+        try {
+          const redirectResponse = await fetch('/api/auth/redirect-after-login', {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (redirectResponse.ok) {
+            const { redirectUrl } = await redirectResponse.json();
+            router.push(redirectUrl);
+            router.refresh();
+          } else {
+            // Fallback para usuarios recién registrados (normalmente USER)
+            router.push(routes.public.canchas);
+            router.refresh();
+          }
+        } catch (error) {
+          console.error('Error al determinar redirección:', error);
+          router.push(routes.public.canchas);
+          router.refresh();
+        }
       }
 
     } catch (err: unknown) {

@@ -1,46 +1,53 @@
-import { MetricCard } from "@/app/features/dashboard/components/MetricCard";
-import { SalesChart } from "@/app/features/dashboard/components/SalesChart";
-import { Reservations } from "@/app/features/dashboard/components/Reservations";
-import { getComplexDataForManager } from "@/app/features/dashboard/services/dashboard.service";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/app/api/auth/[...nextauth]/authOptions";
 import { notFound, redirect } from "next/navigation";
 import { DollarSign, CreditCard, Clock } from "lucide-react";
 import { routes } from "@/routes";
+import { getComplexDataForManager } from "@/app/features/dashboard/services/dashboard.service";
+import { MetricCard } from "@/app/features/dashboard/components/MetricCard";
+import { SalesChart } from "@/app/features/dashboard/components/SalesChart";
+import { Reservations } from "@/app/features/dashboard/components/Reservations";
+import { OnboardingPrompt } from "@/app/features/dashboard/components/OnboardingPrompt";
 
 // --- PÁGINA PRINCIPAL DEL DASHBOARD (AHORA ES UN SERVER COMPONENT) ---
 
+// 1. Definimos una interfaz clara y correcta para las props de la página.
+//    Next.js ya resuelve los parámetros por ti en los Server Components.
 interface DashboardPageProps {
-  params: {
-    complexId: string;
-  };
+  params: Promise<{ complexId: string }>;
 }
 
+// 2. Usamos la interfaz que definimos en la firma de la función.
+//    Esto hace el código más limpio y evita errores de tipado.
 export default async function DashboardPage({ params }: DashboardPageProps) {
   const session = await getServerSession(authOptions);
 
-  // Doble chequeo de seguridad: si no hay sesión o no es MANAGER, fuera.
-  if (!session || session.user.role !== 'MANAGER') {
-    redirect(routes.auth.login);
+  if (!session || session.user.role !== "MANAGER") {
+    redirect(routes.auth.ingreso);
   }
 
-  // Buscamos los datos del complejo usando el ID de la URL y el ID del usuario de la sesión
-  const complexData = await getComplexDataForManager(params.complexId, session.user.id);
+  const { complexId } = await params;
 
-  // Si no se encuentran datos (porque el complejo no existe o el usuario no es el dueño),
-  // mostramos una página 404.
+  const complexData = await getComplexDataForManager(
+    complexId,
+    session.user.id
+  );
+
   if (!complexData) {
     return notFound();
   }
 
   // Formateamos los ingresos para mostrarlos correctamente
-  const formattedIncome = new Intl.NumberFormat('es-AR', {
-    style: 'currency',
-    currency: 'ARS',
-  }).format(complexData.totalIncomeToday / 100); // Asumiendo que guardas los precios en centavos
+  const formattedIncome = new Intl.NumberFormat("es-AR", {
+    style: "currency",
+    currency: "ARS",
+  }).format(complexData.totalIncomeToday / 100);
 
   return (
     <div className="flex-1 space-y-6 mx-auto">
+      {!complexData.onboardingCompleted && (
+        <OnboardingPrompt complexId={complexId} />
+      )}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* COLUMNA IZQUIERDA */}
         <div className="lg:col-span-8 space-y-4">
@@ -50,7 +57,7 @@ export default async function DashboardPage({ params }: DashboardPageProps) {
               title="Reservas de Hoy"
               value={complexData.reservationsToday.toString()}
               icon={<Clock className="h-4 w-4 text-muted-foreground" />}
-              change="+5.2%" // Esto puede ser dinámico en el futuro
+              change="+5.2%"
               changeType="increase"
               description="Comparado con ayer"
             />
@@ -71,11 +78,9 @@ export default async function DashboardPage({ params }: DashboardPageProps) {
               description="Comparado con ayer"
             />
           </div>
-
           {/* GRÁFICO ABAJO */}
           <SalesChart />
         </div>
-
         {/* COLUMNA DERECHA (ASIDE CON TURNOS) */}
         <div className="lg:col-span-4">
           <Reservations />

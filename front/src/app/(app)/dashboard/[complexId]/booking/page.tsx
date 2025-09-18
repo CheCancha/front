@@ -173,7 +173,7 @@ export default function BookingCalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [sportFilter, setSportFilter] = useState<"Todos" | Court["sport"]>("Todos");
   const [bookingsData, setBookingsData] = useState(initialBookingsData);
-  const [isModalOpen, setIsModalOpen] = useState(false); // Estado para el modal
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const filteredCourts = courtsData.filter(
     (court) => sportFilter === "Todos" || court.sport === sportFilter

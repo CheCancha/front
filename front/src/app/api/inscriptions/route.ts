@@ -1,33 +1,58 @@
-import { NextResponse } from 'next/server';
-import { Resend } from 'resend';
+import { NextResponse } from "next/server";
+import { Resend } from "resend";
+import { db } from "@/lib/db";
+import { inscriptionSchema } from "@/lib/inscriptionSchema";
+import { normalizePhoneNumber } from "@/lib/utils";
 
-// Inicializamos Resend con tu API key (guardada en .env)
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { ownerName, ownerEmail, complexName, /* ...otros datos */ } = body;
 
-    // Aquí podrías guardar la solicitud en tu base de datos primero
-    // await db.application.create({ data: body });
+    const validation = inscriptionSchema.safeParse(body);
+    if (!validation.success) {
+      return new NextResponse("Datos inválidos", { status: 400 });
+    }
 
+    // 1. Guardamos la solicitud en la base de datos usando Prisma
+    await db.inscriptionRequest.create({
+      data: {
+        ownerName: body.ownerName,
+        ownerEmail: body.ownerEmail,
+        ownerPhone: normalizePhoneNumber(body.ownerPhone),
+        complexName: body.complexName,
+        address: body.address,
+        city: body.city,
+        province: body.province,
+        sports: body.sports,
+        selectedPlan: body.selectedPlan,
+        status: "PENDIENTE",
+      },
+    });
+
+    // 2. Si se guardó correctamente, enviamos el email de notificación
     await resend.emails.send({
-      from: 'onboarding@resend.dev',
-      to: 'ignacionweppler@gmail.com',
-      subject: `Nueva solicitud de registro: ${complexName}`,
+      from: "onboarding@resend.dev", // Cambiar por un email verificado en Resend
+      to: "ignacionweppler@gmail.com",
+      subject: `Nueva solicitud de registro: ${body.complexName}`,
       html: `
         <h1>Nueva Solicitud de Complejo</h1>
-        <p><strong>Nombre del Complejo:</strong> ${complexName}</p>
-        <p><strong>Nombre del Dueño:</strong> ${ownerName}</p>
-        <p><strong>Email:</strong> ${ownerEmail}</p>
+        <p><strong>Nombre del Complejo:</strong> ${body.complexName}</p>
+        <p><strong>Nombre del Dueño:</strong> ${body.ownerName}</p>
+        <p><strong>Email:</strong> ${body.ownerEmail}</p>
+        <p><strong>Teléfono:</strong> ${body.ownerPhone}</p>
+        <p><strong>Plan Seleccionado:</strong> ${body.selectedPlan}</p>
         <p><em>Revisá tu panel de superadmin para aprobar esta solicitud.</em></p>
       `,
     });
 
-    return NextResponse.json({ message: 'Solicitud enviada con éxito' });
+    return NextResponse.json(
+      { message: "Solicitud enviada con éxito" },
+      { status: 201 }
+    );
   } catch (error) {
-    console.error(error);
-    return new NextResponse('Error al enviar la solicitud', { status: 500 });
+    console.error("[INSCRIPTIONS_POST]", error);
+    return new NextResponse("Error al procesar la solicitud", { status: 500 });
   }
 }

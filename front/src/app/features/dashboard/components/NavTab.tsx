@@ -6,15 +6,15 @@ import { usePathname, useParams } from "next/navigation";
 
 export default function DashboardNavTabs() {
   const pathname = usePathname();
-  const params = useParams(); 
+  const params = useParams();
 
   const complexId = params.complexId as string;
 
   if (!complexId) {
     return (
-        <nav className="border-b border-gray-200">
-            <div className="h-[58px]"></div> 
-        </nav>
+      <div className="border-b border-gray-200">
+        <div className="h-[58px]" />
+      </div>
     );
   }
 

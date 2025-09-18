@@ -1,156 +1,345 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
-import { MapPin, Clock, Wifi, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  MapPin,
+  Clock,
+  Wifi,
+  ChevronLeft,
+  ChevronRight,
+  AlertCircle,
+  Calendar as CalendarIcon,
+} from "lucide-react";
 import Navbar from "@/shared/components/Navbar";
 import Footer from "@/shared/components/Footer";
 import { cn } from "@/lib/utils";
 import { useParams } from "next/navigation";
 import { BookingModal } from "@/shared/components/ui/BookingModal";
+import type {
+  Complex,
+  Court,
+  Image as PrismaImage,
+  Schedule,
+  Booking,
+} from "@prisma/client";
+import { DayPicker } from "react-day-picker";
+import "react-day-picker/dist/style.css";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
+import Link from "next/link";
 
-// --- TIPOS Y DATOS (Simulando el backend) ---
-type Court = {
-  id: number;
-  name: string;
-  sport: "Fútbol" | "Pádel";
-};
-
-type ClubProfile = {
-  id: number;
-  name: string;
-  address: string;
-  images: string[];
+// --- TIPOS (Ahora coinciden con la respuesta de la API del backend) ---
+type ComplexProfileData = Complex & {
+  images: PrismaImage[];
   courts: Court[];
-  services: string[];
-  hours: string;
-  priceFrom: number;
-  bookings: { courtId: number; time: string }[];
+  schedule: Schedule | null;
 };
 
-const clubs: ClubProfile[] = [
-  {
-    id: 1,
-    name: "Palos Verdes Pádel",
-    address: "Caseros 1727, Tostado",
-    images: ["/paddle.jpg", "/paddle2.jpg", "/paddle3.jpg"],
-    courts: [
-      { id: 101, name: "Cancha 1 (Vidrio)", sport: "Pádel" as const },
-      { id: 102, name: "Cancha 2 (Cemento)", sport: "Fútbol" as const },
-    ],
-    services: ["Wifi", "Vestuarios", "Estacionamiento", "Bar / Restaurante"],
-    hours: "Lunes a Domingos: 9:00 a 23:00",
-    priceFrom: 20000,
-    bookings: [
-      { courtId: 101, time: "18:00" },
-      { courtId: 101, time: "21:00" },
-      { courtId: 102, time: "19:00" },
-    ],
-  },
-  // ... otros clubes
-];
+type Availability = Pick<Booking, "courtId" | "startTime">;
 
 // --- COMPONENTES DE LA PÁGINA ---
-
-const ImageCarousel = ({ images }: { images: string[] }) => {
+const ImageCarousel = ({ images }: { images: PrismaImage[] }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const prevSlide = () => setCurrentIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
-  const nextSlide = () => setCurrentIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+
+  if (!images || images.length === 0) {
+    return (
+      <div className="relative w-full h-64 md:h-96 rounded-2xl overflow-hidden bg-gray-200 flex items-center justify-center">
+        <p className="text-gray-500">No hay imágenes disponibles</p>
+      </div>
+    );
+  }
+
+  const prevSlide = () =>
+    setCurrentIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+  const nextSlide = () =>
+    setCurrentIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
 
   return (
     <div className="relative w-full h-64 md:h-96 rounded-2xl overflow-hidden">
-      {images.map((src, index) => (
+      {images.map((image, index) => (
         <Image
-          key={index}
-          src={src}
+          key={image.id}
+          src={image.url}
           alt={`Imagen del complejo ${index + 1}`}
           fill
-          className={`object-cover transition-opacity duration-700 ease-in-out ${index === currentIndex ? "opacity-100" : "opacity-0"}`}
+          className={`object-cover transition-opacity duration-700 ease-in-out ${
+            index === currentIndex ? "opacity-100" : "opacity-0"
+          }`}
           priority={index === 0}
         />
       ))}
       <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
-      <button onClick={prevSlide} className="absolute top-1/2 left-4 -translate-y-1/2 bg-white/20 text-white p-2 rounded-full hover:bg-white/40"><ChevronLeft /></button>
-      <button onClick={nextSlide} className="absolute top-1/2 right-4 -translate-y-1/2 bg-white/20 text-white p-2 rounded-full hover:bg-white/40"><ChevronRight /></button>
+      <button
+        onClick={prevSlide}
+        className="absolute top-1/2 left-4 -translate-y-1/2 bg-white/20 text-white p-2 rounded-full hover:bg-white/40"
+      >
+        <ChevronLeft />
+      </button>
+      <button
+        onClick={nextSlide}
+        className="absolute top-1/2 right-4 -translate-y-1/2 bg-white/20 text-white p-2 rounded-full hover:bg-white/40"
+      >
+        <ChevronRight />
+      </button>
     </div>
   );
 };
 
-// 2. BookingWidget ahora recibe una función para manejar el clic
-const BookingWidget = ({ club, onSlotClick }: { club: ClubProfile; onSlotClick: (court: Court, time: string) => void; }) => {
-  const [selectedCourt, setSelectedCourt] = useState<Court>(club.courts[0]);
-  const timeSlots = Array.from({ length: 14 }, (_, i) => `${i + 9}:00`);
-  const isBooked = (time: string) => club.bookings.some((b) => b.courtId === selectedCourt.id && b.time === time);
+const BookingWidget = ({
+  club,
+  onSlotClick,
+  selectedDate,
+  setSelectedDate,
+}: {
+  club: ComplexProfileData;
+  onSlotClick: (court: Court, time: string) => void;
+  selectedDate: Date;
+  setSelectedDate: (date: Date) => void;
+}) => {
+  const [selectedCourt, setSelectedCourt] = useState<Court | null>(
+    club.courts[0] || null
+  );
+  const [bookings, setBookings] = useState<Availability[]>([]);
+  const [isAvailabilityLoading, setIsAvailabilityLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAvailability = async () => {
+      if (!club.id || !selectedDate) return;
+      setIsAvailabilityLoading(true);
+      try {
+        const dateString = format(selectedDate, "yyyy-MM-dd");
+        const response = await fetch(
+          `/api/complexes/public/${club.id}/availability?date=${dateString}`
+        );
+        if (!response.ok)
+          throw new Error("No se pudo cargar la disponibilidad.");
+        const data: Availability[] = await response.json();
+        setBookings(data);
+      } catch (error) {
+        console.error("Failed to fetch availability", error);
+        setBookings([]);
+      } finally {
+        setIsAvailabilityLoading(false);
+      }
+    };
+    fetchAvailability();
+  }, [club.id, selectedDate]);
+
+  const generateTimeSlots = () => {
+    if (!club.openHour || !club.closeHour || !club.slotDurationMinutes) {
+      return [];
+    }
+    const slots = [];
+    for (let hour = club.openHour; hour < club.closeHour; hour++) {
+      slots.push(`${String(hour).padStart(2, "0")}:00`);
+      if (club.slotDurationMinutes === 30) {
+        slots.push(`${String(hour).padStart(2, "0")}:30`);
+      }
+    }
+    return slots;
+  };
+
+  const timeSlots = generateTimeSlots();
+
+  if (!selectedCourt) {
+    return (
+      <div className="bg-white rounded-2xl p-6 border border-gray-200 text-center text-gray-500">
+        Este complejo no tiene canchas configuradas.
+      </div>
+    );
+  }
+
+  const isBooked = (time: string) => {
+    const hour = parseInt(time.split(":")[0], 10);
+    return bookings.some(
+      (b) => b.courtId === selectedCourt.id && b.startTime === hour
+    );
+  };
 
   return (
     <div className="bg-white rounded-2xl p-6 border border-gray-200">
-      <h2 className="text-2xl font-bold text-foreground mb-4">Reservar un turno</h2>
-      <div className="mb-6">
-        <label className="text-sm font-semibold text-paragraph mb-2 block">1. Elegí la cancha</label>
-        <div className="flex flex-wrap gap-2">
-          {club.courts.map((court) => (
-            <button
-              key={court.id}
-              onClick={() => setSelectedCourt(court)}
-              className={cn(
-                "px-4 py-2 rounded-full text-sm font-semibold border-2 transition-colors",
-                selectedCourt.id === court.id
-                  ? "bg-brand-orange text-white border-brand-orange"
-                  : "bg-transparent text-foreground border-gray-300 hover:border-brand-orange"
-              )}
-            >
-              {court.name}
-            </button>
-          ))}
+      <h2 className="text-2xl font-bold text-foreground mb-4">
+        Reservar un turno
+      </h2>
+      <div className="grid md:grid-cols-2 gap-6 mb-6">
+        <div>
+          <label className="text-sm font-semibold text-paragraph mb-2 block">
+            1. Elegí el día
+          </label>
+          <DayPicker
+            mode="single"
+            selected={selectedDate}
+            onSelect={(date) => date && setSelectedDate(date)}
+            className="border rounded-md p-2 bg-white"
+            locale={es}
+            disabled={{ before: new Date() }}
+          />
+        </div>
+        <div>
+          <label className="text-sm font-semibold text-paragraph mb-2 block">
+            2. Elegí la cancha
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {club.courts.map((court) => (
+              <button
+                key={court.id}
+                onClick={() => setSelectedCourt(court)}
+                className={cn(
+                  "px-4 py-2 rounded-full text-sm font-semibold border-2 transition-colors",
+                  selectedCourt.id === court.id
+                    ? "bg-brand-orange text-white border-brand-orange"
+                    : "bg-transparent text-foreground border-gray-300 hover:border-brand-orange"
+                )}
+              >
+                {court.name}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
       <div>
-        <label className="text-sm font-semibold text-paragraph mb-2 block">2. Seleccioná un horario</label>
-        <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2">
-          {timeSlots.map((time) => (
-            <button
-              key={time}
-              disabled={isBooked(time)}
-              // 3. Al hacer clic, llamamos a la función que viene por props
-              onClick={() => onSlotClick(selectedCourt, time)}
-              className={cn(
-                "p-2 rounded-md text-center font-semibold transition-colors cursor-pointer",
-                isBooked(time)
-                  ? "bg-gray-200 text-gray-400 cursor-not-allowed line-through"
-                  : "bg-neutral-200 text-neutral-700 hover:bg-brand-green hover:text-white"
-              )}
-            >
-              {time}
-            </button>
-          ))}
-        </div>
+        <label className="text-sm font-semibold text-paragraph mb-2 block">
+          3. Seleccioná un horario
+        </label>
+        {isAvailabilityLoading ? (
+          <div className="h-40 flex items-center justify-center text-gray-500">
+            Cargando disponibilidad...
+          </div>
+        ) : timeSlots.length > 0 ? (
+          <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2">
+            {timeSlots.map((time) => (
+              <button
+                key={time}
+                disabled={isBooked(time)}
+                onClick={() => onSlotClick(selectedCourt, time)}
+                className={cn(
+                  "p-2 rounded-md text-center font-semibold transition-colors cursor-pointer",
+                  isBooked(time)
+                    ? "bg-gray-200 text-gray-400 cursor-not-allowed line-through"
+                    : "bg-neutral-200 text-neutral-700 hover:bg-brand-green hover:text-white"
+                )}
+              >
+                {time}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-gray-500">
+            El complejo no ha configurado sus horarios de apertura.
+          </p>
+        )}
       </div>
     </div>
   );
 };
+
+const PageSkeleton = () => (
+  <div className="container mx-auto px-6 py-12 animate-pulse">
+    <div className="max-w-7xl mx-auto">
+      <div className="relative mb-8 h-64 md:h-96 rounded-2xl bg-gray-200"></div>
+      <div className="grid lg:grid-cols-3 gap-8 items-start">
+        <div className="lg:col-span-2 bg-gray-200 rounded-2xl h-96"></div>
+        <div className="lg:col-span-1 space-y-6">
+          <div className="bg-gray-200 rounded-2xl h-24"></div>
+          <div className="bg-gray-200 rounded-2xl h-40"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+);
 
 // --- PÁGINA DE PERFIL DEL CLUB ---
 export default function ClubProfilePage() {
   const params = useParams();
-  const clubId = Number(params.id);
-  const club = clubs.find((c) => c.id === clubId);
+  const clubId = params.id as string;
+  const [club, setClub] = useState<ComplexProfileData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // 4. Estados para manejar el modal
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedBooking, setSelectedBooking] = useState<{ court: Court; time: string } | null>(null);
+  const [selectedBooking, setSelectedBooking] = useState<{
+    court: Court;
+    time: string;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!clubId) return;
+
+    const fetchClubProfile = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch(`/api/complexes/public/${clubId}`);
+        if (!response.ok) {
+          throw new Error("Club no encontrado o no disponible.");
+        }
+        const data = await response.json();
+        setClub(data);
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Ocurrió un error inesperado."
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchClubProfile();
+  }, [clubId]);
 
   const handleSlotClick = (court: Court, time: string) => {
     setSelectedBooking({ court, time });
     setIsModalOpen(true);
   };
 
-  if (!club) {
+  if (isLoading) {
     return (
-      <div className="bg-background min-h-screen flex items-center justify-center">
-        <p className="text-xl font-semibold text-foreground">Club no encontrado</p>
+      <div className="bg-background min-h-screen">
+        <Navbar />
+        <PageSkeleton />
+        <Footer />
       </div>
     );
   }
+
+  if (error || !club) {
+    return (
+      <div className="bg-background min-h-screen flex flex-col">
+        <Navbar />
+        <div className="flex-grow flex items-center justify-center text-center px-4">
+          <div>
+            <AlertCircle className="mx-auto h-12 w-12 text-red-500" />
+            <h2 className="mt-4 text-xl font-semibold text-foreground">
+              {error || "Club no encontrado"}
+            </h2>
+            <p className="mt-2 text-paragraph">
+              El club que buscas no existe o no está disponible en este momento.
+            </p>
+            <Link
+              href="/courts"
+              className="mt-6 inline-block bg-brand-orange text-white font-bold py-2 px-4 rounded-lg hover:opacity-90"
+            >
+              Volver al listado
+            </Link>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  const services = [
+    "Wifi",
+    "Vestuarios",
+    "Estacionamiento",
+    "Bar / Restaurante",
+  ];
+  const hours = `${
+    club.openHour ? `${String(club.openHour).padStart(2, "0")}:00` : "N/A"
+  } a ${
+    club.closeHour ? `${String(club.closeHour).padStart(2, "0")}:00` : "N/A"
+  }`;
 
   return (
     <>
@@ -161,25 +350,50 @@ export default function ClubProfilePage() {
             <section className="relative mb-8">
               <ImageCarousel images={club.images} />
               <div className="absolute bottom-6 left-6 z-10">
-                <h1 className="font-lora text-4xl md:text-5xl font-bold text-white">{club.name}</h1>
-                <p className="text-lg text-gray-200 flex items-center gap-2 mt-1"><MapPin size={18} /> {club.address}</p>
+                <h1
+                  className="text-4xl md:text-5xl font-bold text-white"
+                  style={{ textShadow: "2px 2px 4px rgba(0,0,0,0.7)" }}
+                >
+                  {club.name}
+                </h1>
+                <p
+                  className="text-lg text-gray-200 flex items-center gap-2 mt-1"
+                  style={{ textShadow: "1px 1px 2px rgba(0,0,0,0.8)" }}
+                >
+                  <MapPin size={18} /> {club.address}, {club.city}
+                </p>
               </div>
             </section>
             <div className="grid lg:grid-cols-3 gap-8 items-start">
               <div className="lg:col-span-2">
-                {/* 5. Pasamos la función handleSlotClick al widget */}
-                <BookingWidget club={club} onSlotClick={handleSlotClick} />
+                <BookingWidget
+                  club={club}
+                  onSlotClick={handleSlotClick}
+                  selectedDate={selectedDate}
+                  setSelectedDate={setSelectedDate}
+                />
               </div>
               <div className="lg:col-span-1 space-y-6">
                 <div className="bg-white rounded-2xl p-6 border border-gray-200">
-                  <h3 className="text-lg font-bold text-foreground mb-3">Horarios del Club</h3>
-                  <p className="flex items-center gap-2 text-paragraph"><Clock size={16} /> {club.hours}</p>
+                  <h3 className="text-lg font-bold text-foreground mb-3">
+                    Horarios del Club
+                  </h3>
+                  <p className="flex items-center gap-2 text-paragraph">
+                    <Clock size={16} /> {hours}
+                  </p>
                 </div>
                 <div className="bg-white rounded-2xl p-6 border border-gray-200">
-                  <h3 className="text-lg font-bold text-foreground mb-4">Servicios Incluidos</h3>
+                  <h3 className="text-lg font-bold text-foreground mb-4">
+                    Servicios Incluidos
+                  </h3>
                   <ul className="grid grid-cols-2 gap-3 text-paragraph">
-                    {club.services.map((service) => (
-                      <li key={service} className="flex items-center gap-2 text-sm"><Wifi size={16} /> {service}</li>
+                    {services.map((service) => (
+                      <li
+                        key={service}
+                        className="flex items-center gap-2 text-sm"
+                      >
+                        <Wifi size={16} /> {service}
+                      </li>
                     ))}
                   </ul>
                 </div>
@@ -190,7 +404,6 @@ export default function ClubProfilePage() {
         <Footer />
       </div>
 
-      {/* 6. Renderizamos el modal si hay una reserva seleccionada */}
       {selectedBooking && club && (
         <BookingModal
           isOpen={isModalOpen}
@@ -198,8 +411,7 @@ export default function ClubProfilePage() {
           club={club}
           court={selectedBooking.court}
           time={selectedBooking.time}
-          date={new Date()} // En una app real, aquí iría la fecha seleccionada
-          price={club.priceFrom} // En una app real, el precio dependería de la cancha y la hora
+          date={selectedDate}
         />
       )}
     </>

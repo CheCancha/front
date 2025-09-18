@@ -46,7 +46,7 @@ export default function ProfilePage() {
                         </div>
                         <div className="flex items-center gap-3">
                             <Phone size={18} className="text-gray-500" />
-                            <span className="text-gray-800">11-2233-4455</span> {/* Reemplazar con dato real */}
+                            <span className="text-gray-800">11-2233-4455</span>
                         </div>
                     </div>
                 </div>
