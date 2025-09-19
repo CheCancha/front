@@ -6,10 +6,7 @@ import { getMercadoPagoPreferenceClient } from "@/lib/mercadopago";
 import { format } from "date-fns";
 import { BookingStatus } from "@prisma/client";
 
-/**
- * Crea una preferencia de pago en Mercado Pago para una nueva reserva.
- * Esta ruta es llamada por el BookingModal cuando el usuario decide pagar la seña.
- */
+
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);

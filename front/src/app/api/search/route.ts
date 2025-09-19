@@ -5,7 +5,7 @@ import { z } from "zod";
 
 // Esquema de validación para los parámetros de búsqueda
 const searchSchema = z.object({
-  city: z.string().min(1, "La ciudad es requerida."),
+  city: z.string().optional(),
   sport: z.nativeEnum(Sport).optional(),
   date: z.string().optional(),
   time: z.string().optional(),
@@ -43,7 +43,6 @@ function getNextAvailableSlots(
   count: number = 3
 ): string[] {
   const now = new Date();
-  // Ajustamos la hora actual a la zona horaria de Argentina (UTC-3)
   now.setHours(now.getUTCHours() - 3);
 
   const currentHour = now.getHours();
@@ -107,7 +106,8 @@ function getNextAvailableSlots(
           minute
         ).padStart(2, "0")}`;
         availableSlots.push(timeString);
-        // Si ya encontramos los 3 que necesitábamos, terminamos
+        // Si ya encontramos los 3 que necesitábamos, terminamos        {activeSection === "requests" && <AdminDashboard />}
+
         if (availableSlots.length === count) {
           return availableSlots;
         }
@@ -143,11 +143,14 @@ export async function GET(req: NextRequest) {
 
     const whereClause: Prisma.ComplexWhereInput = {
       onboardingCompleted: true,
-      city: {
+    };
+
+    if (city) {
+      whereClause.city = {
         contains: city,
         mode: "insensitive",
-      },
-    };
+      };
+    }
 
     if (sport) {
       whereClause.courts = { some: { sport: sport } };

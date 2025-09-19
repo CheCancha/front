@@ -30,8 +30,8 @@ const Navbar: React.FC = () => {
         return "/admin"; // Ruta directa para el admin
       case "MANAGER":
         // Si es manager y tiene un complexId, va a su dashboard. Si no, a la página de creación.
-        return user.complexId 
-          ? routes.app.dashboard(user.complexId) 
+        return user.complexId
+          ? routes.app.dashboard(user.complexId)
           : "/dashboard/create-complex";
       case "USER":
         return routes.app.perfil;
@@ -94,7 +94,16 @@ const Navbar: React.FC = () => {
                     </button>
                     {isMenuOpen && (
                       <div className="absolute right-0 mt-5 w-48 bg-white rounded-md shadow-sm py-1 z-30 border">
-                        {/* EL LINK AHORA USA LA URL DINÁMICA */}
+                        {/* Link al perfil */}
+                        <Link
+                          href={routes.app.perfil}
+                          className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        >
+                          <UserCircle size={16} />
+                          Mi Perfil
+                        </Link>
+
+                        {/* Mi Panel según rol */}
                         <Link
                           href={getDashboardUrl()}
                           className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
@@ -102,6 +111,8 @@ const Navbar: React.FC = () => {
                           <LayoutDashboard size={16} />
                           Mi Panel
                         </Link>
+
+                        {/* Cerrar sesión */}
                         <button
                           onClick={() => {
                             signOut({ callbackUrl: routes.public.home });

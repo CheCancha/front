@@ -8,6 +8,13 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+enum SubscriptionPlan {
+  BASE
+  ESTANDAR
+  FULL
+  FREE
+}
+
 model User {
   id             String    @id @default(cuid())
   name           String?
@@ -62,6 +69,7 @@ model Complex {
   courts              Court[]
   images              Image[]
   schedule            Schedule?
+  subscriptionPlan    SubscriptionPlan  @default(FREE)
 }
 
 model Image {

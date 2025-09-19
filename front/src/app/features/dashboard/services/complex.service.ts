@@ -9,6 +9,7 @@ import { db } from "@/lib/db";
 import { routes } from "@/routes";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { validate } from "uuid";
 
 // Esquemas de validación
 const createComplexSchema = z
@@ -17,6 +18,7 @@ const createComplexSchema = z
     address: z.string().min(5, "La dirección es muy corta."),
     city: z.string().min(3, "El nombre de la ciudad es muy corto."),
     province: z.string().min(3, "El nombre de la provincia es muy corto."),
+    subscriptionPlan: z.enum(["BASE", "ESTANDAR", "FULL", "FREE"]).optional(),
     slotDurationMinutes: z
       .number()
       .min(60, "La duración mínima es de 60 minutos."),
@@ -187,6 +189,7 @@ export async function createComplex(formData: FormData) {
         courtCount: 0,
         slotDurationMinutes: validatedData.slotDurationMinutes,
         managerId,
+        subscriptionPlan: validatedData.subscriptionPlan || "FREE",
         images: {
           create: uploadedImages.map((img, index) => ({
             url: img.url,

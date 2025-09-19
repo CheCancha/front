@@ -26,6 +26,8 @@ type NewCourt = {
   isNew: true;
 };
 
+type ScheduleDayKey = Exclude<keyof Schedule, "id" | "complexId">;
+
 // --- Componentes Helper ---
 const hoursOptions = Array.from({ length: 25 }, (_, i) => ({
   value: i,
@@ -38,24 +40,22 @@ const durationOptions = [
   { value: 120, label: "120 min" },
 ];
 
-const sportsOptions = [
-  { value: "FUTBOL", label: "Fútbol" },
-  { value: "PADEL", label: "Pádel" },
-  { value: "TENIS", label: "Tenis" },
-  { value: "BASQUET", label: "Básquet" },
-  { value: "VOLEY", label: "Vóley" },
-];
+const sportsOptions = Object.values(Sport).map((sport) => ({
+  value: sport,
+  label: sport.charAt(0).toUpperCase() + sport.slice(1).toLowerCase(),
+}));
 
-const dayMapping: { [key: string]: keyof Omit<Schedule, "id" | "complexId"> } =
-  {
-    Lunes: "mondayOpen",
-    Martes: "tuesdayOpen",
-    Miércoles: "wednesdayOpen",
-    Jueves: "thursdayOpen",
-    Viernes: "fridayOpen",
-    Sábado: "saturdayOpen",
-    Domingo: "sundayOpen",
-  };
+const dayMapping: {
+  [key: string]: { open: ScheduleDayKey; close: ScheduleDayKey };
+} = {
+  Lunes: { open: "mondayOpen", close: "mondayClose" },
+  Martes: { open: "tuesdayOpen", close: "tuesdayClose" },
+  Miércoles: { open: "wednesdayOpen", close: "wednesdayClose" },
+  Jueves: { open: "thursdayOpen", close: "thursdayClose" },
+  Viernes: { open: "fridayOpen", close: "fridayClose" },
+  Sábado: { open: "saturdayOpen", close: "saturdayClose" },
+  Domingo: { open: "sundayOpen", close: "sundayClose" },
+};
 
 // --- Componente Principal de la Página ---
 export default function SettingsPage() {
@@ -106,7 +106,7 @@ export default function SettingsPage() {
   };
 
   const handleScheduleChange = (
-    dayKey: keyof Omit<Schedule, "id" | "complexId">,
+    dayKey: ScheduleDayKey,
     value: string | null
   ) => {
     setData((prev) => {
@@ -193,7 +193,6 @@ export default function SettingsPage() {
     fetchComplexData();
   };
 
-
   // --- Guardar cambios ---
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -211,28 +210,9 @@ export default function SettingsPage() {
           province: data.province,
         },
         general: {
-          openHour: data.openHour,
-          closeHour: data.closeHour,
           slotDurationMinutes: data.slotDurationMinutes,
         },
-        schedule: data.schedule
-          ? {
-              mondayOpen: data.schedule.mondayOpen,
-              mondayClose: data.schedule.mondayClose,
-              tuesdayOpen: data.schedule.tuesdayOpen,
-              tuesdayClose: data.schedule.tuesdayClose,
-              wednesdayOpen: data.schedule.wednesdayOpen,
-              wednesdayClose: data.schedule.wednesdayClose,
-              thursdayOpen: data.schedule.thursdayOpen,
-              thursdayClose: data.schedule.thursdayClose,
-              fridayOpen: data.schedule.fridayOpen,
-              fridayClose: data.schedule.fridayClose,
-              saturdayOpen: data.schedule.saturdayOpen,
-              saturdayClose: data.schedule.saturdayClose,
-              sundayOpen: data.schedule.sundayOpen,
-              sundayClose: data.schedule.sundayClose,
-            }
-          : {},
+        schedule: data.schedule, // El resto se mantiene igual
         courts: {
           update: data.courts.map((c) => ({
             id: c.id,
@@ -283,7 +263,7 @@ export default function SettingsPage() {
 
   if (isLoading)
     return (
-      <div>
+      <div className="p-8">
         <Spinner />
       </div>
     );
@@ -346,7 +326,7 @@ export default function SettingsPage() {
                     value={data.name}
                     onChange={handleBasicInfoChange}
                     required
-                    className="mt-1 w-full rounded-md border-gray-300"
+                    className="mt-1 w-full rounded-md p-1 border-1 border-neutral-300"
                   />
                 </div>
                 <div>
@@ -359,7 +339,7 @@ export default function SettingsPage() {
                     value={data.address}
                     onChange={handleBasicInfoChange}
                     required
-                    className="mt-1 w-full rounded-md border-gray-300"
+                    className="mt-1 w-full rounded-md p-1 border-1 border-neutral-300"
                   />
                 </div>
                 <div>
@@ -372,7 +352,7 @@ export default function SettingsPage() {
                     value={data.city}
                     onChange={handleBasicInfoChange}
                     required
-                    className="mt-1 w-full rounded-md border-gray-300"
+                    className="mt-1 w-full rounded-md p-1 border-1 border-neutral-300"
                   />
                 </div>
                 <div>
@@ -385,7 +365,7 @@ export default function SettingsPage() {
                     value={data.province}
                     onChange={handleBasicInfoChange}
                     required
-                    className="mt-1 w-full rounded-md border-gray-300"
+                    className="mt-1 w-full rounded-md p-1 border-1 border-neutral-300"
                   />
                 </div>
               </div>
@@ -394,150 +374,200 @@ export default function SettingsPage() {
 
           {/* --- Horarios --- */}
           {activeTab === "schedule" && (
-            <>
-              {/* Configuración General */}
-              <div className="space-y-6">
-                <h3 className="text-lg font-semibold leading-6 text-gray-900">
-                  Configuración General de Horarios
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      Hora de Apertura General
-                    </label>
-                    <select
-                      name="openHour"
-                      value={data.openHour ?? ""}
-                      onChange={handleGeneralChange}
-                      className="mt-1 w-full rounded-md border-gray-300"
+            <div className="space-y-8">
+              {/* SECCIÓN SIMPLIFICADA - Duración de Turnos */}
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100">
+                <div className="flex items-start gap-4">
+                  <div className="p-3 bg-blue-500 rounded-lg text-white flex-shrink-0">
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
                     >
-                      <option value="">--</option>
-                      {hoursOptions.map((h) => (
-                        <option key={`open-${h.value}`} value={h.value}>
-                          {h.label}
-                        </option>
-                      ))}
-                    </select>
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      Hora de Cierre General
-                    </label>
-                    <select
-                      name="closeHour"
-                      value={data.closeHour ?? ""}
-                      onChange={handleGeneralChange}
-                      className="mt-1 w-full rounded-md border-gray-300"
-                    >
-                      <option value="">--</option>
-                      {hoursOptions.map((h) => (
-                        <option key={`close-${h.value}`} value={h.value}>
-                          {h.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-1">
                       Duración de Turnos
-                    </label>
-                    <select
-                      name="slotDurationMinutes"
-                      value={data.slotDurationMinutes ?? ""}
-                      onChange={handleGeneralChange}
-                      className="mt-1 w-full rounded-md border-gray-300"
-                    >
-                      <option value="">--</option>
-                      {durationOptions.map((d) => (
-                        <option key={d.value} value={d.value}>
-                          {d.label}
-                        </option>
-                      ))}
-                    </select>
+                    </h3>
+                    <p className="text-sm text-gray-600 mb-4">
+                      Define la duración estándar de cada turno de reserva.
+                    </p>
+                    <div className="max-w-xs">
+                      <select
+                        name="slotDurationMinutes"
+                        value={data.slotDurationMinutes ?? ""}
+                        onChange={handleGeneralChange}
+                        className="w-full p-1 rounded-md border-1 border-neutral-500 focus:border-blue-500 focus:ring-blue-500 transition-colors"
+                      >
+                        <option value="">-- Seleccionar --</option>
+                        {durationOptions.map((d) => (
+                          <option key={d.value} value={d.value}>
+                            {d.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
                 </div>
               </div>
 
               {/* Horarios por día */}
-              <div className="space-y-6">
-                <h3 className="text-lg font-semibold leading-6 text-gray-900">
-                  Horarios Específicos por Día
-                </h3>
-                <p className="text-sm text-gray-500">
-                  Puedes sobreescribir el horario general para días específicos.
-                  Déjalos en blanco para usar la configuración general.
-                </p>
-                <div className="space-y-4">
-                  {Object.entries(dayMapping).map(([dayName, openKey]) => {
-                    const closeKey = openKey.replace(
-                      "Open",
-                      "Close"
-                    ) as keyof Omit<Schedule, "id" | "complexId">;
-                    const openValue = data.schedule?.[openKey] ?? "";
-                    const closeValue = data.schedule?.[closeKey] ?? "";
-                    return (
-                      <div
-                        key={dayName}
-                        className="grid grid-cols-3 gap-4 items-center"
-                      >
-                        <span className="font-medium text-sm">{dayName}</span>
-                        <select
-                          value={openValue}
-                          onChange={(e) =>
-                            handleScheduleChange(openKey, e.target.value)
-                          }
-                          className="w-full rounded-md border-gray-300 text-sm"
-                        >
-                          <option value="">Apertura (General)</option>
-                          {hoursOptions.map((h) => (
-                            <option
-                              key={`${dayName}-open-${h.value}`}
-                              value={h.value}
-                            >
-                              {h.label}
-                            </option>
-                          ))}
-                        </select>
-                        <select
-                          value={closeValue}
-                          onChange={(e) =>
-                            handleScheduleChange(closeKey, e.target.value)
-                          }
-                          className="w-full rounded-md border-gray-300 text-sm"
-                        >
-                          <option value="">Cierre (General)</option>
-                          {hoursOptions.map((h) => (
-                            <option
-                              key={`${dayName}-close-${h.value}`}
-                              value={h.value}
-                            >
-                              {h.label}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    );
-                  })}
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                {/* Header con gradiente */}
+                <div className="bg-gradient-to-r from-indigo-500 to-purple-600 px-6 py-4">
+                  <div className="flex items-center gap-3 text-white">
+                    <svg
+                      className="w-6 h-6"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                      />
+                    </svg>
+                    <div>
+                      <h3 className="text-lg font-semibold">
+                        Horarios de Apertura por Día
+                      </h3>
+                      <p className="text-indigo-100 text-sm">
+                        Define las horas de apertura y cierre para cada día. Si
+                        un día no se completa, se considerará cerrado.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Contenido */}
+                <div className="p-6">
+                  <div className="space-y-4">
+                    {Object.entries(dayMapping).map(
+                      ([dayName, { open: openKey, close: closeKey }]) => {
+                        const openValue = data.schedule?.[openKey] ?? "";
+                        const closeValue = data.schedule?.[closeKey] ?? "";
+                        const isOpen = openValue && closeValue;
+
+                        return (
+                          <div
+                            key={dayName}
+                            className={`rounded-lg border-2 p-4 transition-all duration-200 ${
+                              isOpen
+                                ? "border-green-200 bg-green-50"
+                                : "border-gray-200 bg-gray-50 hover:bg-gray-100"
+                            }`}
+                          >
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center">
+                              {/* Nombre del día */}
+                              <div className="flex items-center gap-2">
+                                <div
+                                  className={`w-3 h-3 rounded-full ${
+                                    isOpen ? "bg-green-500" : "bg-gray-300"
+                                  }`}
+                                ></div>
+                                <span className="font-medium text-gray-900">
+                                  {dayName}
+                                </span>
+                              </div>
+
+                              {/* Select de apertura */}
+                              <select
+                                value={openValue}
+                                onChange={(e) =>
+                                  handleScheduleChange(openKey, e.target.value)
+                                }
+                                className="w-full p-1 rounded-md border-1 border-neutral-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 transition-colors"
+                              >
+                                <option value="">Apertura</option>
+                                {hoursOptions.map((h) => (
+                                  <option
+                                    key={`${dayName}-open-${h.value}`}
+                                    value={h.value}
+                                  >
+                                    {h.label}
+                                  </option>
+                                ))}
+                              </select>
+
+                              {/* Select de cierre */}
+                              <select
+                                value={closeValue}
+                                onChange={(e) =>
+                                  handleScheduleChange(closeKey, e.target.value)
+                                }
+                                className="w-full rounded-md p-1 border-1 border-neutral-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 transition-colors"
+                              >
+                                <option value="">Cierre</option>
+                                {hoursOptions.map((h) => (
+                                  <option
+                                    key={`${dayName}-close-${h.value}`}
+                                    value={h.value}
+                                  >
+                                    {h.label}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          </div>
+                        );
+                      }
+                    )}
+                  </div>
                 </div>
               </div>
-            </>
+            </div>
           )}
 
           {/* --- Canchas --- */}
           {activeTab === "courts" && (
-            <div className="space-y-6">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold leading-6 text-gray-900">
-                  Gestión de Canchas
-                </h3>
-                <button
-                  type="button"
-                  onClick={addNewCourt}
-                  className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-black hover:bg-gray-800"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Agregar Cancha
-                </button>
+            <div className="space-y-8">
+              {/* Header con botón agregar */}
+              <div className="bg-gradient-to-r from-emerald-500 to-teal-600 rounded-xl p-6 shadow-sm">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div className="flex items-center gap-4 text-white">
+                    <div className="p-3 bg-white/20 rounded-lg">
+                      <svg
+                        className="w-6 h-6"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                        />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold mb-1">
+                        Gestión de Canchas
+                      </h3>
+                      <p className="text-emerald-100 text-sm">
+                        Configura y administra las canchas de tu complejo
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={addNewCourt}
+                    className="inline-flex items-center px-4 py-2 bg-white text-emerald-600 font-medium rounded-lg hover:bg-gray-50 transition-colors shadow-sm cursor-pointer"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Agregar Cancha
+                  </button>
+                </div>
               </div>
 
               {/* Canchas existentes */}
@@ -545,81 +575,101 @@ export default function SettingsPage() {
                 {data.courts.map((court) => (
                   <div
                     key={court.id}
-                    className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center p-4 border rounded-lg"
+                    className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm"
                   >
-                    <div className="md:col-span-3">
-                      <label className="block text-xs font-medium text-gray-500">
-                        Nombre
-                      </label>
-                      <input
-                        type="text"
-                        value={court.name}
-                        onChange={(e) =>
-                          handleCourtChange(court.id, "name", e.target.value)
-                        }
-                        className="w-full rounded-md border-gray-300 shadow-sm sm:text-sm"
-                      />
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                      <span className="text-sm font-medium text-gray-600">
+                        Cancha Existente
+                      </span>
                     </div>
-                    <div className="md:col-span-2">
-                      <label className="block text-xs font-medium text-gray-500">
-                        Deporte
-                      </label>
-                      <select
-                        value={court.sport}
-                        onChange={(e) =>
-                          handleCourtChange(court.id, "sport", e.target.value)
-                        }
-                        className="w-full rounded-md border-gray-300 shadow-sm sm:text-sm"
-                      >
-                        {sportsOptions.map((sport) => (
-                          <option key={sport.value} value={sport.value}>
-                            {sport.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="md:col-span-2">
-                      <label className="block text-xs font-medium text-gray-500">
-                        Precio / hora
-                      </label>
-                      <input
-                        type="number"
-                        value={court.pricePerHour}
-                        onChange={(e) =>
-                          handleCourtChange(
-                            court.id,
-                            "pricePerHour",
-                            e.target.value
-                          )
-                        }
-                        className="w-full rounded-md border-gray-300 shadow-sm sm:text-sm"
-                      />
-                    </div>
-                    <div className="md:col-span-2">
-                      <label className="block text-xs font-medium text-gray-500">
-                        Monto Seña
-                      </label>
-                      <input
-                        type="number"
-                        value={court.depositAmount}
-                        onChange={(e) =>
-                          handleCourtChange(
-                            court.id,
-                            "depositAmount",
-                            e.target.value
-                          )
-                        }
-                        className="w-full rounded-md border-gray-300 shadow-sm sm:text-sm"
-                      />
-                    </div>
-                    <div className="md:col-span-1">
-                      <button
-                        type="button"
-                        onClick={() => deleteCourt(court.id)}
-                        className="text-red-600 hover:text-red-800"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                      <div className="md:col-span-3">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Nombre
+                        </label>
+                        <input
+                          type="text"
+                          value={court.name}
+                          onChange={(e) =>
+                            handleCourtChange(court.id, "name", e.target.value)
+                          }
+                          className="w-full rounded-lg p-1 border-1 border-neutral-300 focus:border-blue-500 focus:ring-blue-500 transition-colors"
+                        />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Deporte
+                        </label>
+                        <select
+                          value={court.sport}
+                          onChange={(e) =>
+                            handleCourtChange(court.id, "sport", e.target.value)
+                          }
+                          className="w-full rounded-lg p-1 border-1 border-neutral-300 focus:border-blue-500 focus:ring-blue-500 transition-colors"
+                        >
+                          {sportsOptions.map((sport) => (
+                            <option key={sport.value} value={sport.value}>
+                              {sport.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Precio / hora
+                        </label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                            $
+                          </span>
+                          <input
+                            type="number"
+                            value={court.pricePerHour}
+                            onChange={(e) =>
+                              handleCourtChange(
+                                court.id,
+                                "pricePerHour",
+                                e.target.value
+                              )
+                            }
+                            className="w-full pl-8 rounded-lg p-1 border-1 border-neutral-300 focus:border-blue-500 focus:ring-blue-500 transition-colors"
+                          />
+                        </div>
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Monto Seña
+                        </label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                            $
+                          </span>
+                          <input
+                            type="number"
+                            value={court.depositAmount}
+                            onChange={(e) =>
+                              handleCourtChange(
+                                court.id,
+                                "depositAmount",
+                                e.target.value
+                              )
+                            }
+                            className="w-full pl-8 rounded-lg p-1 border-1 border-neutral-300 focus:border-blue-500 focus:ring-blue-500 transition-colors"
+                          />
+                        </div>
+                      </div>
+                      <div className="md:col-span-1 flex justify-center">
+                        <button
+                          type="button"
+                          onClick={() => deleteCourt(court.id)}
+                          className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                          title="Eliminar cancha"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -628,94 +678,117 @@ export default function SettingsPage() {
                 {newCourts.map((court) => (
                   <div
                     key={court.tempId}
-                    className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center p-4 border-2 border-dashed border-green-300 rounded-lg bg-green-50"
+                    className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-dashed border-green-300 rounded-xl p-6 shadow-sm"
                   >
-                    <div className="md:col-span-3">
-                      <label className="block text-xs font-medium text-gray-500">
-                        Nombre *
-                      </label>
-                      <input
-                        type="text"
-                        value={court.name}
-                        onChange={(e) =>
-                          handleNewCourtChange(
-                            court.tempId,
-                            "name",
-                            e.target.value
-                          )
-                        }
-                        placeholder="Ej: Cancha 1"
-                        required
-                        className="w-full rounded-md border-gray-300 shadow-sm sm:text-sm"
-                      />
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                      <span className="text-sm font-medium text-green-700">
+                        Nueva Cancha
+                      </span>
+                      <span className="text-xs bg-green-200 text-green-800 px-2 py-1 rounded-full">
+                        Pendiente de guardar
+                      </span>
                     </div>
-                    <div className="md:col-span-2">
-                      <label className="block text-xs font-medium text-gray-500">
-                        Deporte *
-                      </label>
-                      <select
-                        value={court.sport}
-                        onChange={(e) =>
-                          handleNewCourtChange(
-                            court.tempId,
-                            "sport",
-                            e.target.value
-                          )
-                        }
-                        className="w-full rounded-md border-gray-300 shadow-sm sm:text-sm"
-                      >
-                        {sportsOptions.map((sport) => (
-                          <option key={sport.value} value={sport.value}>
-                            {sport.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="md:col-span-2">
-                      <label className="block text-xs font-medium text-gray-500">
-                        Precio / hora *
-                      </label>
-                      <input
-                        type="number"
-                        value={court.pricePerHour}
-                        onChange={(e) =>
-                          handleNewCourtChange(
-                            court.tempId,
-                            "pricePerHour",
-                            e.target.value
-                          )
-                        }
-                        min="0"
-                        required
-                        className="w-full rounded-md border-gray-300 shadow-sm sm:text-sm"
-                      />
-                    </div>
-                    <div className="md:col-span-2">
-                      <label className="block text-xs font-medium text-gray-500">
-                        Monto Seña
-                      </label>
-                      <input
-                        type="number"
-                        value={court.depositAmount}
-                        onChange={(e) =>
-                          handleNewCourtChange(
-                            court.tempId,
-                            "depositAmount",
-                            e.target.value
-                          )
-                        }
-                        min="0"
-                        className="w-full rounded-md border-gray-300 shadow-sm sm:text-sm"
-                      />
-                    </div>
-                    <div className="md:col-span-1">
-                      <button
-                        type="button"
-                        onClick={() => removeNewCourt(court.tempId)}
-                        className="text-red-600 hover:text-red-800"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
+
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                      <div className="md:col-span-3">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Nombre <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={court.name}
+                          onChange={(e) =>
+                            handleNewCourtChange(
+                              court.tempId,
+                              "name",
+                              e.target.value
+                            )
+                          }
+                          placeholder="Ej: Cancha 1"
+                          required
+                          className="w-full rounded-lg p-1 border-1 border-neutral-300 focus:border-green-500 focus:ring-green-500 transition-colors"
+                        />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Deporte <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                          value={court.sport}
+                          onChange={(e) =>
+                            handleNewCourtChange(
+                              court.tempId,
+                              "sport",
+                              e.target.value
+                            )
+                          }
+                          className="w-full rounded-lg p-1 border-1 border-neutral-300 focus:border-green-500 focus:ring-green-500 transition-colors"
+                        >
+                          {sportsOptions.map((sport) => (
+                            <option key={sport.value} value={sport.value}>
+                              {sport.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Precio / hora <span className="text-red-500">*</span>
+                        </label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                            $
+                          </span>
+                          <input
+                            type="number"
+                            value={court.pricePerHour}
+                            onChange={(e) =>
+                              handleNewCourtChange(
+                                court.tempId,
+                                "pricePerHour",
+                                e.target.value
+                              )
+                            }
+                            min="0"
+                            required
+                            className="w-full pl-8 rounded-lg p-1 border-1 border-neutral-300 focus:border-green-500 focus:ring-green-500 transition-colors"
+                          />
+                        </div>
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Monto Seña
+                        </label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                            $
+                          </span>
+                          <input
+                            type="number"
+                            value={court.depositAmount}
+                            onChange={(e) =>
+                              handleNewCourtChange(
+                                court.tempId,
+                                "depositAmount",
+                                e.target.value
+                              )
+                            }
+                            min="0"
+                            className="w-full pl-8 rounded-lg p-1 border-1 border-neutral-300 focus:border-green-500 focus:ring-green-500 transition-colors"
+                          />
+                        </div>
+                      </div>
+                      <div className="md:col-span-1 flex justify-center">
+                        <button
+                          type="button"
+                          onClick={() => removeNewCourt(court.tempId)}
+                          className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                          title="Cancelar nueva cancha"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -723,28 +796,54 @@ export default function SettingsPage() {
 
               {/* Canchas marcadas para eliminar */}
               {courtsToDelete.length > 0 && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                  <h4 className="text-sm font-medium text-red-800">
-                    Canchas marcadas para eliminar:
-                  </h4>
-                  <div className="mt-2 space-y-2">
-                    {courtsToDelete.map((courtId) => (
-                      <div
-                        key={courtId}
-                        className="flex items-center justify-between"
+                <div className="bg-gradient-to-r from-red-50 to-pink-50 border-2 border-red-200 rounded-xl p-6 shadow-sm">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 bg-red-100 rounded-lg">
+                      <svg
+                        className="w-5 h-5 text-red-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
                       >
-                        <span className="text-sm text-red-700">
-                          Cancha ID: {courtId}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => restoreCourt(courtId)}
-                          className="text-xs text-red-600 hover:text-red-800 underline"
-                        >
-                          Restaurar
-                        </button>
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.314 15.5C3.546 16.333 4.508 18 6.048 18z"
+                        />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-lg font-semibold text-red-800 mb-2">
+                        Canchas marcadas para eliminar
+                      </h4>
+                      <p className="text-sm text-red-700 mb-4">
+                        Estas canchas serán eliminadas cuando guardes los
+                        cambios
+                      </p>
+                      <div className="space-y-3">
+                        {courtsToDelete.map((courtId) => (
+                          <div
+                            key={courtId}
+                            className="flex items-center justify-between bg-white rounded-lg p-3 border border-red-200"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                              <span className="text-sm font-medium text-gray-900">
+                                Cancha ID: {courtId}
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => restoreCourt(courtId)}
+                              className="text-sm text-red-600 hover:text-red-800 font-medium hover:bg-red-50 px-3 py-1 rounded-md transition-colors"
+                            >
+                              Restaurar
+                            </button>
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    </div>
                   </div>
                 </div>
               )}
@@ -753,11 +852,11 @@ export default function SettingsPage() {
 
           {/* --- Imágenes --- */}
           {activeTab === "images" && (
-          <ImageSettings
-            data={data}
-            setData={setData}
-            complexId={complexId}
-          />
+            <ImageSettings
+              data={data}
+              setData={setData}
+              complexId={complexId}
+            />
           )}
 
           {/* --- Pagos --- */}
@@ -785,7 +884,6 @@ export default function SettingsPage() {
               )}
             </div>
           )}
-
           {/* --- Acciones --- */}
           <div className="flex justify-between pt-8 border-t">
             <button
@@ -805,7 +903,7 @@ export default function SettingsPage() {
               <button
                 type="submit"
                 disabled={isSaving}
-                className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-black hover:bg-gray-800 disabled:bg-gray-400"
+                className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-black hover:bg-gray-800 disabled:bg-gray-400 cursor-pointer"
               >
                 {isSaving ? "Guardando..." : "Guardar Cambios"}
               </button>

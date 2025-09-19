@@ -1,5 +1,6 @@
 "use client";
 
+import "../../../../styles/day-picker.css";
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import {
@@ -25,7 +26,7 @@ import type {
 } from "@prisma/client";
 import { DayPicker } from "react-day-picker";
 import "react-day-picker/dist/style.css";
-import { format } from "date-fns";
+import { format, isToday } from "date-fns";
 import { es } from "date-fns/locale";
 import Link from "next/link";
 
@@ -102,6 +103,16 @@ const BookingWidget = ({
   );
   const [bookings, setBookings] = useState<Availability[]>([]);
   const [isAvailabilityLoading, setIsAvailabilityLoading] = useState(true);
+  const isSelectedDateToday = isToday(selectedDate);
+  const currentHour = new Date().getHours();
+
+  const isPast = (time: string) => {
+    if (!isSelectedDateToday) {
+      return false;
+    }
+    const slotHour = parseInt(time.split(":")[0], 10);
+    return slotHour < currentHour;
+  };
 
   useEffect(() => {
     const fetchAvailability = async () => {
@@ -208,21 +219,26 @@ const BookingWidget = ({
           </div>
         ) : timeSlots.length > 0 ? (
           <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2">
-            {timeSlots.map((time) => (
-              <button
-                key={time}
-                disabled={isBooked(time)}
-                onClick={() => onSlotClick(selectedCourt, time)}
-                className={cn(
-                  "p-2 rounded-md text-center font-semibold transition-colors cursor-pointer",
-                  isBooked(time)
-                    ? "bg-gray-200 text-gray-400 cursor-not-allowed line-through"
-                    : "bg-neutral-200 text-neutral-700 hover:bg-brand-green hover:text-white"
-                )}
-              >
-                {time}
-              </button>
-            ))}
+            {timeSlots.map((time) => {
+              const booked = isBooked(time);
+              const past = isPast(time); 
+
+              return (
+                <button
+                  key={time}
+                  disabled={booked || past}
+                  onClick={() => onSlotClick(selectedCourt, time)}
+                  className={cn(
+                    "p-2 rounded-md text-center font-semibold transition-colors cursor-pointer",
+                    booked || past
+                      ? "bg-gray-200 text-gray-400 cursor-not-allowed line-through"
+                      : "bg-neutral-200 text-neutral-700 hover:bg-brand-green hover:text-white"
+                  )}
+                >
+                  {time}
+                </button>
+              );
+            })}
           </div>
         ) : (
           <p className="text-sm text-gray-500">

@@ -18,6 +18,7 @@ export const routes = {
   // --- Rutas de la App (app - para managers) ---
   app: {
     dashboardBase: "/dashboard",
+    admin: "/admin",
     
     // Convertimos las rutas dinámicas en funciones
     dashboard: (complexId: string) => `/dashboard/${complexId}`,

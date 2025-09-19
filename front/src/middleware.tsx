@@ -37,10 +37,9 @@ export default withAuth(
     }
 
     // --- Regla 4: Proteger el Perfil (solo para Users) ---
-    if (pathname.startsWith(routes.app.perfil) && token?.role !== "USER") {
-        const redirectUrl = token?.role === "ADMIN" ? "/admin" : routes.app.dashboardBase;
-        return NextResponse.redirect(new URL(redirectUrl, req.url));
-    }
+if (pathname.startsWith(routes.app.perfil) && !token) {
+    return NextResponse.redirect(new URL(routes.auth.ingreso, req.url));
+}
 
     return NextResponse.next();
   },
