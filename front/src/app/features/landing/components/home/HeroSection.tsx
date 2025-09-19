@@ -2,38 +2,9 @@
 
 import type { FC } from "react";
 import Image from "next/image";
-import { MapPinIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import {
-  DatePicker,
-  TimePicker,
-} from "../../../../../shared/components/ui/DateTimePicker";
-import { ChevronDownIcon } from "@heroicons/react/20/solid";
-import { Volleyball } from "lucide-react";
-import { cn } from "@/lib/utils"; 
-import { format } from 'date-fns';
+import { SearchBar } from "@/shared/components/ui/Searchbar";
 
 const HeroSection: FC = () => {
-  const router = useRouter();
-  const [city, setCity] = useState("Tostado");
-  const [date, setDate] = useState<Date | undefined>(new Date());
-  const [time, setTime] = useState("");
-  const [sport, setSport] = useState("");
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    const params = new URLSearchParams();
-
-    if (city) params.set("city", city);
-    if (sport) params.set("sport", sport);
-    if (date) params.set("date", format(date, 'yyyy-MM-dd'));
-    if (time) params.set("time", time);
-    
-    // Redirigimos al usuario a la página de resultados con los parámetros
-    router.push(`/courts?${params.toString()}`);
-  };
-
   return (
     <div className="w-full h-[80vh] min-h-[600px] my-16 flex items-center justify-center text-background bg-background">
       {/* Contenedor para la Imagen de Fondo */}
@@ -52,7 +23,7 @@ const HeroSection: FC = () => {
       </div>
 
       {/* Contenido del Hero */}
-      <div className="absolute z-10 w-full max-w-4xl mx-auto text-center px-4 ">
+      <div className="absolute z-10 w-full max-w-5xl mx-auto text-center px-4 ">
         <h1 className="font-lora text-5xl md:text-7xl font-medium leading-tight mb-4">
           Encontrá tu cancha, reservá tu partido.
         </h1>
@@ -61,62 +32,7 @@ const HeroSection: FC = () => {
           deporte favorito en tu ciudad.
         </p>
 
-        {/* Barra de Búsqueda Compleja */}
-        <div className="bg-background text-neutral-900 rounded-lg p-4 max-w-5xl mx-auto">
-          <form onSubmit={handleSearch} className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-3 items-center">
-            {/* Input: Ciudad */}
-            <div className="relative w-full">
-              <MapPinIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-600" />
-              <input
-                type="text"
-                placeholder="Ciudad"
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
-                required
-                className="w-full pl-10 pr-4 py-3 border border-neutral-400 rounded-md focus:ring-2 focus:ring-neutral-950 outline-none"
-              />
-            </div>
-
-            {/* Input: Deporte */}
-            <div className="relative w-full">
-              <Volleyball className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-600" />
-              <select
-                className={cn(
-                  "w-full pl-10 pr-4 py-3 border border-neutral-400 rounded-md focus:ring-2 focus:ring-neutral-950 outline-none cursor-pointer appearance-none",
-                  !sport ? "text-neutral-600" : "text-neutral-900"
-                )}
-                value={sport}
-                onChange={(e) => setSport(e.target.value)}
-              >
-                <option value="" disabled>Deporte</option>
-                <option value="FUTBOL">Fútbol</option>
-                <option value="PADEL">Pádel</option>
-                <option value="BASQUET">Básquet</option>
-                <option value="TENIS">Tenis</option>
-                <option value="VOLEY">Vóley</option>
-              </select>
-              <ChevronDownIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-600 pointer-events-none" />
-            </div>
-
-            {/* Input: Fecha */}
-            <DatePicker selectedDate={date} onSelectDate={setDate} />
-
-            {/* Input: Hora */}
-            <TimePicker
-              value={time}
-              onChange={(e) => setTime(e.target.value)}
-            />
-
-            {/* Botón de Búsqueda (CTA) */}
-            <button
-              type="submit"
-              className="w-full lg:col-span-1 bg-brand-orange hover:bg-opacity-90 text-white font-medium py-3 px-6 rounded-md flex items-center justify-center transition-colors duration-300 cursor-pointer"
-            >
-              <MagnifyingGlassIcon className="h-5 w-5 mr-2 " />
-              Buscar
-            </button>
-          </form>
-        </div>
+        <SearchBar />
       </div>
     </div>
   );

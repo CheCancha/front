@@ -41,7 +41,7 @@ export const PasswordInput: React.FC<InputProps> = ({ label, register, error, ..
           {...register}
           {...props}
           className={cn(
-            "block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-brand-orange focus:border-brand-orange sm:text-sm",
+            "block w-full px-3 py-2 border bg-background rounded-md shadow-sm focus:outline-none focus:ring-brand-orange focus:border-brand-orange sm:text-sm",
             error ? "border-red-500" : "border-gray-300"
           )}
         />

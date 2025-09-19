@@ -66,7 +66,7 @@ export default function InscriptionRequests({ initialRequests }: InscriptionRequ
                     <td className="p-3 text-center">
                        <button
                         onClick={() => handleReviewClick(req)}
-                        className="px-3 py-1 bg-blue-500 text-white text-xs font-semibold rounded-md hover:bg-blue-600"
+                        className="px-3 py-1 bg-orange-500 text-white text-xs font-semibold rounded-md hover:bg-neutral-950"
                       >
                         Revisar
                       </button>
