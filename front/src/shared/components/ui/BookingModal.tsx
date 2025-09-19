@@ -31,8 +31,6 @@ interface BookingModalProps {
   date: Date;
 }
 
-// Inicializamos Mercado Pago con tu Public Key de PRUEBA.
-// Es importante que esta sea la 'Public Key', no el 'Access Token'.
 initMercadoPago(process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY!, { locale: 'es-AR' });
 
 export const BookingModal: React.FC<BookingModalProps> = ({
