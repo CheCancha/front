@@ -1,66 +1,67 @@
-import { withAuth, NextRequestWithAuth } from "next-auth/middleware";
+// src/middleware.ts (Corregido y Refactorizado)
+
 import { NextResponse } from "next/server";
-import { routes } from "./routes";
+import type { NextRequest } from "next/server";
+import { getToken } from "next-auth/jwt";
+import { routes } from "./routes"; // Asegúrate de que este import sea correcto
 
-export default withAuth(
-  function middleware(req: NextRequestWithAuth) {
-    const token = req.nextauth.token;
-    const pathname = req.nextUrl.pathname;
+// Mapeo de roles a sus redirecciones para evitar `if` anidados.
+const roleRedirects: Record<string, string> = {
+  ADMIN: "/admin",
+  MANAGER: routes.app.dashboardBase,
+  USER: routes.app.perfil,
+};
 
-    console.log("Middleware ejecutado para:", pathname, "con rol:", token?.role);
+export async function middleware(req: NextRequest) {
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+  const { pathname } = req.nextUrl;
 
-    // --- Regla 0: Redirección si ya está logueado ---
-    if (token) {
-      if (
-        pathname.startsWith(routes.auth.ingreso) ||
-        pathname.startsWith(routes.auth.registro)
-      ) {
-        let redirectUrl = routes.public.home;
-        if (token.role === "ADMIN") redirectUrl = "/admin";
-        if (token.role === "MANAGER") redirectUrl = routes.app.dashboardBase;
-        if (token.role === "USER") redirectUrl = routes.app.perfil;
-        
-        return NextResponse.redirect(new URL(redirectUrl, req.url));
-      }
+  const isAuthPage =
+    pathname.startsWith(routes.auth.ingreso) ||
+    pathname.startsWith(routes.auth.registro);
+
+  // --- 1. Manejo de usuarios YA AUTENTICADOS ---
+  if (token) {
+    // Si un usuario logueado intenta ir a /login o /register, redirígelo.
+    if (isAuthPage) {
+      const redirectUrl = roleRedirects[token.role as string] || routes.public.home;
+      return NextResponse.redirect(new URL(redirectUrl, req.url));
     }
 
-    // --- Regla 1: Proteger Rutas de Admin ---
-    if (pathname.startsWith("/admin") && token?.role !== "ADMIN") {
-      return NextResponse.redirect(new URL(routes.public.home, req.url));
+    // Proteger rutas de ADMIN
+    if (pathname.startsWith("/admin") && token.role !== "ADMIN") {
+      const redirectUrl = roleRedirects[token.role as string] || routes.public.home;
+      return NextResponse.redirect(new URL(redirectUrl, req.url));
     }
 
-    // --- Regla 3: Proteger el Dashboard (solo para Managers y Admins) ---
-    if (pathname.startsWith(routes.app.dashboardBase)) {
-        if (token?.role === "USER") {
-            return NextResponse.redirect(new URL(routes.app.perfil, req.url));
-        }
+    // Proteger rutas de MANAGER (dashboard)
+    if (
+      pathname.startsWith(routes.app.dashboardBase) &&
+      !["ADMIN", "MANAGER"].includes(token.role as string)
+    ) {
+      return NextResponse.redirect(new URL(routes.app.perfil, req.url));
     }
-
-    // --- Regla 4: Proteger el Perfil (solo para Users) ---
-if (pathname.startsWith(routes.app.perfil) && !token) {
-    return NextResponse.redirect(new URL(routes.auth.ingreso, req.url));
-}
 
     return NextResponse.next();
-  },
-  {
-    callbacks: {
-      authorized: ({ token }) => !!token,
-    },
-    pages: {
-      signIn: routes.auth.ingreso,
-      error: routes.auth.ingreso,
-    },
   }
-);
+
+  // --- 2. Manejo de usuarios NO AUTENTICADOS ---
+  if (!token && !isAuthPage) {
+
+    const loginUrl = new URL(routes.auth.ingreso, req.url);
+    loginUrl.searchParams.set("callbackUrl", pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  return NextResponse.next();
+}
 
 export const config = {
   matcher: [
     "/admin/:path*",
-    "/dashboard", 
+    "/dashboard/:path*",
     "/profile/:path*",
     "/login",
     "/register",
   ],
 };
-

@@ -2,9 +2,17 @@
 
 import "@/styles/day-picker.css";
 import React, { useState } from "react";
-import Select, { OptionProps, SingleValueProps, PlaceholderProps, components } from "react-select";
+import Select, {
+  OptionProps,
+  SingleValueProps,
+  PlaceholderProps,
+  components,
+} from "react-select";
 import { MapPinIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
-import { Volleyball, CircleDotDashed } from "lucide-react";
+import { PiSoccerBall, PiVolleyball } from "react-icons/pi";
+import { MdSportsTennis } from "react-icons/md";
+import { IoBasketballOutline, IoTennisballOutline } from "react-icons/io5";
+
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
@@ -18,11 +26,11 @@ interface SportOption {
 }
 
 const sportOptions: SportOption[] = [
-  { value: "FUTBOL", label: "Fútbol", icon: Volleyball },
-  { value: "PADEL", label: "Pádel", icon: CircleDotDashed },
-  { value: "BASQUET", label: "Básquet", icon: Volleyball },
-  { value: "TENIS", label: "Tenis", icon: Volleyball },
-  { value: "VOLEY", label: "Vóley", icon: Volleyball },
+  { value: "FUTBOL", label: "Fútbol", icon: PiSoccerBall },
+  { value: "PADEL", label: "Pádel", icon: IoTennisballOutline },
+  { value: "BASQUET", label: "Básquet", icon: IoBasketballOutline },
+  { value: "TENIS", label: "Tenis", icon: MdSportsTennis },
+  { value: "VOLEY", label: "Vóley", icon: PiVolleyball },
 ];
 
 // --- Interfaz de Props ---
@@ -48,7 +56,9 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   const [date, setDate] = useState<Date | undefined>(initialDate);
   const [time, setTime] = useState(initialTime);
   const [sport, setSport] = useState<SportOption | null>(
-    initialSport ? sportOptions.find(opt => opt.value === initialSport) || null : null
+    initialSport
+      ? sportOptions.find((opt) => opt.value === initialSport) || null
+      : null
   );
 
   const handleSearch = (e: React.FormEvent) => {
@@ -113,7 +123,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
     return (
       <components.Placeholder {...props}>
         <div className="flex items-center">
-          <Volleyball className="h-5 w-5 mr-3 text-neutral-500" />
+          <PiSoccerBall className="h-5 w-5 mr-3 text-neutral-500" />
           <span className="text-neutral-700">Deporte</span>
         </div>
       </components.Placeholder>
@@ -148,26 +158,29 @@ export const SearchBar: React.FC<SearchBarProps> = ({
             onChange={(selectedOption) => setSport(selectedOption)}
             isSearchable={false}
             placeholder="Deporte"
-            components={{ 
-              Option: CustomOption, 
-              SingleValue: CustomSingleValue, 
+            components={{
+              Option: CustomOption,
+              SingleValue: CustomSingleValue,
               Placeholder: CustomPlaceholder,
-              IndicatorSeparator: () => null 
+              IndicatorSeparator: () => null,
             }}
             classNamePrefix="react-select"
             classNames={{
               control: () =>
                 cn(
                   "w-full py-[5.5px] border rounded-md transition-colors cursor-pointer hover:border-brand-orange",
-                   variant === "hero" ? "border-neutral-400" : "border-neutral-300"
+                  variant === "hero"
+                    ? "border-neutral-400 cursor-pointer"
+                    : "border-neutral-300 cursor-pointer"
                 ),
               valueContainer: () => "pl-3 pr-1",
-              placeholder: () => "text-neutral-700", // Color más oscuro para el placeholder
-              input: () => "text-neutral-900 m-0",
-              singleValue: () => "text-neutral-900",
-              menu: () => "bg-white border border-neutral-200 rounded-md shadow-lg mt-1 z-10",
+              placeholder: () => "text-neutral-700 cursor-pointer",
+              input: () => "text-neutral-900 m-0 cursor-pointer",
+              singleValue: () => "text-neutral-900 cursor-pointer",
+              menu: () =>
+                "bg-white border border-neutral-200 rounded-md shadow-lg mt-1 z-10",
               option: () => "px-4 py-2 cursor-pointer",
-              dropdownIndicator: () => "text-neutral-600 pr-1 cursor-pointer"
+              dropdownIndicator: () => "text-neutral-600 pr-1 cursor-pointer",
             }}
           />
         </div>

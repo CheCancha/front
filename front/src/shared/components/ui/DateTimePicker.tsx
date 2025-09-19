@@ -1,6 +1,10 @@
 import "@/styles/day-picker.css";
 import React, { useState } from "react";
-import Select, { components, SingleValueProps, PlaceholderProps } from "react-select";
+import Select, {
+  components,
+  SingleValueProps,
+  PlaceholderProps,
+} from "react-select";
 import { CalendarDaysIcon, ClockIcon } from "lucide-react";
 import { DayPicker } from "react-day-picker";
 import "react-day-picker/dist/style.css";
@@ -27,8 +31,10 @@ interface TimePickerProps {
 }
 
 // --- Style Definitions (from Searchbar.tsx) ---
-const inputClass = "w-full pl-10 pr-4 py-3 border border-neutral-300 rounded-md focus:ring-2 focus:ring-brand-orange outline-none";
-const iconClass = "absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-600";
+const inputClass =
+  "w-full pl-10 pr-4 py-3 border border-neutral-300 rounded-md focus:ring-2 focus:ring-brand-orange outline-none";
+const iconClass =
+  "absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-600";
 
 // --- Custom DatePicker Component ---
 export const DatePicker: React.FC<DatePickerProps> = ({
@@ -87,10 +93,10 @@ export const DatePicker: React.FC<DatePickerProps> = ({
 };
 
 // --- Custom TimePicker Component with react-select ---
-export const TimePicker: React.FC<TimePickerProps> = ({ 
-  value, 
-  onChange, 
-  variant = "default" 
+export const TimePicker: React.FC<TimePickerProps> = ({
+  value,
+  onChange,
+  variant = "default",
 }) => {
   // Generar las opciones de tiempo
   const timeOptions: TimeOption[] = Array.from({ length: 17 }, (_, i) => {
@@ -103,7 +109,8 @@ export const TimePicker: React.FC<TimePickerProps> = ({
   });
 
   // Encontrar la opción seleccionada
-  const selectedTimeOption = timeOptions.find(option => option.value === value) || null;
+  const selectedTimeOption =
+    timeOptions.find((option) => option.value === value) || null;
 
   // Componente personalizado para el valor seleccionado
   const CustomSingleValue = (props: SingleValueProps<TimeOption>) => {
@@ -130,7 +137,7 @@ export const TimePicker: React.FC<TimePickerProps> = ({
   };
 
   return (
-    <div className="relative w-full">
+    <div className="relative w-full cursor-pointer">
       <Select<TimeOption>
         instanceId="time-select"
         options={timeOptions}
@@ -138,25 +145,28 @@ export const TimePicker: React.FC<TimePickerProps> = ({
         onChange={(selectedOption) => onChange(selectedOption?.value || "")}
         isSearchable={false}
         placeholder="Hora"
-        components={{ 
-          SingleValue: CustomSingleValue, 
+        components={{
+          SingleValue: CustomSingleValue,
           Placeholder: CustomPlaceholder,
-          IndicatorSeparator: () => null 
+          IndicatorSeparator: () => null,
         }}
         classNamePrefix="react-select"
         classNames={{
           control: () =>
             cn(
               "w-full py-[5.5px] border rounded-md transition-colors cursor-pointer hover:border-brand-orange",
-               variant === "hero" ? "border-neutral-400" : "border-neutral-300"
+              variant === "hero"
+                ? "border-neutral-400 cursor-pointer"
+                : "border-neutral-300 cursor-pointer"
             ),
           valueContainer: () => "pl-3 pr-1 cursor-pointer",
           placeholder: () => "text-neutral-700 cursor-pointer",
-          input: () => "text-neutral-900 m-0",
+          input: () => "text-neutral-900 m-0 cursor-pointer",
           singleValue: () => "text-neutral-900 cursor-pointer",
-          menu: () => "bg-white border border-neutral-200 rounded-md shadow-lg mt-1 z-10",
+          menu: () =>
+            "bg-white border border-neutral-200 rounded-md shadow-lg mt-1 z-10 cursor-pointer",
           option: () => "px-4 py-2 cursor-pointer",
-          dropdownIndicator: () => "text-neutral-600 pr-1 cursor-pointer"
+          dropdownIndicator: () => "text-neutral-600 pr-1 cursor-pointer",
         }}
       />
     </div>
