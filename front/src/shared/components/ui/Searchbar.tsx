@@ -2,19 +2,33 @@
 
 import "@/styles/day-picker.css";
 import React, { useState } from "react";
+import Select, { OptionProps, SingleValueProps, PlaceholderProps, components } from "react-select";
 import { MapPinIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
-import { ChevronDownIcon } from "@heroicons/react/20/solid";
-import { Volleyball } from "lucide-react";
+import { Volleyball, CircleDotDashed } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { DatePicker, TimePicker } from "./DateTimePicker";
 
+// --- Tipos y Opciones para el Select ---
+interface SportOption {
+  value: string;
+  label: string;
+  icon: React.ElementType;
+}
+
+const sportOptions: SportOption[] = [
+  { value: "FUTBOL", label: "Fútbol", icon: Volleyball },
+  { value: "PADEL", label: "Pádel", icon: CircleDotDashed },
+  { value: "BASQUET", label: "Básquet", icon: Volleyball },
+  { value: "TENIS", label: "Tenis", icon: Volleyball },
+  { value: "VOLEY", label: "Vóley", icon: Volleyball },
+];
+
 // --- Interfaz de Props ---
 interface SearchBarProps {
   className?: string;
   variant?: "default" | "hero";
-  // Props opcionales para valores iniciales
   initialCity?: string;
   initialSport?: string;
   initialDate?: Date;
@@ -33,22 +47,23 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   const [city, setCity] = useState(initialCity);
   const [date, setDate] = useState<Date | undefined>(initialDate);
   const [time, setTime] = useState(initialTime);
-  const [sport, setSport] = useState(initialSport);
+  const [sport, setSport] = useState<SportOption | null>(
+    initialSport ? sportOptions.find(opt => opt.value === initialSport) || null : null
+  );
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     const params = new URLSearchParams();
 
     if (city) params.set("city", city);
-    if (sport) params.set("sport", sport);
+    if (sport) params.set("sport", sport.value);
     if (date) params.set("date", format(date, "yyyy-MM-dd"));
     if (time) params.set("time", time);
 
-    // Redirigimos al usuario a la página de resultados con los parámetros
     router.push(`/courts?${params.toString()}`);
   };
 
-  // Estilos condicionales basados en la variante
+  // --- Clases de Tailwind ---
   const containerClass =
     variant === "hero"
       ? "bg-white text-neutral-900 rounded-lg p-4 shadow-sm max-w-7xl mx-auto"
@@ -66,6 +81,44 @@ export const SearchBar: React.FC<SearchBarProps> = ({
     variant === "hero"
       ? "w-full lg:col-span-1 bg-brand-orange hover:bg-neutral-950 text-white font-medium py-3 px-6 rounded-md flex items-center justify-center transition-colors duration-300 cursor-pointer"
       : "w-full lg:col-span-1 bg-brand-orange hover:bg-neutral-950 text-white font-medium py-3 px-6 rounded-md flex items-center justify-center transition-colors duration-300 cursor-pointer";
+
+  // Componente personalizado para las opciones del menú
+  const CustomOption = (props: OptionProps<SportOption>) => {
+    const Icon = props.data.icon;
+    return (
+      <components.Option {...props}>
+        <div className="flex items-center">
+          <Icon className="h-5 w-5 mr-3 text-neutral-500" />
+          <span>{props.label}</span>
+        </div>
+      </components.Option>
+    );
+  };
+
+  // Componente personalizado para el valor seleccionado
+  const CustomSingleValue = (props: SingleValueProps<SportOption>) => {
+    const Icon = props.data.icon;
+    return (
+      <components.SingleValue {...props}>
+        <div className="flex items-center">
+          <Icon className="h-5 w-5 mr-3 text-neutral-500" />
+          <span>{props.data.label}</span>
+        </div>
+      </components.SingleValue>
+    );
+  };
+
+  // Componente personalizado para el placeholder
+  const CustomPlaceholder = (props: PlaceholderProps<SportOption>) => {
+    return (
+      <components.Placeholder {...props}>
+        <div className="flex items-center">
+          <Volleyball className="h-5 w-5 mr-3 text-neutral-500" />
+          <span className="text-neutral-700">Deporte</span>
+        </div>
+      </components.Placeholder>
+    );
+  };
 
   return (
     <div className={cn(containerClass, className)}>
@@ -86,39 +139,48 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           />
         </div>
 
-        {/* Input: Deporte */}
+        {/* Input: Deporte con React-Select */}
         <div className="relative w-full">
-          <Volleyball className={iconClass} />
-          <select
-            className={cn(
-              inputClass,
-              "cursor-pointer appearance-none",
-              !sport ? "text-neutral-600" : "text-neutral-900"
-            )}
+          <Select<SportOption>
+            instanceId="sport-select"
+            options={sportOptions}
             value={sport}
-            onChange={(e) => setSport(e.target.value)}
-          >
-            <option value="" disabled>
-              Deporte
-            </option>
-            <option value="FUTBOL">Fútbol</option>
-            <option value="PADEL">Pádel</option>
-            <option value="BASQUET">Básquet</option>
-            <option value="TENIS">Tenis</option>
-            <option value="VOLEY">Vóley</option>
-          </select>
-          <ChevronDownIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-600 pointer-events-none" />
+            onChange={(selectedOption) => setSport(selectedOption)}
+            isSearchable={false}
+            placeholder="Deporte"
+            components={{ 
+              Option: CustomOption, 
+              SingleValue: CustomSingleValue, 
+              Placeholder: CustomPlaceholder,
+              IndicatorSeparator: () => null 
+            }}
+            classNamePrefix="react-select"
+            classNames={{
+              control: () =>
+                cn(
+                  "w-full py-[5.5px] border rounded-md transition-colors cursor-pointer hover:border-brand-orange",
+                   variant === "hero" ? "border-neutral-400" : "border-neutral-300"
+                ),
+              valueContainer: () => "pl-3 pr-1",
+              placeholder: () => "text-neutral-700", // Color más oscuro para el placeholder
+              input: () => "text-neutral-900 m-0",
+              singleValue: () => "text-neutral-900",
+              menu: () => "bg-white border border-neutral-200 rounded-md shadow-lg mt-1 z-10",
+              option: () => "px-4 py-2 cursor-pointer",
+              dropdownIndicator: () => "text-neutral-600 pr-1 cursor-pointer"
+            }}
+          />
         </div>
 
         {/* Input: Fecha */}
         <DatePicker selectedDate={date} onSelectDate={setDate} />
 
         {/* Input: Hora */}
-        <TimePicker value={time} onChange={(e) => setTime(e.target.value)} />
+        <TimePicker value={time} onChange={setTime} variant={variant} />
 
         {/* Botón de Búsqueda (CTA) */}
         <button type="submit" className={buttonClass}>
-          <MagnifyingGlassIcon className="h-5 w-5 mr-2 " />
+          <MagnifyingGlassIcon className="h-5 w-5 mr-2" />
           Buscar
         </button>
       </form>

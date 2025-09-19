@@ -1,12 +1,18 @@
 import "@/styles/day-picker.css";
 import React, { useState } from "react";
+import Select, { components, SingleValueProps, PlaceholderProps } from "react-select";
 import { CalendarDaysIcon, ClockIcon } from "lucide-react";
-import { ChevronDownIcon } from "@heroicons/react/20/solid";
 import { DayPicker } from "react-day-picker";
 import "react-day-picker/dist/style.css";
 import { format, addDays } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+
+// --- Tipos para TimePicker ---
+interface TimeOption {
+  value: string;
+  label: string;
+}
 
 // --- Props for the components ---
 interface DatePickerProps {
@@ -16,7 +22,8 @@ interface DatePickerProps {
 
 interface TimePickerProps {
   value: string;
-  onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  onChange: (value: string) => void;
+  variant?: "default" | "hero";
 }
 
 // --- Style Definitions (from Searchbar.tsx) ---
@@ -79,35 +86,79 @@ export const DatePicker: React.FC<DatePickerProps> = ({
   );
 };
 
-// --- Custom TimePicker Component ---
-export const TimePicker: React.FC<TimePickerProps> = ({ value, onChange }) => {
-  const timeSlots = Array.from({ length: 17 }, (_, i) => {
+// --- Custom TimePicker Component with react-select ---
+export const TimePicker: React.FC<TimePickerProps> = ({ 
+  value, 
+  onChange, 
+  variant = "default" 
+}) => {
+  // Generar las opciones de tiempo
+  const timeOptions: TimeOption[] = Array.from({ length: 17 }, (_, i) => {
     const hour = i + 8;
-    return `${hour.toString().padStart(2, "0")}:00`;
+    const timeValue = `${hour.toString().padStart(2, "0")}:00`;
+    return {
+      value: timeValue,
+      label: timeValue,
+    };
   });
+
+  // Encontrar la opción seleccionada
+  const selectedTimeOption = timeOptions.find(option => option.value === value) || null;
+
+  // Componente personalizado para el valor seleccionado
+  const CustomSingleValue = (props: SingleValueProps<TimeOption>) => {
+    return (
+      <components.SingleValue {...props}>
+        <div className="flex items-center">
+          <ClockIcon className="h-5 w-5 mr-3 text-neutral-500" />
+          <span>{props.data.label}</span>
+        </div>
+      </components.SingleValue>
+    );
+  };
+
+  // Componente personalizado para el placeholder
+  const CustomPlaceholder = (props: PlaceholderProps<TimeOption>) => {
+    return (
+      <components.Placeholder {...props}>
+        <div className="flex items-center">
+          <ClockIcon className="h-5 w-5 mr-3 text-neutral-500" />
+          <span className="text-neutral-700">Hora</span>
+        </div>
+      </components.Placeholder>
+    );
+  };
 
   return (
     <div className="relative w-full">
-      <ClockIcon className={iconClass} />
-      <select
-        value={value}
-        onChange={onChange}
-        className={cn(
-            inputClass,
-            "cursor-pointer appearance-none",
-            !value ? "text-neutral-600" : "text-neutral-900"
-          )}
-      >
-        <option value="" disabled>
-          Hora
-        </option>
-        {timeSlots.map((time) => (
-          <option key={time} value={time}>
-            {time}
-          </option>
-        ))}
-      </select>
-      <ChevronDownIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-600 pointer-events-none" />
+      <Select<TimeOption>
+        instanceId="time-select"
+        options={timeOptions}
+        value={selectedTimeOption}
+        onChange={(selectedOption) => onChange(selectedOption?.value || "")}
+        isSearchable={false}
+        placeholder="Hora"
+        components={{ 
+          SingleValue: CustomSingleValue, 
+          Placeholder: CustomPlaceholder,
+          IndicatorSeparator: () => null 
+        }}
+        classNamePrefix="react-select"
+        classNames={{
+          control: () =>
+            cn(
+              "w-full py-[5.5px] border rounded-md transition-colors cursor-pointer hover:border-brand-orange",
+               variant === "hero" ? "border-neutral-400" : "border-neutral-300"
+            ),
+          valueContainer: () => "pl-3 pr-1 cursor-pointer",
+          placeholder: () => "text-neutral-700 cursor-pointer",
+          input: () => "text-neutral-900 m-0",
+          singleValue: () => "text-neutral-900 cursor-pointer",
+          menu: () => "bg-white border border-neutral-200 rounded-md shadow-lg mt-1 z-10",
+          option: () => "px-4 py-2 cursor-pointer",
+          dropdownIndicator: () => "text-neutral-600 pr-1 cursor-pointer"
+        }}
+      />
     </div>
   );
 };
