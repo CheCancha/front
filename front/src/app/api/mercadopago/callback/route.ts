@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/authOptions";
 import { db } from "@/shared/lib/db";
 import SimpleCrypto from "simple-crypto-js";
-import { routes } from "@/routes"; // Importamos las rutas
+import { routes } from "@/routes";
 
 const getMercadoPagoTokens = async (authCode: string) => {
   const response = await fetch("https://api.mercadopago.com/oauth/token", {
