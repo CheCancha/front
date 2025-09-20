@@ -18,7 +18,6 @@ export default function DashboardNavTabs() {
     );
   }
 
-  // 4. Usamos el complexId para generar las rutas dinámicas
   const tabs = [
     { name: "Dashboard", href: routes.app.dashboard(complexId) },
     { name: "Reservas", href: routes.app.reservations(complexId) },
@@ -28,12 +27,12 @@ export default function DashboardNavTabs() {
 
   return (
     <nav className="border-b border-gray-200">
-      <div className="flex items-center space-x-8">
+      <div className="flex items-center space-x-8 overflow-x-auto px-4 sm:px-0">
         {tabs.map((tab) => (
           <Link
             key={tab.name}
             href={tab.href}
-            className={`whitespace-nowrap border-b-2 py-4 text-sm font-medium transition-colors
+            className={`whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition-colors
               ${
                 pathname === tab.href
                   ? "border-slate-900 text-slate-900"

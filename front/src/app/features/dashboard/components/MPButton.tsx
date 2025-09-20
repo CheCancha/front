@@ -13,13 +13,12 @@ const MercadoPagoConnectButton = ({ complexId }: { complexId: string }) => {
   const CLIENT_ID = process.env.NEXT_PUBLIC_MERCADOPAGO_CLIENT_ID;
   const redirectUri = `${process.env.NEXT_PUBLIC_BASE_URL}/api/mercadopago/callback`;
   
-  // Usamos el parámetro 'state' para pasar el complexId de forma segura a través del redirect.
   const authUrl = `https://auth.mercadopago.com.ar/authorization?client_id=${CLIENT_ID}&response_type=code&platform_id=mp&redirect_uri=${redirectUri}&state=${complexId}`;
 
   return (
     <a
       href={authUrl}
-      className="bg-[#009EE3] text-white font-semibold py-2 px-4 rounded-lg hover:bg-[#0089cc] transition-colors"
+      className="inline-block w-full whitespace-nowrap rounded-lg bg-[#009EE3] py-2 px-4 text-center font-semibold text-white transition-colors hover:bg-[#0089cc] sm:w-auto"
     >
       Conectar con Mercado Pago
     </a>
@@ -48,13 +47,12 @@ export default function MPButton({ complex }: MPButtonProps) {
       }
       
       toast.success("Cuenta de Mercado Pago desconectada.");
-      router.refresh(); // Refrescamos la página para ver los cambios
+      router.refresh();
     } catch (error) {
       toast.dismiss();
       toast.error(error instanceof Error ? error.message : "Error desconocido.");
     }
   };
-
 
   return (
     <div className="space-y-6">
@@ -64,11 +62,12 @@ export default function MPButton({ complex }: MPButtonProps) {
       <p className="mt-1 text-sm text-gray-500">
         Conecta tu cuenta de Mercado Pago para aceptar señas y pagos online.
       </p>
-      <div className="mt-6 flex items-center gap-4 p-4 border rounded-lg">
+      
+      <div className="mt-6 flex flex-col items-start gap-4 rounded-lg border p-4 sm:flex-row sm:items-center">
         <img
           src="https://logospng.org/download/mercado-pago/logo-mercado-pago-256.png"
           alt="Mercado Pago Logo"
-          className="h-10 w-10"
+          className="h-10 w-10 flex-shrink-0"
         />
         <div className="flex-1">
           {isConnected ? (
@@ -87,8 +86,12 @@ export default function MPButton({ complex }: MPButtonProps) {
             </>
           )}
         </div>
+        
         {isConnected ? (
-          <button onClick={handleDisconnect} className="bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors">
+          <button 
+            onClick={handleDisconnect} 
+            className="w-full rounded-lg bg-gray-200 py-2 px-4 font-semibold text-gray-800 transition-colors hover:bg-gray-300 sm:w-auto"
+          >
             Desconectar
           </button>
         ) : (

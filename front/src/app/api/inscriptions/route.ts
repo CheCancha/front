@@ -33,7 +33,7 @@ export async function POST(request: Request) {
 
     // 2. Si se guardó correctamente, enviamos el email de notificación
     await resend.emails.send({
-      from: "onboarding@resend.dev", // Cambiar por un email verificado en Resend
+      from: "onboarding@resend.dev", 
       to: "ignacionweppler@gmail.com",
       subject: `Nueva solicitud de registro: ${body.complexName}`,
       html: `

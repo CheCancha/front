@@ -70,7 +70,7 @@ export async function approveInscription(requestId: string): Promise<{ success: 
     }, { timeout: 15000 });
     
     try {
-      await sendWelcomeEmail(newUser.email!, newUser.name!, temporaryPassword);
+      await sendWelcomeEmail(newUser.email!, newUser.name!, newUser.phone!, temporaryPassword);
     } catch (emailError) {
       console.error("La transacción de la BBDD fue exitosa, pero falló el envío del email:", emailError);
       revalidatePath("/admin");
