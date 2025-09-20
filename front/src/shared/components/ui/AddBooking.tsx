@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { ChevronLeft, ChevronRight, Calendar, PlusCircle, X } from "lucide-react";
 import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/lib/utils";
 
 // --- 1. MODELOS DE DATOS Y DATOS DE EJEMPLO ---
 type Court = {

@@ -1,4 +1,3 @@
-// front/src/app/features/dashboard/components/OnboardingPrompt.tsx
 
 import Link from "next/link";
 import { ButtonPrimary } from "@/shared/components/ui/Buttons";

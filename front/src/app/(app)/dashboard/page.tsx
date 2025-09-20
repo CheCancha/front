@@ -1,9 +1,7 @@
-// front/src/app/(app)/dashboard/page.tsx
-
 import { getServerSession } from "next-auth/next";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/app/api/auth/[...nextauth]/authOptions";
-import { db } from "@/lib/db";
+import { db } from "@/shared/lib/db";
 import { routes } from "@/routes";
 
 // Esta página actúa como el ÚNICO "distribuidor" inteligente.

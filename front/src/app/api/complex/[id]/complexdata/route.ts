@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/authOptions";
-import { db } from "@/lib/db";
+import { db } from "@/shared/lib/db";
 
 export async function GET() {
   try {

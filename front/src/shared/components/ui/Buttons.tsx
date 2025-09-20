@@ -3,7 +3,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/lib/utils";
 import { RippleButton } from "@/shared/components/magicui/ripple-button";
 
 // --- Interfaz de Props Base ---

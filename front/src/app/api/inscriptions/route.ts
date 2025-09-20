@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
-import { db } from "@/lib/db";
-import { inscriptionSchema } from "@/lib/inscriptionSchema";
-import { normalizePhoneNumber } from "@/lib/utils";
+import { db } from "@/shared/lib/db";
+import { inscriptionSchema } from "@/shared/lib/inscriptionSchema";
+import { normalizePhoneNumber } from "@/shared/lib/utils";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 

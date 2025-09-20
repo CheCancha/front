@@ -1,4 +1,4 @@
-import { db } from "@/lib/db";
+import { db } from "@/shared/lib/db";
 import InscriptionRequests from "./InscriptionRequests";
 import AdminDashboard from "./AdminDashboard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/Tabs";

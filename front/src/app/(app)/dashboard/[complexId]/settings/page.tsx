@@ -3,47 +3,52 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { toast } from "react-hot-toast";
 import MPButton from "@/app/features/dashboard/components/MPButton";
-import { Complex, Schedule, Court, Image, Sport } from "@prisma/client";
+import {
+  Complex,
+  Schedule,
+  Court as PrismaCourt,
+  Image,
+  Sport,
+} from "@prisma/client";
 import { useParams } from "next/navigation";
-import { Trash2, Plus, Upload, X } from "lucide-react";
+import { Trash2, Plus, X } from "lucide-react";
 import { Spinner } from "@/shared/components/ui/Spinner";
 import ImageSettings from "./ImageSettings";
+import { id } from "zod/v4/locales";
 
 // Tipos para los datos completos del complejo
+type CourtWithSport = PrismaCourt & { sport: Sport };
+// El tipo principal ahora usa CourtWithSport
 export type FullComplexData = Complex & {
   schedule: Schedule | null;
-  courts: Court[];
+  courts: CourtWithSport[];
   images: Image[];
 };
 
-// Tipo para nueva cancha
+// El tipo para una nueva cancha ahora usa sportId y tiene su duración
 type NewCourt = {
   tempId: string;
   name: string;
-  sport: Sport;
+  sportId: string;
   pricePerHour: number;
   depositAmount: number;
+  slotDurationMinutes: number;
   isNew: true;
 };
 
 type ScheduleDayKey = Exclude<keyof Schedule, "id" | "complexId">;
 
-// --- Componentes Helper ---
+// --- Opciones y Mapeos ---
 const hoursOptions = Array.from({ length: 25 }, (_, i) => ({
   value: i,
   label: `${String(i).padStart(2, "0")}:00`,
 }));
-
 const durationOptions = [
+  { value: 30, label: "30 min" },
   { value: 60, label: "60 min" },
   { value: 90, label: "90 min" },
   { value: 120, label: "120 min" },
 ];
-
-const sportsOptions = Object.values(Sport).map((sport) => ({
-  value: sport,
-  label: sport.charAt(0).toUpperCase() + sport.slice(1).toLowerCase(),
-}));
 
 const dayMapping: {
   [key: string]: { open: ScheduleDayKey; close: ScheduleDayKey };
@@ -57,24 +62,41 @@ const dayMapping: {
   Domingo: { open: "sundayOpen", close: "sundayClose" },
 };
 
-// --- Componente Principal de la Página ---
+// --- Componente Principal ---
 export default function SettingsPage() {
-  const { complexId } = useParams<{ complexId: string }>();
+  const params = useParams();
+  const complexId = params.complexId as string;
   const [data, setData] = useState<FullComplexData | null>(null);
+  const [allSports, setAllSports] = useState<Sport[]>([]);
   const [newCourts, setNewCourts] = useState<NewCourt[]>([]);
   const [courtsToDelete, setCourtsToDelete] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState("general");
 
-  // --- Cargar datos del complejo ---
   const fetchComplexData = useCallback(async () => {
+    if (typeof complexId !== "string" || !complexId) {
+      toast.error("ID de complejo inválido.");
+      setIsLoading(false);
+      return;
+    }
     try {
       setIsLoading(true);
-      const response = await fetch(`/api/complex/${complexId}/settings`);
-      if (!response.ok) throw new Error("No se pudo cargar la configuración.");
-      const complexData = await response.json();
+      const [complexRes, sportsRes] = await Promise.all([
+        fetch(`/api/complex/${complexId}/settings`),
+        fetch(`/api/sports`),
+      ]);
+
+      if (!complexRes.ok)
+        throw new Error("No se pudo cargar la configuración del complejo.");
+      if (!sportsRes.ok)
+        throw new Error("No se pudo cargar la lista de deportes.");
+
+      const complexData = await complexRes.json();
+      const sportsData = await sportsRes.json();
+
       setData(complexData);
+      setAllSports(sportsData);
       setNewCourts([]);
       setCourtsToDelete([]);
     } catch (error) {
@@ -88,20 +110,10 @@ export default function SettingsPage() {
     fetchComplexData();
   }, [fetchComplexData]);
 
-  // --- Manejadores de cambios ---
-  const handleBasicInfoChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    setData((prev) => (prev ? { ...prev, [name]: value } : null));
-  };
-
-  const handleGeneralChange = (
-    e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>
-  ) => {
-    const { name, value } = e.target;
+  // --- Manejadores de cambios (actualizados) ---
+  const handleBasicInfoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setData((prev) =>
-      prev ? { ...prev, [name]: value ? parseInt(value) : null } : null
+      prev ? { ...prev, [e.target.name]: e.target.value } : null
     );
   };
 
@@ -121,52 +133,43 @@ export default function SettingsPage() {
 
   const handleCourtChange = (
     courtId: string,
-    field: "name" | "sport" | "pricePerHour" | "depositAmount",
-    value: string
+    field: keyof CourtWithSport,
+    value: string | number
   ) => {
     setData((prev) => {
       if (!prev) return null;
-      const newCourts = prev.courts.map((court) => {
-        if (court.id === courtId) {
-          if (field === "name" || field === "sport") {
-            return { ...court, [field]: value };
-          } else {
-            return { ...court, [field]: value ? parseInt(value) : 0 };
-          }
-        }
-        return court;
-      });
+      const newCourts = prev.courts.map((court) =>
+        court.id === courtId ? { ...court, [field]: value } : court
+      );
       return { ...prev, courts: newCourts };
     });
   };
 
   const handleNewCourtChange = (
     tempId: string,
-    field: "name" | "sport" | "pricePerHour" | "depositAmount",
-    value: string
+    field: keyof NewCourt,
+    value: string | number
   ) => {
     setNewCourts((prev) =>
-      prev.map((court) => {
-        if (court.tempId === tempId) {
-          if (field === "name" || field === "sport") {
-            return { ...court, [field]: value };
-          } else {
-            return { ...court, [field]: value ? parseInt(value) : 0 };
-          }
-        }
-        return court;
-      })
+      prev.map((court) =>
+        court.tempId === tempId ? { ...court, [field]: value } : court
+      )
     );
   };
 
-  // --- Manejo de canchas ---
+  // --- Manejo de canchas (actualizado) ---
   const addNewCourt = () => {
+    if (allSports.length === 0) {
+      toast.error("No hay deportes disponibles para crear una cancha.");
+      return;
+    }
     const newCourt: NewCourt = {
       tempId: `new_${Date.now()}`,
       name: "",
-      sport: "FUTBOL" as Sport,
+      sportId: allSports[0].id,
       pricePerHour: 0,
       depositAmount: 0,
+      slotDurationMinutes: 60,
       isNew: true,
     };
     setNewCourts((prev) => [...prev, newCourt]);
@@ -189,7 +192,6 @@ export default function SettingsPage() {
 
   const restoreCourt = (courtId: string) => {
     setCourtsToDelete((prev) => prev.filter((id) => id !== courtId));
-    // Recargar datos para restaurar la cancha
     fetchComplexData();
   };
 
@@ -209,23 +211,22 @@ export default function SettingsPage() {
           city: data.city,
           province: data.province,
         },
-        general: {
-          slotDurationMinutes: data.slotDurationMinutes,
-        },
-        schedule: data.schedule, // El resto se mantiene igual
+        schedule: data.schedule,
         courts: {
           update: data.courts.map((c) => ({
             id: c.id,
             name: c.name,
-            sport: c.sport,
+            sportId: c.sportId,
             pricePerHour: c.pricePerHour,
             depositAmount: c.depositAmount,
+            slotDurationMinutes: c.slotDurationMinutes,
           })),
           create: newCourts.map((c) => ({
             name: c.name,
-            sport: c.sport,
+            sportId: c.sportId,
             pricePerHour: c.pricePerHour,
             depositAmount: c.depositAmount,
+            slotDurationMinutes: c.slotDurationMinutes,
           })),
           delete: courtsToDelete,
         },
@@ -244,15 +245,8 @@ export default function SettingsPage() {
       toast.dismiss();
       if (!response.ok) throw new Error("Error al guardar los cambios.");
 
-      // Marcar onboarding como completado si no estaba
-      if (!data.onboardingCompleted) {
-        await fetch(`/api/complex/${complexId}/complete-onboarding`, {
-          method: "POST",
-        });
-      }
-
       toast.success("¡Ajustes guardados con éxito!");
-      fetchComplexData(); // Recargar datos
+      fetchComplexData();
     } catch (error) {
       toast.dismiss();
       toast.error(error instanceof Error ? error.message : "Error desconocido");
@@ -375,50 +369,6 @@ export default function SettingsPage() {
           {/* --- Horarios --- */}
           {activeTab === "schedule" && (
             <div className="space-y-8">
-              {/* SECCIÓN SIMPLIFICADA - Duración de Turnos */}
-              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100">
-                <div className="flex items-start gap-4">
-                  <div className="p-3 bg-blue-500 rounded-lg text-white flex-shrink-0">
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                      Duración de Turnos
-                    </h3>
-                    <p className="text-sm text-gray-600 mb-4">
-                      Define la duración estándar de cada turno de reserva.
-                    </p>
-                    <div className="max-w-xs">
-                      <select
-                        name="slotDurationMinutes"
-                        value={data.slotDurationMinutes ?? ""}
-                        onChange={handleGeneralChange}
-                        className="w-full p-1 rounded-md border-1 border-neutral-500 focus:border-blue-500 focus:ring-blue-500 transition-colors"
-                      >
-                        <option value="">-- Seleccionar --</option>
-                        {durationOptions.map((d) => (
-                          <option key={d.value} value={d.value}>
-                            {d.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
               {/* Horarios por día */}
               <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
                 {/* Header con gradiente */}
@@ -456,7 +406,9 @@ export default function SettingsPage() {
                       ([dayName, { open: openKey, close: closeKey }]) => {
                         const openValue = data.schedule?.[openKey] ?? "";
                         const closeValue = data.schedule?.[closeKey] ?? "";
-                        const isOpen = openValue && closeValue;
+                        const isOpen =
+                          typeof openValue === "number" &&
+                          typeof closeValue === "number";
 
                         return (
                           <div
@@ -486,7 +438,7 @@ export default function SettingsPage() {
                                 onChange={(e) =>
                                   handleScheduleChange(openKey, e.target.value)
                                 }
-                                className="w-full p-1 rounded-md border-1 border-neutral-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 transition-colors"
+                                className="w-full p-2 rounded-md border border-neutral-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 transition-colors"
                               >
                                 <option value="">Apertura</option>
                                 {hoursOptions.map((h) => (
@@ -505,7 +457,7 @@ export default function SettingsPage() {
                                 onChange={(e) =>
                                   handleScheduleChange(closeKey, e.target.value)
                                 }
-                                className="w-full rounded-md p-1 border-1 border-neutral-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 transition-colors"
+                                className="w-full p-2 rounded-md border border-neutral-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 transition-colors"
                               >
                                 <option value="">Cierre</option>
                                 {hoursOptions.map((h) => (
@@ -555,14 +507,14 @@ export default function SettingsPage() {
                         Gestión de Canchas
                       </h3>
                       <p className="text-emerald-100 text-sm">
-                        Configura y administra las canchas de tu complejo
+                        Configura y administra las canchas de tu complejo.
                       </p>
                     </div>
                   </div>
                   <button
                     type="button"
                     onClick={addNewCourt}
-                    className="inline-flex items-center px-4 py-2 bg-white text-emerald-600 font-medium rounded-lg hover:bg-gray-50 transition-colors shadow-sm cursor-pointer"
+                    className="inline-flex items-center px-4 py-2 bg-white text-emerald-600 font-medium rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
                   >
                     <Plus className="w-4 h-4 mr-2" />
                     Agregar Cancha
@@ -583,10 +535,9 @@ export default function SettingsPage() {
                         Cancha Existente
                       </span>
                     </div>
-
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
                       <div className="md:col-span-3">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
                           Nombre
                         </label>
                         <input
@@ -595,29 +546,55 @@ export default function SettingsPage() {
                           onChange={(e) =>
                             handleCourtChange(court.id, "name", e.target.value)
                           }
-                          className="w-full rounded-lg p-1 border-1 border-neutral-300 focus:border-blue-500 focus:ring-blue-500 transition-colors"
+                          className="w-full rounded-lg p-2 border border-neutral-300"
                         />
                       </div>
                       <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
                           Deporte
                         </label>
                         <select
-                          value={court.sport}
+                          value={court.sportId}
                           onChange={(e) =>
-                            handleCourtChange(court.id, "sport", e.target.value)
+                            handleCourtChange(
+                              court.id,
+                              "sportId",
+                              e.target.value
+                            )
                           }
-                          className="w-full rounded-lg p-1 border-1 border-neutral-300 focus:border-blue-500 focus:ring-blue-500 transition-colors"
+                          className="w-full rounded-lg p-2 border border-neutral-300"
                         >
-                          {sportsOptions.map((sport) => (
-                            <option key={sport.value} value={sport.value}>
-                              {sport.label}
+                          {allSports.map((sport) => (
+                            <option key={sport.id} value={sport.id}>
+                              {sport.name}
                             </option>
                           ))}
                         </select>
                       </div>
                       <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Duración Turno
+                        </label>
+                        <select
+                          value={court.slotDurationMinutes}
+                          onChange={(e) =>
+                            handleCourtChange(
+                              court.id,
+                              "slotDurationMinutes",
+                              Number(e.target.value)
+                            )
+                          }
+                          className="w-full rounded-lg p-2 border border-neutral-300"
+                        >
+                          {durationOptions.map((opt) => (
+                            <option key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
                           Precio / hora
                         </label>
                         <div className="relative">
@@ -631,15 +608,15 @@ export default function SettingsPage() {
                               handleCourtChange(
                                 court.id,
                                 "pricePerHour",
-                                e.target.value
+                                Number(e.target.value)
                               )
                             }
-                            className="w-full pl-8 rounded-lg p-1 border-1 border-neutral-300 focus:border-blue-500 focus:ring-blue-500 transition-colors"
+                            className="w-full pl-8 rounded-lg p-2 border border-neutral-300"
                           />
                         </div>
                       </div>
                       <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
                           Monto Seña
                         </label>
                         <div className="relative">
@@ -653,10 +630,10 @@ export default function SettingsPage() {
                               handleCourtChange(
                                 court.id,
                                 "depositAmount",
-                                e.target.value
+                                Number(e.target.value)
                               )
                             }
-                            className="w-full pl-8 rounded-lg p-1 border-1 border-neutral-300 focus:border-blue-500 focus:ring-blue-500 transition-colors"
+                            className="w-full pl-8 rounded-lg p-2 border border-neutral-300"
                           />
                         </div>
                       </div>
@@ -664,7 +641,7 @@ export default function SettingsPage() {
                         <button
                           type="button"
                           onClick={() => deleteCourt(court.id)}
-                          className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
                           title="Eliminar cancha"
                         >
                           <Trash2 className="w-5 h-5" />
@@ -680,19 +657,10 @@ export default function SettingsPage() {
                     key={court.tempId}
                     className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-dashed border-green-300 rounded-xl p-6 shadow-sm"
                   >
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                      <span className="text-sm font-medium text-green-700">
-                        Nueva Cancha
-                      </span>
-                      <span className="text-xs bg-green-200 text-green-800 px-2 py-1 rounded-full">
-                        Pendiente de guardar
-                      </span>
-                    </div>
-
+                    {/* ... Header de Nueva Cancha ... */}
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
                       <div className="md:col-span-3">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
                           Nombre <span className="text-red-500">*</span>
                         </label>
                         <input
@@ -705,35 +673,56 @@ export default function SettingsPage() {
                               e.target.value
                             )
                           }
-                          placeholder="Ej: Cancha 1"
                           required
-                          className="w-full rounded-lg p-1 border-1 border-neutral-300 focus:border-green-500 focus:ring-green-500 transition-colors"
+                          className="w-full rounded-lg p-2 border border-neutral-300"
                         />
                       </div>
                       <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
                           Deporte <span className="text-red-500">*</span>
                         </label>
                         <select
-                          value={court.sport}
+                          value={court.sportId}
                           onChange={(e) =>
                             handleNewCourtChange(
                               court.tempId,
-                              "sport",
+                              "sportId",
                               e.target.value
                             )
                           }
-                          className="w-full rounded-lg p-1 border-1 border-neutral-300 focus:border-green-500 focus:ring-green-500 transition-colors"
+                          className="w-full rounded-lg p-2 border border-neutral-300"
                         >
-                          {sportsOptions.map((sport) => (
-                            <option key={sport.value} value={sport.value}>
-                              {sport.label}
+                          {allSports.map((sport) => (
+                            <option key={sport.id} value={sport.id}>
+                              {sport.name}
                             </option>
                           ))}
                         </select>
                       </div>
                       <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Duración Turno
+                        </label>
+                        <select
+                          value={court.slotDurationMinutes}
+                          onChange={(e) =>
+                            handleNewCourtChange(
+                              court.tempId,
+                              "slotDurationMinutes",
+                              Number(e.target.value)
+                            )
+                          }
+                          className="w-full rounded-lg p-2 border border-neutral-300"
+                        >
+                          {durationOptions.map((opt) => (
+                            <option key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
                           Precio / hora <span className="text-red-500">*</span>
                         </label>
                         <div className="relative">
@@ -747,17 +736,16 @@ export default function SettingsPage() {
                               handleNewCourtChange(
                                 court.tempId,
                                 "pricePerHour",
-                                e.target.value
+                                Number(e.target.value)
                               )
                             }
-                            min="0"
                             required
-                            className="w-full pl-8 rounded-lg p-1 border-1 border-neutral-300 focus:border-green-500 focus:ring-green-500 transition-colors"
+                            className="w-full pl-8 rounded-lg p-2 border border-neutral-300"
                           />
                         </div>
                       </div>
                       <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
                           Monto Seña
                         </label>
                         <div className="relative">
@@ -771,11 +759,10 @@ export default function SettingsPage() {
                               handleNewCourtChange(
                                 court.tempId,
                                 "depositAmount",
-                                e.target.value
+                                Number(e.target.value)
                               )
                             }
-                            min="0"
-                            className="w-full pl-8 rounded-lg p-1 border-1 border-neutral-300 focus:border-green-500 focus:ring-green-500 transition-colors"
+                            className="w-full pl-8 rounded-lg p-2 border border-neutral-300"
                           />
                         </div>
                       </div>
@@ -783,7 +770,7 @@ export default function SettingsPage() {
                         <button
                           type="button"
                           onClick={() => removeNewCourt(court.tempId)}
-                          className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
                           title="Cancelar nueva cancha"
                         >
                           <X className="w-5 h-5" />

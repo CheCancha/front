@@ -1,37 +1,45 @@
 "use client";
 
 import "@/styles/day-picker.css";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Select, {
   OptionProps,
   SingleValueProps,
   PlaceholderProps,
   components,
 } from "react-select";
+import { FaQuestionCircle } from "react-icons/fa";
 import { MapPinIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import { PiSoccerBall, PiVolleyball } from "react-icons/pi";
 import { MdSportsTennis } from "react-icons/md";
 import { IoBasketballOutline, IoTennisballOutline } from "react-icons/io5";
-
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/lib/utils";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { DatePicker, TimePicker } from "./DateTimePicker";
 
 // --- Tipos y Opciones para el Select ---
+interface ApiSport {
+  id: string;
+  name: string;
+  slug: string;
+  icon?: string | null;
+}
 interface SportOption {
   value: string;
   label: string;
   icon: React.ElementType;
 }
 
-const sportOptions: SportOption[] = [
-  { value: "FUTBOL", label: "Fútbol", icon: PiSoccerBall },
-  { value: "PADEL", label: "Pádel", icon: IoTennisballOutline },
-  { value: "BASQUET", label: "Básquet", icon: IoBasketballOutline },
-  { value: "TENIS", label: "Tenis", icon: MdSportsTennis },
-  { value: "VOLEY", label: "Vóley", icon: PiVolleyball },
-];
+const iconMap: { [key: string]: React.ElementType } = {
+  "futbol-5": PiSoccerBall,
+  "futbol-7": PiSoccerBall,
+  "futbol-11": PiSoccerBall,
+  "padel": IoTennisballOutline,
+  "basquet": IoBasketballOutline,
+  "tenis": MdSportsTennis,
+  "voley": PiVolleyball,
+};
 
 // --- Interfaz de Props ---
 interface SearchBarProps {
@@ -55,18 +63,46 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   const [city, setCity] = useState(initialCity);
   const [date, setDate] = useState<Date | undefined>(initialDate);
   const [time, setTime] = useState(initialTime);
-  const [sport, setSport] = useState<SportOption | null>(
-    initialSport
-      ? sportOptions.find((opt) => opt.value === initialSport) || null
-      : null
-  );
+  const [sportOptions, setSportOptions] = useState<SportOption[]>([]);
+  const [isLoadingSports, setIsLoadingSports] = useState(true);
+  const [sport, setSport] = useState<SportOption | null>(null);
+
+  useEffect(() => {
+    const fetchSports = async () => {
+      try {
+        const response = await fetch('/api/sports');
+        const data: ApiSport[] = await response.json();
+        
+        const options = data.map(s => ({
+          value: s.slug,
+          label: s.name,
+          icon: iconMap[s.slug] || FaQuestionCircle,
+        }));
+        setSportOptions(options);
+
+        // Si hay un deporte inicial en la URL, lo seleccionamos
+        if (initialSport) {
+            const initialOption = options.find(opt => opt.value === initialSport);
+            if (initialOption) setSport(initialOption);
+        }
+
+      } catch (error) {
+        console.error("Error al cargar los deportes:", error);
+      } finally {
+        setIsLoadingSports(false);
+      }
+    };
+
+    fetchSports();
+  }, [initialSport]);
+
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     const params = new URLSearchParams();
 
     if (city) params.set("city", city);
-    if (sport) params.set("sport", sport.value);
+    if (sport) params.set("sport", sport.value); 
     if (date) params.set("date", format(date, "yyyy-MM-dd"));
     if (time) params.set("time", time);
 
@@ -158,6 +194,9 @@ export const SearchBar: React.FC<SearchBarProps> = ({
             onChange={(selectedOption) => setSport(selectedOption)}
             isSearchable={false}
             placeholder="Deporte"
+            isLoading={isLoadingSports}
+            loadingMessage={() => 'Cargando deportes...'}
+            noOptionsMessage={() => 'No hay deportes disponibles.'}
             components={{
               Option: CustomOption,
               SingleValue: CustomSingleValue,

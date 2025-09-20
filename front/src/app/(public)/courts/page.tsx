@@ -14,7 +14,7 @@ import {
 import Navbar from "@/shared/components/Navbar";
 import Footer from "@/shared/components/Footer";
 import { motion, AnimatePresence } from "framer-motion";
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/lib/utils";
 import { SearchBar } from "@/shared/components/ui/Searchbar";
 import { useSearchParams } from "next/navigation";
 import { toast } from "react-hot-toast";

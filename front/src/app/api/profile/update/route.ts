@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]/authOptions";
-import { db } from "@/lib/db";
+import { db } from "@/shared/lib/db";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import bcrypt from "bcryptjs";

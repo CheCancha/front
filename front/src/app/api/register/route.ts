@@ -2,8 +2,8 @@
 
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { db } from "@/lib/db";
-import { normalizePhoneNumber } from "@/lib/utils";
+import { db } from "@/shared/lib/db";
+import { normalizePhoneNumber } from "@/shared/lib/utils";
 
 export async function POST(request: Request) {
   try {

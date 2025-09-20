@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import Navbar from "@/shared/components/Navbar";
 import Footer from "@/shared/components/Footer";
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/lib/utils";
 import { useParams } from "next/navigation";
 import { BookingModal } from "@/shared/components/ui/BookingModal";
 import type {
@@ -26,7 +26,7 @@ import type {
 } from "@prisma/client";
 import { DayPicker } from "react-day-picker";
 import "react-day-picker/dist/style.css";
-import { format, isToday } from "date-fns";
+import { format, isToday, getDay } from "date-fns";
 import { es } from "date-fns/locale";
 import Link from "next/link";
 
@@ -37,7 +37,43 @@ type ComplexProfileData = Complex & {
   schedule: Schedule | null;
 };
 
-type Availability = Pick<Booking, "courtId" | "startTime">;
+type CourtAvailability = {
+  courtId: string;
+  available: boolean;
+};
+type ValidStartTime = {
+  time: string;
+  courts: CourtAvailability[];
+};
+
+
+const generateWeeklySchedule = (complex: ComplexProfileData) => {
+    const schedule = [];
+    const dayOrder: { name: string; openKey: keyof Schedule; closeKey: keyof Schedule }[] = [
+        { name: "Lunes", openKey: "mondayOpen", closeKey: "mondayClose" },
+        { name: "Martes", openKey: "tuesdayOpen", closeKey: "tuesdayClose" },
+        { name: "Miércoles", openKey: "wednesdayOpen", closeKey: "wednesdayClose" },
+        { name: "Jueves", openKey: "thursdayOpen", closeKey: "thursdayClose" },
+        { name: "Viernes", openKey: "fridayOpen", closeKey: "fridayClose" },
+        { name: "Sábado", openKey: "saturdayOpen", closeKey: "saturdayClose" },
+        { name: "Domingo", openKey: "sundayOpen", closeKey: "sundayClose" },
+    ];
+
+    for (const day of dayOrder) {
+        const specificOpenHour = complex.schedule?.[day.openKey] as number | null;
+        const specificCloseHour = complex.schedule?.[day.closeKey] as number | null;
+
+        const openHour = specificOpenHour ?? complex.openHour;
+        const closeHour = specificCloseHour ?? complex.closeHour;
+
+        let hoursString = "Cerrado";
+        if (typeof openHour === 'number' && typeof closeHour === 'number') {
+            hoursString = `${String(openHour).padStart(2, "0")}:00 - ${String(closeHour).padStart(2, "0")}:00`;
+        }
+        schedule.push({ day: day.name, hours: hoursString });
+    }
+    return schedule;
+};
 
 // --- COMPONENTES DE LA PÁGINA ---
 const ImageCarousel = ({ images }: { images: PrismaImage[] }) => {
@@ -101,17 +137,19 @@ const BookingWidget = ({
   const [selectedCourt, setSelectedCourt] = useState<Court | null>(
     club.courts[0] || null
   );
-  const [bookings, setBookings] = useState<Availability[]>([]);
+  const [validStartTimes, setValidStartTimes] = useState<ValidStartTime[]>([]);
   const [isAvailabilityLoading, setIsAvailabilityLoading] = useState(true);
+
   const isSelectedDateToday = isToday(selectedDate);
   const currentHour = new Date().getHours();
+  const currentMinute = new Date().getMinutes();
 
   const isPast = (time: string) => {
-    if (!isSelectedDateToday) {
-      return false;
-    }
-    const slotHour = parseInt(time.split(":")[0], 10);
-    return slotHour < currentHour;
+    if (!isSelectedDateToday) return false;
+    const [slotHour, slotMinute] = time.split(":").map(Number);
+    if (slotHour < currentHour) return true;
+    if (slotHour === currentHour && slotMinute < currentMinute) return true;
+    return false;
   };
 
   useEffect(() => {
@@ -123,35 +161,19 @@ const BookingWidget = ({
         const response = await fetch(
           `/api/complexes/public/${club.id}/availability?date=${dateString}`
         );
-        if (!response.ok)
-          throw new Error("No se pudo cargar la disponibilidad.");
-        const data: Availability[] = await response.json();
-        setBookings(data);
+        if (!response.ok) throw new Error("No se pudo cargar la disponibilidad.");
+        
+        const data: ValidStartTime[] = await response.json();
+        setValidStartTimes(data);
       } catch (error) {
         console.error("Failed to fetch availability", error);
-        setBookings([]);
+        setValidStartTimes([]);
       } finally {
         setIsAvailabilityLoading(false);
       }
     };
     fetchAvailability();
   }, [club.id, selectedDate]);
-
-  const generateTimeSlots = () => {
-    if (!club.openHour || !club.closeHour || !club.slotDurationMinutes) {
-      return [];
-    }
-    const slots = [];
-    for (let hour = club.openHour; hour < club.closeHour; hour++) {
-      slots.push(`${String(hour).padStart(2, "0")}:00`);
-      if (club.slotDurationMinutes === 30) {
-        slots.push(`${String(hour).padStart(2, "0")}:30`);
-      }
-    }
-    return slots;
-  };
-
-  const timeSlots = generateTimeSlots();
 
   if (!selectedCourt) {
     return (
@@ -161,23 +183,12 @@ const BookingWidget = ({
     );
   }
 
-  const isBooked = (time: string) => {
-    const hour = parseInt(time.split(":")[0], 10);
-    return bookings.some(
-      (b) => b.courtId === selectedCourt.id && b.startTime === hour
-    );
-  };
-
   return (
     <div className="bg-white rounded-2xl p-6 border border-gray-200">
-      <h2 className="text-2xl font-bold text-foreground mb-4">
-        Reservar un turno
-      </h2>
+      <h2 className="text-2xl font-bold text-foreground mb-4">Reservar un turno</h2>
       <div className="grid md:grid-cols-2 gap-6 mb-6">
         <div>
-          <label className="text-sm font-semibold text-paragraph mb-2 block">
-            1. Elegí el día
-          </label>
+          <label className="text-sm font-semibold text-paragraph mb-2 block">1. Elegí el día</label>
           <DayPicker
             mode="single"
             selected={selectedDate}
@@ -188,9 +199,7 @@ const BookingWidget = ({
           />
         </div>
         <div>
-          <label className="text-sm font-semibold text-paragraph mb-2 block">
-            2. Elegí la cancha
-          </label>
+          <label className="text-sm font-semibold text-paragraph mb-2 block">2. Elegí la cancha</label>
           <div className="flex flex-wrap gap-2">
             {club.courts.map((court) => (
               <button
@@ -210,40 +219,35 @@ const BookingWidget = ({
         </div>
       </div>
       <div>
-        <label className="text-sm font-semibold text-paragraph mb-2 block">
-          3. Seleccioná un horario
-        </label>
+        <label className="text-sm font-semibold text-paragraph mb-2 block">3. Seleccioná un horario de inicio</label>
         {isAvailabilityLoading ? (
-          <div className="h-40 flex items-center justify-center text-gray-500">
-            Cargando disponibilidad...
-          </div>
-        ) : timeSlots.length > 0 ? (
+          <div className="h-40 flex items-center justify-center text-gray-500">Cargando disponibilidad...</div>
+        ) : validStartTimes.length > 0 ? (
           <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2">
-            {timeSlots.map((time) => {
-              const booked = isBooked(time);
-              const past = isPast(time); 
+            {validStartTimes.map((slot) => {
+              const courtStatus = slot.courts.find(c => c.courtId === selectedCourt.id);
+              const isAvailable = courtStatus?.available ?? false;
+              const past = isPast(slot.time);
 
               return (
                 <button
-                  key={time}
-                  disabled={booked || past}
-                  onClick={() => onSlotClick(selectedCourt, time)}
+                  key={slot.time}
+                  disabled={!isAvailable || past}
+                  onClick={() => onSlotClick(selectedCourt, slot.time)}
                   className={cn(
-                    "p-2 rounded-md text-center font-semibold transition-colors cursor-pointer",
-                    booked || past
-                      ? "bg-gray-200 text-gray-400 cursor-not-allowed line-through"
-                      : "bg-neutral-200 text-neutral-700 hover:bg-brand-green hover:text-white"
+                    "p-2 rounded-md text-center font-semibold transition-colors",
+                    !isAvailable || past
+                      ? "bg-gray-100 text-gray-400 cursor-not-allowed opacity-50"
+                      : "bg-neutral-200 text-neutral-700 hover:bg-brand-green hover:text-white cursor-pointer"
                   )}
                 >
-                  {time}
+                  {slot.time}
                 </button>
               );
             })}
           </div>
         ) : (
-          <p className="text-sm text-gray-500">
-            El complejo no ha configurado sus horarios de apertura.
-          </p>
+          <p className="text-sm text-gray-500">No hay horarios disponibles para este día.</p>
         )}
       </div>
     </div>
@@ -345,17 +349,9 @@ export default function ClubProfilePage() {
     );
   }
 
-  const services = [
-    "Wifi",
-    "Vestuarios",
-    "Estacionamiento",
-    "Bar / Restaurante",
-  ];
-  const hours = `${
-    club.openHour ? `${String(club.openHour).padStart(2, "0")}:00` : "N/A"
-  } a ${
-    club.closeHour ? `${String(club.closeHour).padStart(2, "0")}:00` : "N/A"
-  }`;
+  const weeklySchedule = club ? generateWeeklySchedule(club) : [];
+  const todayIndex = (getDay(new Date()) + 6) % 7;
+  const services = ["Wifi", "Vestuarios", "Estacionamiento", "Bar / Restaurante"];
 
   return (
     <>
@@ -391,12 +387,23 @@ export default function ClubProfilePage() {
               </div>
               <div className="lg:col-span-1 space-y-6">
                 <div className="bg-white rounded-2xl p-6 border border-gray-200">
-                  <h3 className="text-lg font-bold text-foreground mb-3">
+                  <h3 className="text-lg font-bold text-foreground mb-4">
                     Horarios del Club
                   </h3>
-                  <p className="flex items-center gap-2 text-paragraph">
-                    <Clock size={16} /> {hours}
-                  </p>
+                  <ul className="space-y-2 text-paragraph">
+                    {weeklySchedule.map((item, index) => (
+                      <li
+                        key={item.day}
+                        className={cn(
+                          "flex justify-between text-sm",
+                          index === todayIndex && "font-bold text-brand-orange"
+                        )}
+                      >
+                        <span>{item.day}</span>
+                        <span>{item.hours}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
                 <div className="bg-white rounded-2xl p-6 border border-gray-200">
                   <h3 className="text-lg font-bold text-foreground mb-4">

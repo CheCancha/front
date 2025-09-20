@@ -1,12 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { db } from "@/lib/db";
+import { db } from "@/shared/lib/db";
 import { Prisma, Sport } from "@prisma/client";
 import { z } from "zod";
 
 // Esquema de validación para los parámetros de búsqueda
 const searchSchema = z.object({
   city: z.string().optional(),
-  sport: z.nativeEnum(Sport).optional(),
+  sport: z.string().optional(),
   date: z.string().optional(),
   time: z.string().optional(),
 });
@@ -142,8 +142,10 @@ export async function GET(req: NextRequest) {
     const { city, sport, date, time } = validation.data;
 
     const whereClause: Prisma.ComplexWhereInput = {
-      onboardingCompleted: true,
+      onboardingCompleted: true, // Solo mostrar complejos activos
     };
+
+    // --- Construcción de la cláusula de búsqueda ---
 
     if (city) {
       whereClause.city = {
@@ -152,37 +154,43 @@ export async function GET(req: NextRequest) {
       };
     }
 
+    // El filtro de canchas ('courts') es el más complejo y lo construiremos por partes
+    const courtFilter: Prisma.CourtWhereInput = {};
+
     if (sport) {
-      whereClause.courts = { some: { sport: sport } };
+        courtFilter.sport = { slug: sport };
     }
 
     if (date && time) {
-      const bookingDate = new Date(date);
-      const startTime = parseInt(time.split(":")[0]);
-      whereClause.courts = {
-        ...whereClause.courts,
-        some: {
-          ...((whereClause.courts as Prisma.ComplexWhereInput["courts"])
-            ?.some || {}),
-          bookings: {
+        const bookingDate = new Date(`${date}T00:00:00.000-03:00`);
+        const [hour, minute] = time.split(':').map(Number);
+
+        // Buscamos canchas que NO tengan ('none') una reserva en ese horario exacto.
+        courtFilter.bookings = {
             none: {
-              date: bookingDate,
-              startTime: startTime,
-              status: { in: ["CONFIRMADO", "PENDIENTE"] },
+                date: bookingDate,
+                startTime: hour,
+                startMinute: minute,
+                status: { in: ["CONFIRMADO", "PENDIENTE"] },
             },
-          },
-        },
-      };
+        };
     }
 
-    const now = new Date();
-    const startOfToday = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate()
-    );
-    const startOfTomorrow = new Date(startOfToday);
-    startOfTomorrow.setDate(startOfTomorrow.getDate() + 1);
+    if (Object.keys(courtFilter).length > 0) {
+        whereClause.courts = {
+            some: courtFilter,
+        };
+    }
+
+
+    // const now = new Date();
+    // const startOfToday = new Date(
+    //   now.getFullYear(),
+    //   now.getMonth(),
+    //   now.getDate()
+    // );
+    // const startOfTomorrow = new Date(startOfToday);
+    // startOfTomorrow.setDate(startOfTomorrow.getDate() + 1);
 
     const complexes = await db.complex.findMany({
       where: whereClause,
@@ -192,22 +200,6 @@ export async function GET(req: NextRequest) {
         address: true,
         city: true,
         images: { where: { isPrimary: true }, take: 1 },
-        openHour: true,
-        closeHour: true,
-        slotDurationMinutes: true,
-        schedule: true,
-        courts: {
-          select: {
-            id: true,
-            bookings: {
-              where: {
-                date: { gte: startOfToday, lt: startOfTomorrow },
-                status: { in: ["CONFIRMADO", "PENDIENTE"] },
-              },
-              select: { startTime: true },
-            },
-          },
-        },
       },
     });
 
@@ -216,7 +208,7 @@ export async function GET(req: NextRequest) {
       name: complex.name,
       address: `${complex.address}, ${complex.city}`,
       imageUrl: complex.images[0]?.url || "/placeholder.jpg",
-      availableSlots: getNextAvailableSlots(complex),
+      availableSlots: [time || 'Disponible'], 
     }));
 
     return NextResponse.json(formattedComplexes);

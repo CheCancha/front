@@ -2,10 +2,10 @@ import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { type NextAuthOptions, type DefaultSession } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
-import { db } from "@/lib/db";
+import { db } from "@/shared/lib/db";
 import bcrypt from "bcrypt";
 import { Role } from "@prisma/client";
-import { normalizePhoneNumber } from "@/lib/utils";
+import { normalizePhoneNumber } from "@/shared/lib/utils";
 
 // 1. AMPLIAMOS LA DECLARACIÓN DE TIPOS PARA INCLUIR complexId
 declare module "next-auth" {

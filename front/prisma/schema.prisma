@@ -56,7 +56,7 @@ model Complex {
   province            String
   managerId           String    @unique
   onboardingCompleted Boolean   @default(false)
-  slotDurationMinutes Int?
+  // slotDurationMinutes Int?
   openHour            Int?
   closeHour           Int?
   courtCount          Int?
@@ -83,12 +83,22 @@ model Image {
   updatedAt DateTime @updatedAt
 }
 
+model Sport {
+  id          String   @id @default(cuid())
+  name        String   // Ej: "Fútbol 5", "Fútbol 7", "Fútbol 11", "Pádel", "Tenis"
+  slug        String   @unique // Ej: "futbol-5", "padel" (para URLs amigables)
+  icon        String?  
+
+  courts      Court[]
+}
 model Court {
-  id            String    @id @default(cuid())
+  id            String     @id @default(cuid())
   name          String
-  sport         Sport
+  sportId       String     @default("cmfsf71vz0000i02g5a2vvvgd")
+  sport         Sport      @relation(fields: [sportId], references: [id])
   pricePerHour  Int
   depositAmount Int
+  slotDurationMinutes Int  @default(60)
   complexId     String
   bookings      Booking[]
   complex       Complex   @relation(fields: [complexId], references: [id])
@@ -118,16 +128,18 @@ model Booking {
   id               String        @id @default(cuid())
   date             DateTime
   startTime        Int
+  startMinute      Int           @default(0)
   totalPrice       Int
   depositPaid      Int
   remainingBalance Int
   status           BookingStatus @default(PENDIENTE)
   createdAt        DateTime      @default(now())
   courtId          String
-  userId           String
+  userId           String?
   court            Court         @relation(fields: [courtId], references: [id])
-  user             User          @relation(fields: [userId], references: [id])
-
+  user             User?          @relation(fields: [userId], references: [id])
+  guestName  String?
+  
   @@unique([courtId, date, startTime])
 }
 
@@ -150,14 +162,6 @@ enum Role {
   USER
   MANAGER
   ADMIN
-}
-
-enum Sport {
-  FUTBOL
-  PADEL
-  TENIS
-  BASQUET
-  VOLEY
 }
 
 enum BookingStatus {

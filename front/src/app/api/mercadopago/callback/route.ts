@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/authOptions";
-import { db } from "@/lib/db";
+import { db } from "@/shared/lib/db";
 import SimpleCrypto from "simple-crypto-js";
 import { routes } from "@/routes"; // Importamos las rutas
 
@@ -29,7 +29,6 @@ const getMercadoPagoTokens = async (authCode: string) => {
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
-    // Redirigimos al login usando la ruta definida
     return NextResponse.redirect(
       new URL(routes.auth.ingreso, process.env.NEXT_PUBLIC_BASE_URL!)
     );
@@ -39,7 +38,6 @@ export async function GET(req: NextRequest) {
   const complexId = req.nextUrl.searchParams.get("state");
 
   if (!code || !complexId) {
-    // Si falta algún dato, redirigimos a una página de error genérica o al dashboard principal
     const errorUrl = new URL("/dashboard", process.env.NEXT_PUBLIC_BASE_URL!);
     errorUrl.searchParams.set("error", "mp_auth_failed");
     return NextResponse.redirect(errorUrl);
@@ -73,7 +71,6 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    // CORRECCIÓN: Llamamos a la función `routes.app.settings` con el complexId
     const successUrl = new URL(
       routes.app.settings(complexId),
       process.env.NEXT_PUBLIC_BASE_URL!
@@ -83,7 +80,6 @@ export async function GET(req: NextRequest) {
 
   } catch (error) {
     console.error("Error en el callback de Mercado Pago:", error);
-    // CORRECCIÓN: También usamos la ruta correcta para los errores
     const errorUrl = new URL(
       routes.app.settings(complexId),
       process.env.NEXT_PUBLIC_BASE_URL!

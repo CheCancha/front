@@ -64,7 +64,6 @@ export const LoginForm = () => {
         router.push(redirectUrl);
         router.refresh();
       } else {
-        // Fallback si la API falla
         router.push(routes.public.home);
         router.refresh();
       }
@@ -95,7 +94,7 @@ export const LoginForm = () => {
         <h2 className="font-lora text-3xl font-semibold text-gray-900">
           Iniciá sesión en tu cuenta
         </h2>
-        <p className="mt-2 text-sm text-gray-600">
+        <p className="mt-2 text-gray-600">
           ¿Aún no tenés una?{" "}
           <Link
             href={routes.auth.registro}
@@ -229,51 +228,42 @@ export const RegisterForm = () => {
     <div className="w-full ">
       <div className="text-center mb-8">
         <h2 className="font-lora text-3xl font-semibold text-foreground">
-                    Creá tu cuenta        
+          Creá tu cuenta
         </h2>
-               
         <p className="mt-2 text-paragraph">
-                    ¿Ya tenés una?          
+          ¿Ya tenés una?
           <Link
             href="/login"
             className="font-medium text-brand-orange hover:underline"
           >
-                        Iniciá sesión          
+            {" "}
+            Iniciá sesión
           </Link>
-                 
         </p>
-             
       </div>
-           
       <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-6">
-               
         <CustomInput
           label="Nombre Completo"
           type="text"
           register={register("name")}
           error={errors.name?.message}
         />
-               
         <CustomInput
           label="Número de Teléfono"
           type="tel"
           register={register("phone")}
           error={errors.phone?.message}
         />
-               
         <PasswordInput
           label="Contraseña"
           register={register("password")}
           error={errors.password?.message}
         />
-                {error && <p className="text-sm text-red-600">{error}</p>}     
-         
+         {error && <p className="text-sm text-red-600">{error}</p>}   
         <ButtonPrimary type="submit" className="w-full" disabled={isSubmitting}>
-                    {isSubmitting ? "Creando cuenta..." : "Crear Cuenta"}       
-        </ButtonPrimary>
-             
+          {isSubmitting ? "Creando cuenta..." : "Crear Cuenta"}
+        </ButtonPrimary>
       </form>
-         
     </div>
   );
 };

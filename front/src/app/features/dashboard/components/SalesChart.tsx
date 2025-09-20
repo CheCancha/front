@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts";
 import { ChevronDown } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/lib/utils";
 
 // --- DATOS DE EJEMPLO (En una app real, vendrían de una API) ---
 const weeklyData = {

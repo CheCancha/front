@@ -1,5 +1,5 @@
 import { NextResponse, NextRequest } from "next/server";
-import { db } from "@/lib/db";
+import { db } from "@/shared/lib/db";
 import { MercadoPagoConfig, Payment } from "mercadopago";
 import { BookingStatus } from "@prisma/client";
 import SimpleCrypto from "simple-crypto-js";

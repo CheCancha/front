@@ -1,12 +1,11 @@
-// front/src/app/api/complex/[complexId]/settings/route.ts
-
 import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { db } from "@/shared/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/authOptions";
-import { Prisma, Sport } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 
 // Tipos para el payload
+
 type BasicInfoPayload = {
   name: string;
   address: string;
@@ -17,7 +16,6 @@ type BasicInfoPayload = {
 type GeneralPayload = {
   openHour?: number | null;
   closeHour?: number | null;
-  slotDurationMinutes?: number | null;
 };
 
 type SchedulePayload = {
@@ -40,16 +38,18 @@ type SchedulePayload = {
 type CourtUpdatePayload = {
   id: string;
   name: string;
-  sport: Sport;
+  sportId: string;
   pricePerHour: number;
   depositAmount: number;
+  slotDurationMinutes: number;
 };
 
 type CourtCreatePayload = {
   name: string;
-  sport: Sport;
+  sportId: string;
   pricePerHour: number;
   depositAmount: number;
+  slotDurationMinutes: number;
 };
 
 type CourtsPayload = {
@@ -86,7 +86,12 @@ export async function GET(
       },
       include: {
         schedule: true,
-        courts: { orderBy: { name: "asc" } },
+        courts: {
+          orderBy: { name: "asc" },
+          include: {
+            sport: true,
+          },
+        },
         images: { orderBy: [{ isPrimary: "desc" }, { id: "asc" }] },
       },
     });
@@ -156,8 +161,6 @@ export async function PUT(
           complexUpdateData.openHour = general.openHour;
         if (general.closeHour !== undefined)
           complexUpdateData.closeHour = general.closeHour;
-        if (general.slotDurationMinutes !== undefined)
-          complexUpdateData.slotDurationMinutes = general.slotDurationMinutes;
       }
 
       // Marcar onboarding como completo si no estaba
@@ -184,7 +187,6 @@ export async function PUT(
 
       // C. Operaciones con canchas
       if (courts) {
-        // Eliminar canchas marcadas para eliminación
         if (courts.delete && courts.delete.length > 0) {
           await prisma.court.deleteMany({
             where: {
@@ -204,9 +206,10 @@ export async function PUT(
               },
               data: {
                 name: court.name,
-                sport: court.sport,
+                sportId: court.sportId,
                 pricePerHour: Number(court.pricePerHour),
                 depositAmount: Number(court.depositAmount),
+                slotDurationMinutes: Number(court.slotDurationMinutes),
               },
             });
           }
@@ -217,9 +220,10 @@ export async function PUT(
           await prisma.court.createMany({
             data: courts.create.map((court) => ({
               name: court.name,
-              sport: court.sport,
+              sportId: court.sportId,
               pricePerHour: Number(court.pricePerHour),
               depositAmount: Number(court.depositAmount),
+              slotDurationMinutes: Number(court.slotDurationMinutes),
               complexId: id,
             })),
           });
@@ -241,7 +245,16 @@ export async function PUT(
         }
       }
 
-      return updatedComplex;
+      const updatedComplexWithDetails = await prisma.complex.findUnique({
+          where: { id },
+          include: {
+              schedule: true,
+              courts: { include: { sport: true } },
+              images: true,
+          }
+      });
+      
+      return updatedComplexWithDetails;
     });
 
     return NextResponse.json({

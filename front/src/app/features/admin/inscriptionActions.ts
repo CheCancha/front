@@ -1,10 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { db } from "@/lib/db";
+import { db } from "@/shared/lib/db";
 import bcrypt from 'bcryptjs';
 import { Role, SubscriptionPlan } from "@prisma/client";
-import { sendWelcomeEmail } from "@/lib/email";
+import { sendWelcomeEmail } from "@/shared/lib/email";
 
 // Función para mapear el string del plan al enum de Prisma
 const getPlanEnumFromString = (planString: string): SubscriptionPlan => {

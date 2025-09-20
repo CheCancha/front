@@ -3,10 +3,10 @@ import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { type NextAuthOptions, type DefaultSession } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
-import { db } from "@/lib/db";
+import { normalizePhoneNumber } from "@/shared/lib/utils";
+import { db } from "@/shared/lib/db";
 import bcrypt from "bcrypt";
 import { Role } from "@prisma/client";
-import { normalizePhoneNumber } from "@/lib/utils";
 
 declare module "next-auth" {
   interface Session {

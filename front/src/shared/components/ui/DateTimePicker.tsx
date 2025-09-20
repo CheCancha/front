@@ -10,7 +10,7 @@ import { DayPicker } from "react-day-picker";
 import "react-day-picker/dist/style.css";
 import { format, addDays } from "date-fns";
 import { es } from "date-fns/locale";
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/lib/utils";
 
 // --- Tipos para TimePicker ---
 interface TimeOption {
@@ -93,26 +93,24 @@ export const DatePicker: React.FC<DatePickerProps> = ({
 };
 
 // --- Custom TimePicker Component with react-select ---
-export const TimePicker: React.FC<TimePickerProps> = ({
-  value,
-  onChange,
-  variant = "default",
-}) => {
-  // Generar las opciones de tiempo
-  const timeOptions: TimeOption[] = Array.from({ length: 17 }, (_, i) => {
-    const hour = i + 8;
-    const timeValue = `${hour.toString().padStart(2, "0")}:00`;
-    return {
-      value: timeValue,
-      label: timeValue,
-    };
-  });
+export const TimePicker: React.FC<TimePickerProps> = ({ value, onChange, variant }) => {
+  // ✨ 1. Generamos correctamente las opciones de tiempo
+  const timeOptions: TimeOption[] = [];
+  for (let h = 8; h < 24; h++) {
+    const hour = String(h).padStart(2, '0');
+    // Generamos el slot de la hora en punto (ej: 09:00)
+    timeOptions.push({ value: `${hour}:00`, label: `${hour}:00` });
+    // Generamos el slot de la media hora (ej: 09:30)
+    if (h < 23) {
+        timeOptions.push({ value: `${hour}:30`, label: `${hour}:30` });
+    }
+  }
 
   // Encontrar la opción seleccionada
   const selectedTimeOption =
     timeOptions.find((option) => option.value === value) || null;
 
-  // Componente personalizado para el valor seleccionado
+  // --- Componentes personalizados para react-select (tu código estaba perfecto aquí) ---
   const CustomSingleValue = (props: SingleValueProps<TimeOption>) => {
     return (
       <components.SingleValue {...props}>
@@ -124,7 +122,6 @@ export const TimePicker: React.FC<TimePickerProps> = ({
     );
   };
 
-  // Componente personalizado para el placeholder
   const CustomPlaceholder = (props: PlaceholderProps<TimeOption>) => {
     return (
       <components.Placeholder {...props}>
@@ -156,17 +153,16 @@ export const TimePicker: React.FC<TimePickerProps> = ({
             cn(
               "w-full py-[5.5px] border rounded-md transition-colors cursor-pointer hover:border-brand-orange",
               variant === "hero"
-                ? "border-neutral-400 cursor-pointer"
-                : "border-neutral-300 cursor-pointer"
+                ? "border-neutral-400"
+                : "border-neutral-300"
             ),
-          valueContainer: () => "pl-3 pr-1 cursor-pointer",
-          placeholder: () => "text-neutral-700 cursor-pointer",
-          input: () => "text-neutral-900 m-0 cursor-pointer",
-          singleValue: () => "text-neutral-900 cursor-pointer",
-          menu: () =>
-            "bg-white border border-neutral-200 rounded-md shadow-lg mt-1 z-10 cursor-pointer",
-          option: () => "px-4 py-2 cursor-pointer",
-          dropdownIndicator: () => "text-neutral-600 pr-1 cursor-pointer",
+          valueContainer: () => "pl-3 pr-1",
+          placeholder: () => "text-neutral-700",
+          input: () => "text-neutral-900 m-0",
+          singleValue: () => "text-neutral-900",
+          menu: () => "bg-white border border-neutral-200 rounded-md shadow-lg mt-1 z-10",
+          option: ({ isFocused }) => cn("px-4 py-2 cursor-pointer", isFocused && "bg-gray-100"),
+          dropdownIndicator: () => "text-neutral-600 pr-1",
         }}
       />
     </div>

@@ -1,4 +1,4 @@
-import { db } from "@/lib/db";
+import { db } from "@/shared/lib/db";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/authOptions";
 

@@ -1,5 +1,5 @@
 import DashboardNavTabs from "@/app/features/dashboard/components/NavTab";
-import { db } from "@/lib/db";
+import { db } from "@/shared/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/authOptions";
 import { notFound } from "next/navigation";

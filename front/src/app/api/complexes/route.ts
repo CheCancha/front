@@ -1,6 +1,5 @@
-// front/src/app/api/admin/complexes/route.ts
 import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { db } from "@/shared/lib/db";
 
 export async function GET() {
   const complexes = await db.complex.findMany({

@@ -1,4 +1,4 @@
-import { db } from "@/lib/db";
+import { db } from "@/shared/lib/db";
 
 export const getComplexDataForManager = async (complexId: string, managerId: string) => {
   try {
@@ -27,7 +27,7 @@ export const getComplexDataForManager = async (complexId: string, managerId: str
 
     return {
       name: complex.name,
-      onboardingCompleted: complex.onboardingCompleted, // <-- ¡Importante!
+      onboardingCompleted: complex.onboardingCompleted,
       reservationsToday: reservationsTodayCount,
       totalIncomeToday,
     };
