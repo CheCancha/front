@@ -1,20 +1,20 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams } from "next/navigation";
-import { ChevronLeft, ChevronRight, Calendar, PlusCircle, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar, PlusCircle, X, Circle } from "lucide-react";
 import { motion, AnimatePresence } from 'framer-motion';
 import { format, add, startOfDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from "@/shared/lib/utils";
-import type { Complex, Court, Booking as PrismaBooking, Sport } from '@prisma/client';
+import type { Complex, Court, Booking as PrismaBooking, Sport, BookingStatus } from '@prisma/client';
 
-// --- 1. TIPOS DE DATOS ---
+// --- TIPOS ---
 type CourtWithSport = Court & { sport: Sport };
 type ComplexWithCourts = Complex & { courts: CourtWithSport[] };
 type BookingWithCourt = PrismaBooking & { court: { slotDurationMinutes: number } };
 
-// --- 2. COMPONENTE MODAL ---
+// --- COMPONENTE MODAL ---
 interface AddBookingModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -49,25 +49,24 @@ const AddBookingModal: React.FC<AddBookingModalProps> = ({ isOpen, onClose, onSu
     return (
         <AnimatePresence>
             {isOpen && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-                    <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-8 m-4">
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+                    <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
                         <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><X size={24} /></button>
-                        <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">Añadir Nueva Reserva</h2>
-                        
+                        <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">Añadir Reserva Manual</h2>
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div>
                                 <label htmlFor="customerName" className="block text-sm font-medium text-gray-700 mb-1">Nombre del Cliente</label>
-                                <input id="customerName" type="text" value={guestName} onChange={(e) => setGuestName(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black" placeholder="Ej: Lionel Messi" required />
+                                <input id="customerName" type="text" value={guestName} onChange={(e) => setGuestName(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="Ej: Lionel Messi" required />
                             </div>
                             <div>
                                 <label htmlFor="court" className="block text-sm font-medium text-gray-700 mb-1">Cancha</label>
-                                <select id="court" value={courtId} onChange={(e) => setCourtId(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black">
+                                <select id="court" value={courtId} onChange={(e) => setCourtId(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg">
                                     {courts.map(court => (<option key={court.id} value={court.id}>{court.name}</option>))}
                                 </select>
                             </div>
                             <div>
                                 <label htmlFor="time" className="block text-sm font-medium text-gray-700 mb-1">Horario</label>
-                                <select id="time" value={time} onChange={(e) => setTime(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black">
+                                <select id="time" value={time} onChange={(e) => setTime(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg">
                                     {timeSlots.map(t => (<option key={t} value={t}>{t}</option>))}
                                 </select>
                             </div>
@@ -77,7 +76,6 @@ const AddBookingModal: React.FC<AddBookingModalProps> = ({ isOpen, onClose, onSu
                                 </button>
                             </div>
                         </form>
-
                     </motion.div>
                 </motion.div>
             )}
@@ -85,7 +83,24 @@ const AddBookingModal: React.FC<AddBookingModalProps> = ({ isOpen, onClose, onSu
     );
 };
 
-// --- 3. COMPONENTE PRINCIPAL ---
+// --- COMPONENTE SKELETON PARA LA CARGA ---
+const CalendarSkeleton = () => (
+    <div className="flex-1 bg-gray-50 p-6 animate-pulse">
+        <header className="mb-6 h-10 bg-gray-200 rounded-md"></header>
+        <div className="bg-white border rounded-lg shadow-sm overflow-hidden">
+            <div className="grid grid-cols-4 min-w-[800px]">
+                <div className="h-14 bg-gray-100 border-b border-l"></div>
+                <div className="h-14 bg-gray-100 border-b border-l"></div>
+                <div className="h-14 bg-gray-100 border-b border-l"></div>
+                <div className="h-14 bg-gray-100 border-b border-l"></div>
+            </div>
+            <div className="h-96 bg-gray-50"></div>
+        </div>
+    </div>
+);
+
+
+// --- COMPONENTE PRINCIPAL ---
 export default function BookingCalendarPage() {
     const params = useParams();
     const complexId = params.complexId as string;
@@ -96,8 +111,9 @@ export default function BookingCalendarPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalInitialValues, setModalInitialValues] = useState<{ courtId: string; time: string } | undefined>();
+    const [sportFilter, setSportFilter] = useState<string>("Todos");
 
-    const timeSlots = React.useMemo(() => {
+    const timeSlots = useMemo(() => {
         const slots = [];
         const open = complex?.openHour ?? 9;
         const close = complex?.closeHour ?? 23;
@@ -157,19 +173,62 @@ export default function BookingCalendarPage() {
         setIsModalOpen(true);
     };
 
-    if (isLoading || !complex) return <div>Cargando calendario...</div>;
+    // Filtramos las canchas y los deportes para los botones
+    const { filteredCourts, sportFilters } = useMemo(() => {
+        if (!complex) return { filteredCourts: [], sportFilters: [] };
+        
+        const sports = ["Todos", ...new Set(complex.courts.map(c => c.sport.name))];
+        const courts = sportFilter === "Todos"
+            ? complex.courts
+            : complex.courts.filter(c => c.sport.name === sportFilter);
+
+        return { filteredCourts: courts, sportFilters: sports };
+    }, [complex, sportFilter]);
+    
+    const statusColors: Record<BookingStatus, string> = {
+        CONFIRMADO: "bg-green-100 text-green-800 border-l-4 border-green-500",
+        PENDIENTE: "bg-yellow-100 text-yellow-800 border-l-4 border-yellow-500",
+        COMPLETADO: "bg-blue-100 text-blue-800 border-l-4 border-blue-500",
+        CANCELADO: "bg-red-100 text-red-800 border-l-4 border-red-500 line-through",
+    };
+
+    if (isLoading || !complex) return <CalendarSkeleton />;
 
     return (
         <>
             <div className="flex-1 bg-gray-50 p-6">
-                <header className="mb-6 flex flex-wrap items-center justify-between gap-4">
-                    {/* ... (Tus controles de fecha y filtros aquí. No los modifico.) ... */}
+                <header className="mb-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                        <div className="flex items-center p-1 bg-white border rounded-lg">
+                            <button onClick={() => handleDateChange(-1)} className="p-1.5 text-gray-500 hover:text-black"><ChevronLeft size={20} /></button>
+                            <button onClick={() => setCurrentDate(startOfDay(new Date()))} className="px-3 py-1.5 text-sm font-semibold text-gray-700 hover:text-black flex items-center gap-2"><Calendar size={16} /> Hoy</button>
+                            <button onClick={() => handleDateChange(1)} className="p-1.5 text-gray-500 hover:text-black"><ChevronRight size={20} /></button>
+                        </div>
+                        <span className="font-semibold text-lg text-gray-800 capitalize">
+                            {format(currentDate, 'eeee, dd MMMM', { locale: es })}
+                        </span>
+                    </div>
+                    <div className="flex items-center gap-2 self-start sm:self-center">
+                        {sportFilters.map(sport => (
+                            <button 
+                                key={sport} 
+                                onClick={() => setSportFilter(sport)}
+                                className={cn("px-3 py-1.5 rounded-md text-sm font-semibold", sportFilter === sport ? "bg-black text-white" : "bg-white text-gray-700 hover:bg-gray-100 border")}
+                            >
+                                {sport}
+                            </button>
+                        ))}
+                    </div>
                 </header>
 
                 <div className="bg-white border rounded-lg shadow-sm overflow-auto">
-                    <div className="grid min-w-[800px]" style={{ gridTemplateColumns: `60px repeat(${complex.courts.length}, 1fr)` }}>
-                        <div className="sticky top-0 bg-white z-10"></div>
-                        {complex.courts.map(court => (
+                    <div className="grid min-w-[800px]" style={{ gridTemplateColumns: `80px repeat(${filteredCourts.length}, 1fr)` }}>
+                        <div className="sticky top-0 bg-white z-10 flex items-center justify-end pr-2">
+                            <button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2 text-sm font-semibold text-white bg-black hover:bg-gray-800 rounded-md px-2 py-1">
+                                <PlusCircle size={16}/> Add
+                            </button>
+                        </div>
+                        {filteredCourts.map(court => (
                             <div key={court.id} className="sticky top-0 text-center font-semibold p-3 border-b border-l bg-white z-10">
                                 {court.name}
                             </div>
@@ -177,8 +236,8 @@ export default function BookingCalendarPage() {
                         
                         {timeSlots.map(time => (
                             <React.Fragment key={time}>
-                                <div className="text-right text-xs font-mono text-gray-500 pr-2 pt-3 border-r">{time}</div>
-                                {complex.courts.map(court => {
+                                <div className="text-right text-xs font-mono text-gray-500 pr-2 pt-3 border-r h-16">{time}</div>
+                                {filteredCourts.map(court => {
                                     const [slotHour, slotMinute] = time.split(':').map(Number);
                                     const slotStartMinutes = slotHour * 60 + slotMinute;
 
@@ -189,19 +248,16 @@ export default function BookingCalendarPage() {
                                         return slotStartMinutes >= bookingStartMinutes && slotStartMinutes < bookingEndMinutes;
                                     });
 
-                                    if (bookingInSlot && (bookingInSlot.startTime * 60 + (bookingInSlot.startMinute || 0)) !== slotStartMinutes) {
-                                        return null;
-                                    }
+                                    if (bookingInSlot && (bookingInSlot.startTime * 60 + (bookingInSlot.startMinute || 0)) !== slotStartMinutes) return null;
                                     
                                     const rowSpan = bookingInSlot ? bookingInSlot.court.slotDurationMinutes / 30 : 1;
-                                    const cellHeight = 4; // 4rem = 64px
-                                    const height = rowSpan * cellHeight;
-
+                                    
                                     return (
-                                        <div key={`${court.id}-${time}`} className="relative border-b border-l p-1" style={{ height: `${cellHeight}rem` }}>
+                                        <div key={`${court.id}-${time}`} className="relative border-b border-l p-1 h-16">
                                             {bookingInSlot ? (
-                                                <div className="bg-indigo-100 text-indigo-800 rounded-md w-full p-2 text-xs font-semibold cursor-pointer absolute top-0 left-0" style={{ height: `${height}rem`, zIndex: 10 }}>
-                                                    {bookingInSlot.guestName || bookingInSlot.userId}
+                                                <div className={cn("rounded-md w-full p-2 text-xs font-semibold cursor-pointer absolute top-0 left-0 flex flex-col justify-start", statusColors[bookingInSlot.status])} style={{ height: `calc(${rowSpan} * 4rem - 0.5rem)`, zIndex: 10 }}>
+                                                    <span className="font-bold">{bookingInSlot.guestName || "Usuario Registrado"}</span>
+                                                    <span className="capitalize text-xs">{bookingInSlot.status.toLowerCase()}</span>
                                                 </div>
                                             ) : (
                                                 <button onClick={() => openModalForSlot(court.id, time)} className="h-full w-full rounded-md text-gray-300 hover:bg-gray-100 flex items-center justify-center">
@@ -217,15 +273,7 @@ export default function BookingCalendarPage() {
                 </div>
             </div>
 
-            <AddBookingModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                onSubmit={handleAddBooking}
-                courts={complex.courts}
-                timeSlots={timeSlots}
-                selectedDate={currentDate}
-                initialValues={modalInitialValues}
-            />
+            <AddBookingModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSubmit={handleAddBooking} courts={complex.courts} timeSlots={timeSlots} selectedDate={currentDate} initialValues={modalInitialValues}/>
         </>
     );
 }

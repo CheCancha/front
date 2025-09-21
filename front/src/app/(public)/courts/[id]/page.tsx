@@ -22,7 +22,6 @@ import type {
   Court,
   Image as PrismaImage,
   Schedule,
-  Booking,
 } from "@prisma/client";
 import { DayPicker } from "react-day-picker";
 import "react-day-picker/dist/style.css";

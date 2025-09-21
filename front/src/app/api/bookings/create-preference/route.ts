@@ -24,16 +24,20 @@ export async function POST(req: Request) {
 
     const complex = await db.complex.findUnique({
       where: { id: complexId },
-      select: { name: true, mp_access_token: true },
+        select: { name: true, mp_access_token: true, courts: { where: { id: courtId } } },
     });
 
-    if (!complex) {
-        return new NextResponse("Complejo no encontrado.", { status: 404 });
+    if (!complex || complex.courts.length === 0) {
+      return new NextResponse("El complejo o la cancha no fueron encontrados.", { status: 404 });
     }
+    const court = complex.courts[0];
+
+
 
     let accessToken = "";
     if (complex.mp_access_token) {
         const secretKey = process.env.ENCRYPTION_KEY!;
+        if (!secretKey) throw new Error("ENCRYPTION_KEY no está definida en las variables de entorno.");
         const crypto = new SimpleCrypto(secretKey);
         accessToken = crypto.decrypt(complex.mp_access_token) as string;
         console.log("Usando Access Token del complejo (producción).");
@@ -48,46 +52,78 @@ export async function POST(req: Request) {
     const bookingDate = new Date(date);
     const [hour, minute] = time.split(':').map(Number);
 
-    const pendingBooking = await db.booking.create({
-        data: {
-            courtId,
+    const requestedStartMinutes = hour * 60 + minute;
+    const requestedEndMinutes = requestedStartMinutes + court.slotDurationMinutes;
+
+    const conflictingBookings = await db.booking.findMany({
+        where: {
+            courtId: courtId,
             date: bookingDate,
-            startTime: hour,
-            startMinute: minute,
-            totalPrice: price,
-            depositPaid: depositAmount,
-            remainingBalance: price - depositAmount,
-            status: BookingStatus.PENDIENTE,
-            ...(userId ? { userId: userId } : { guestName: guestName }),
+            status: { in: ["CONFIRMADO", "PENDIENTE"] }
         },
+        include: {
+            court: { select: { slotDurationMinutes: true } }
+        }
+    });
+
+    const isConflict = conflictingBookings.some(booking => {
+        const existingStartMinutes = booking.startTime * 60 + (booking.startMinute || 0);
+        const existingEndMinutes = existingStartMinutes + booking.court.slotDurationMinutes;
+        
+        return requestedStartMinutes < existingEndMinutes && requestedEndMinutes > existingStartMinutes;
+    });
+
+    if (isConflict) {
+        return new NextResponse("Lo sentimos, este horario ya no está disponible o se superpone con otra reserva.", { status: 409 }); // 409 Conflict
+    }
+    
+    const pendingBooking = await db.booking.create({
+      data: {
+        courtId,
+        date: bookingDate,
+        startTime: hour,
+        startMinute: minute,
+        totalPrice: price,
+        depositPaid: depositAmount,
+        remainingBalance: price - depositAmount,
+        status: BookingStatus.PENDIENTE,
+        ...(userId ? { userId: userId } : { guestName: guestName }),
+      },
     });
     
     const preferenceClient = getMercadoPagoPreferenceClient(accessToken);
     
-    const preference = await preferenceClient.create({
-        body: {
-            items: [
-              {
-                id: courtId,
-                title: `Seña para reserva en ${complex.name}`, 
-                description: `Turno para el día ${format(bookingDate, "dd/MM/yyyy")} a las ${time}hs`,
-                quantity: 1,
-                currency_id: "ARS",
-                unit_price: depositAmount,
+    try {
+        const preference = await preferenceClient.create({
+            body: {
+                items: [
+                  {
+                    id: courtId,
+                    title: `Seña para reserva en ${complex.name}`,
+                    description: `Turno para el día ${format(bookingDate, "dd/MM/yyyy")} a las ${time}hs`,
+                    quantity: 1,
+                    currency_id: "ARS",
+                    unit_price: depositAmount,
+                  },
+                ],
+                external_reference: pendingBooking.id,
+                notification_url: `${process.env.NEXT_PUBLIC_BASE_URL}/api/webhooks/mercado-pago`,
+                back_urls: {
+                  success: `${process.env.NEXT_PUBLIC_BASE_URL}/courts/${complexId}?status=success&booking_id=${pendingBooking.id}`,
+                  failure: `${process.env.NEXT_PUBLIC_BASE_URL}/courts/${complexId}?status=failure`,
+                  pending: `${process.env.NEXT_PUBLIC_BASE_URL}/courts/${complexId}?status=pending`,
+                },
+                auto_return: "approved",
               },
-            ],
-            external_reference: pendingBooking.id,
-            notification_url: `${process.env.NEXT_PUBLIC_BASE_URL}/api/webhooks/mercado-pago`,
-            back_urls: {
-              success: `${process.env.NEXT_PUBLIC_BASE_URL}/courts/${complexId}?status=success&booking_id=${pendingBooking.id}`,
-              failure: `${process.env.NEXT_PUBLIC_BASE_URL}/courts/${complexId}?status=failure`,
-              pending: `${process.env.NEXT_PUBLIC_BASE_URL}/courts/${complexId}?status=pending`,
-            },
-            auto_return: "approved",
-          },
-    });
+        });
+        return NextResponse.json({ preferenceId: preference.id });
 
-    return NextResponse.json({ preferenceId: preference.id });
+    } catch (mpError: any) {
+        console.error("Error específico de Mercado Pago:", mpError);
+        const errorMessage = mpError?.cause?.message || mpError.message || "Error al comunicarse con Mercado Pago.";
+        await db.booking.delete({ where: { id: pendingBooking.id } });
+        return new NextResponse(`Error de Mercado Pago: ${errorMessage}`, { status: 400 });
+    }
 
   } catch (error) {
     console.error("[CREATE_PREFERENCE_POST]", error);
