@@ -6,7 +6,6 @@ import bcrypt from 'bcryptjs';
 import { Role, SubscriptionPlan } from "@prisma/client";
 import { sendWelcomeEmail } from "@/shared/lib/email";
 
-// Función para mapear el string del plan al enum de Prisma
 const getPlanEnumFromString = (planString: string): SubscriptionPlan => {
   switch (planString) {
     case "Plan Básico":
@@ -16,7 +15,7 @@ const getPlanEnumFromString = (planString: string): SubscriptionPlan => {
     case "Plan Full":
       return SubscriptionPlan.FULL;
     default:
-      return SubscriptionPlan.FREE; // Un valor por defecto seguro
+      return SubscriptionPlan.FREE;
   }
 };
 
@@ -36,7 +35,6 @@ export async function approveInscription(requestId: string): Promise<{ success: 
     const temporaryPassword = Math.random().toString(36).slice(-8);
     const hashedPassword = await bcrypt.hash(temporaryPassword, 12);
     
-    // Convertimos el string del plan al valor del enum
     const plan = getPlanEnumFromString(inscription.selectedPlan);
     
     const newUser = await db.$transaction(async (prisma) => {

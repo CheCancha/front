@@ -1,4 +1,4 @@
-import { Resend } from 'resend';
+import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -6,8 +6,7 @@ const fromEmail = "CheCancha <onboarding@resend.dev>";
 
 const loginUrl = process.env.NEXTAUTH_URL
   ? `${process.env.NEXTAUTH_URL}/login`
-  : 'http://localhost:3000/login';
-
+  : "http://localhost:3000/login";
 
 export const sendWelcomeEmail = async (
   managerEmail: string,
@@ -16,15 +15,22 @@ export const sendWelcomeEmail = async (
   temporaryPassword: string
 ) => {
   try {
-    // --- LÓGICA DE DESTINATARIO MEJORADA ---
-    const isDevelopment = process.env.NODE_ENV === 'development';
     const testRecipient = process.env.RESEND_TEST_RECIPIENT_EMAIL;
 
-    const recipientEmail = testRecipient || managerEmail;
+    const recipientEmail = testRecipient;
 
-    console.log(`Enviando email de bienvenida. Destinatario original: ${managerEmail}, Destinatario final: ${recipientEmail}`);
+    if (!recipientEmail) {
+      console.error(
+        "Modo de prueba: RESEND_TEST_RECIPIENT_EMAIL no está configurado en .env. No se puede enviar el email."
+      );
+      throw new Error("El email de prueba no está configurado en el servidor.");
+    }
 
-    // --- PLANTILLA DE EMAIL MEJORADA ---
+    console.log(
+      `Enviando email de bienvenida. Destinatario original: ${managerEmail}, Destinatario de prueba: ${recipientEmail}`
+    );
+
+    // --- PLANTILLA DE EMAIL ---
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
         <div style="max-width: 600px; margin: 20px auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
@@ -57,12 +63,14 @@ export const sendWelcomeEmail = async (
 
     await resend.emails.send({
       from: fromEmail,
-      to: recipientEmail, 
-      subject: `[APROBADO] ¡Felicitaciones! Tu complejo ha sido aprobado en CheCancha`, 
+      to: recipientEmail,
+      subject: `[APROBADO] ¡Felicitaciones! Tu complejo ha sido aprobado en CheCancha`,
       html: emailHtml,
     });
 
-    console.log(`Solicitud de email de bienvenida enviada a Resend para: ${recipientEmail}`);
+    console.log(
+      `Solicitud de email de bienvenida enviada a Resend para: ${recipientEmail}`
+    );
   } catch (error) {
     console.error("Error al enviar el email de bienvenida:", error);
     throw new Error("No se pudo enviar el email de bienvenida.");
