@@ -85,8 +85,8 @@ model Image {
 
 model Sport {
   id          String   @id @default(cuid())
-  name        String   // Ej: "Fútbol 5", "Fútbol 7", "Fútbol 11", "Pádel", "Tenis"
-  slug        String   @unique // Ej: "futbol-5", "padel" (para URLs amigables)
+  name        String   
+  slug        String   @unique 
   icon        String?  
 
   courts      Court[]

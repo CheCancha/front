@@ -58,7 +58,7 @@ export async function GET(
     const totalSlots = (closeHour - openHour) * (60 / TIME_GRID_INTERVAL);
 
     for (const court of complex.courts) {
-      const courtSlots = new Array(totalSlots).fill(true); // true = disponible
+      const courtSlots = new Array(totalSlots).fill(true);
       for (const booking of court.bookings) {
         const startIdx =
           (booking.startTime * 60 +
@@ -68,7 +68,7 @@ export async function GET(
         const slotsToBook = court.slotDurationMinutes / TIME_GRID_INTERVAL;
         for (let i = 0; i < slotsToBook; i++) {
           if (startIdx + i < totalSlots) {
-            courtSlots[startIdx + i] = false; // false = ocupado
+            courtSlots[startIdx + i] = false;
           }
         }
       }

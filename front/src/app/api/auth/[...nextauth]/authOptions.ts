@@ -1,4 +1,3 @@
-// src/app/api/auth/[...nextauth]/authOptions.ts
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { type NextAuthOptions, type DefaultSession } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
@@ -31,6 +30,7 @@ export const authOptions: NextAuthOptions = {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      allowDangerousEmailAccountLinking: true,
     }),
     CredentialsProvider({
       name: "Credentials",
@@ -63,11 +63,18 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    jwt({ token, user }) {
+    async jwt({ token, user }) {
       if (user) {
-        token.id = user.id;
-        token.role = user.role;
-        token.complexId = user.complexId;
+        const dbUser = await db.user.findUnique({
+            where: { id: user.id },
+            include: { managedComplex: { select: { id: true } } },
+        });
+
+        if (dbUser) {
+            token.id = dbUser.id;
+            token.role = dbUser.role;
+            token.complexId = dbUser.managedComplex?.id || null;
+        }
       }
       return token;
     },
