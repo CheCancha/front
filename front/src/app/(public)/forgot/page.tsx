@@ -54,7 +54,7 @@ export default function ForgotPasswordPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2 px-4 bg-black text-white rounded-md hover:opacity-90 disabled:opacity-50 flex items-center justify-center"
+            className="w-full py-2 px-4 bg-black text-white rounded-md hover:opacity-90 disabled:opacity-50 flex items-center justify-center cursor-pointer"
           >
             {loading ? <Loader2 className="animate-spin" /> : "Enviar Enlace"}
           </button>

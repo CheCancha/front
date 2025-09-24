@@ -111,7 +111,9 @@ export async function POST(
         { status: 409 }
       );
     }
-    // --- FIN DE LA VALIDACIÓN ---
+
+    const totalPrice = 0; // Placeholder - should be calculated from priceRules
+    const depositAmount = depositPaid || 0;
 
     const newBooking = await db.booking.create({
       data: {
@@ -120,9 +122,10 @@ export async function POST(
         date: bookingDate,
         startTime: hour,
         startMinute: minute,
-        totalPrice: court.pricePerHour,
-        depositPaid: depositPaid || 0,
-        remainingBalance: court.pricePerHour - (depositPaid || 0),
+        totalPrice,
+        depositAmount,
+        depositPaid,
+        remainingBalance: totalPrice - depositAmount,
         status: (status || "PENDIENTE") as BookingStatus,
       },
     });

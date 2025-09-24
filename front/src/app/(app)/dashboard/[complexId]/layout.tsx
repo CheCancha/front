@@ -11,11 +11,9 @@ export default async function DashboardComplexLayout({
   children: React.ReactNode;
   params: Promise<{ complexId: string }>; 
 }) {
-  // Await params antes de usarlo
   const { complexId } = await params;
   const session = await getServerSession(authOptions);
 
-  // Buscamos el nombre del complejo 
   const complex = await db.complex.findUnique({
     where: {
       id: complexId,

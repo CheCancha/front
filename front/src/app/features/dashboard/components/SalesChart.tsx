@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from "react";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts";
 import { ChevronDown, Frown } from "lucide-react";
-import { cn } from "@/shared/lib/utils";
 import { format, startOfMonth, endOfMonth, subQuarters, startOfYear, endOfYear } from 'date-fns';
 
 // --- TIPOS ---

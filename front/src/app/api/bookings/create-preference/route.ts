@@ -7,9 +7,7 @@ import { format } from "date-fns";
 import { BookingStatus } from "@prisma/client";
 import SimpleCrypto from "simple-crypto-js";
 
-interface MercadoPagoError extends Error {
-  cause?: { message?: string } | { message?: string }[];
-}
+
 
 export async function POST(req: Request) {
   try {
@@ -120,6 +118,7 @@ export async function POST(req: Request) {
         startTime: hour,
         startMinute: minute,
         totalPrice: price,
+        depositAmount: depositAmount,
         depositPaid: depositAmount,
         remainingBalance: price - depositAmount,
         status: BookingStatus.PENDIENTE,

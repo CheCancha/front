@@ -16,7 +16,7 @@ export const metadata: Metadata = {
     siteName: "checancha",
     images: [
       {
-        url: "https://checancha.vercel.app/cat17.jpg",
+        url: "https://checancha.vercel.app/logochecancha.png",
         width: 1200,
         height: 630,
       },
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "checancha",
     description: "Página Oficial del checancha.",
-    images: ["https://checancha.vercel.app/cat17.jpg"],
+    images: ["https://checancha.vercel.app/logochecancha.png"],
   },
 };
 
@@ -42,7 +42,7 @@ export default function RootLayout({
     "@type": "SportsClub",
     name: "checancha",
     url: "https://checancha.vercel.app",
-    logo: "https://checancha.vercel.app/logo-cat.png",
+    logo: "https://checancha.vercel.app/logochecancha.png",
     address: {
       "@type": "PostalAddress",
       streetAddress: "9 de Julio y San Martín",

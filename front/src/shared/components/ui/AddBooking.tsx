@@ -6,13 +6,23 @@ import { X, Loader2, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 // Se importa el tipo Court directamente de Prisma, ya que contiene los campos necesarios
 import type { Court, BookingStatus } from "@prisma/client";
+
+type CourtWithPriceRules = Court & {
+  priceRules: {
+    id: string;
+    startTime: number;
+    endTime: number;
+    price: number;
+    depositPercentage: number;
+  }[];
+};
 import { cn } from "@/shared/lib/utils";
 
 interface AddBookingModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (bookingData: SubmitPayload) => Promise<void>;
-  courts: Court[]; // Se usa el tipo Court importado de Prisma
+  courts: CourtWithPriceRules[];
   timeSlots: string[];
   selectedDate: Date;
   isEditing?: boolean;
@@ -80,11 +90,11 @@ const AddBookingModal: React.FC<AddBookingModalProps> = ({
 
         if (initialCourt) {
           // CORRECCIÓN: Usar `pricePerHour` en lugar de `price`
-          if (amountPaid >= initialCourt.pricePerHour) {
+          if (amountPaid >= initialCourt.priceRules[0]?.price) {
             setPaymentOption("total");
             // CORRECCIÓN: Usar `depositAmount` en lugar de `deposit`
           } else if (
-            amountPaid >= initialCourt.depositAmount &&
+            amountPaid >= initialCourt.priceRules[0]?.depositPercentage &&
             amountPaid > 0
           ) {
             setPaymentOption("deposit");
@@ -116,10 +126,10 @@ const AddBookingModal: React.FC<AddBookingModalProps> = ({
     let finalAmountPaid = 0;
     if (paymentOption === "deposit") {
       // CORRECCIÓN: Usar `depositAmount`
-      finalAmountPaid = selectedCourt.depositAmount;
+      finalAmountPaid = selectedCourt.priceRules[0]?.depositPercentage;
     } else if (paymentOption === "total") {
       // CORRECCIÓN: Usar `pricePerHour`
-      finalAmountPaid = selectedCourt.pricePerHour;
+      finalAmountPaid = selectedCourt.priceRules[0]?.price;
     }
 
     const baseData: CreateBookingPayload = {
@@ -277,11 +287,11 @@ const AddBookingModal: React.FC<AddBookingModalProps> = ({
                     <>
                       <option value="deposit">
                         {/* CORRECCIÓN: Usar `depositAmount` */}
-                        Seña (${selectedCourt.depositAmount})
+                        Seña (${selectedCourt.priceRules[0]?.depositPercentage})
                       </option>
                       <option value="total">
                         {/* CORRECCIÓN: Usar `pricePerHour` */}
-                        Total (${selectedCourt.pricePerHour})
+                        Total (${selectedCourt.priceRules[0]?.price})
                       </option>
                     </>
                   )}

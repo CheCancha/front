@@ -4,7 +4,6 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/authOptions";
 import { db } from "@/shared/lib/db";
 import { routes } from "@/routes";
 
-// Esta página actúa como el ÚNICO "distribuidor" inteligente.
 export default async function DashboardEntryPage() {
   const session = await getServerSession(authOptions);
 
@@ -21,10 +20,9 @@ export default async function DashboardEntryPage() {
   if (user.role === "MANAGER") {
     const complex = await db.complex.findUnique({
       where: { managerId: user.id },
-      select: { id: true }, // Ya no necesitamos 'onboardingCompleted' aquí
+      select: { id: true },
     });
 
-    // Si el manager TIENE un complejo, lo mandamos a su dashboard, sin importar el estado del onboarding.
     if (complex) {
       redirect(routes.app.dashboard(complex.id));
     }

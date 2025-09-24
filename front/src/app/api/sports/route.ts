@@ -1,5 +1,3 @@
-// app/api/sports/route.ts
-
 import { NextResponse } from 'next/server';
 import { db } from '@/shared/lib/db';
 

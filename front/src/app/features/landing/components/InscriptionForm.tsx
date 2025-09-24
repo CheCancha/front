@@ -9,7 +9,6 @@ import { inscriptionSchema, InscriptionValues } from "@/shared/lib/inscriptionSc
 import { CustomInput } from "@/shared/components/ui/Input";
 import { ButtonPrimary } from "@/shared/components/ui/Buttons";
 import { SuccessModal } from "@/shared/components/ui/Modal";
-import { UserCircleIcon, BuildingOffice2Icon } from "@heroicons/react/24/solid";
 import { Sport } from "@prisma/client";
 
 interface PlanOption {

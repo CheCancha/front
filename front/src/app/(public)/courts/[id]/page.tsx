@@ -31,7 +31,15 @@ import Link from "next/link";
 // --- TIPOS (Ahora coinciden con la respuesta de la API del backend) ---
 type ComplexProfileData = Complex & {
   images: PrismaImage[];
-  courts: Court[];
+  courts: (Court & {
+    priceRules: {
+      id: string;
+      startTime: number;
+      endTime: number;
+      price: number;
+      depositPercentage: number;
+    }[];
+  })[];
   schedule: Schedule | null;
 };
 
@@ -44,33 +52,38 @@ type ValidStartTime = {
   courts: CourtAvailability[];
 };
 
-
 const generateWeeklySchedule = (complex: ComplexProfileData) => {
-    const schedule = [];
-    const dayOrder: { name: string; openKey: keyof Schedule; closeKey: keyof Schedule }[] = [
-        { name: "Lunes", openKey: "mondayOpen", closeKey: "mondayClose" },
-        { name: "Martes", openKey: "tuesdayOpen", closeKey: "tuesdayClose" },
-        { name: "Miércoles", openKey: "wednesdayOpen", closeKey: "wednesdayClose" },
-        { name: "Jueves", openKey: "thursdayOpen", closeKey: "thursdayClose" },
-        { name: "Viernes", openKey: "fridayOpen", closeKey: "fridayClose" },
-        { name: "Sábado", openKey: "saturdayOpen", closeKey: "saturdayClose" },
-        { name: "Domingo", openKey: "sundayOpen", closeKey: "sundayClose" },
-    ];
+  const schedule = [];
+  const dayOrder: {
+    name: string;
+    openKey: keyof Schedule;
+    closeKey: keyof Schedule;
+  }[] = [
+    { name: "Lunes", openKey: "mondayOpen", closeKey: "mondayClose" },
+    { name: "Martes", openKey: "tuesdayOpen", closeKey: "tuesdayClose" },
+    { name: "Miércoles", openKey: "wednesdayOpen", closeKey: "wednesdayClose" },
+    { name: "Jueves", openKey: "thursdayOpen", closeKey: "thursdayClose" },
+    { name: "Viernes", openKey: "fridayOpen", closeKey: "fridayClose" },
+    { name: "Sábado", openKey: "saturdayOpen", closeKey: "saturdayClose" },
+    { name: "Domingo", openKey: "sundayOpen", closeKey: "sundayClose" },
+  ];
 
-    for (const day of dayOrder) {
-        const specificOpenHour = complex.schedule?.[day.openKey] as number | null;
-        const specificCloseHour = complex.schedule?.[day.closeKey] as number | null;
+  for (const day of dayOrder) {
+    const specificOpenHour = complex.schedule?.[day.openKey] as number | null;
+    const specificCloseHour = complex.schedule?.[day.closeKey] as number | null;
 
-        const openHour = specificOpenHour ?? complex.openHour;
-        const closeHour = specificCloseHour ?? complex.closeHour;
+    const openHour = specificOpenHour ?? complex.openHour;
+    const closeHour = specificCloseHour ?? complex.closeHour;
 
-        let hoursString = "Cerrado";
-        if (typeof openHour === 'number' && typeof closeHour === 'number') {
-            hoursString = `${String(openHour).padStart(2, "0")}:00 - ${String(closeHour).padStart(2, "0")}:00`;
-        }
-        schedule.push({ day: day.name, hours: hoursString });
+    let hoursString = "Cerrado";
+    if (typeof openHour === "number" && typeof closeHour === "number") {
+      hoursString = `${String(openHour).padStart(2, "0")}:00 - ${String(
+        closeHour
+      ).padStart(2, "0")}:00`;
     }
-    return schedule;
+    schedule.push({ day: day.name, hours: hoursString });
+  }
+  return schedule;
 };
 
 // --- COMPONENTES DE LA PÁGINA ---
@@ -128,13 +141,33 @@ const BookingWidget = ({
   setSelectedDate,
 }: {
   club: ComplexProfileData;
-  onSlotClick: (court: Court, time: string) => void;
+  onSlotClick: (
+    court: Court & {
+      priceRules: {
+        id: string;
+        startTime: number;
+        endTime: number;
+        price: number;
+        depositPercentage: number;
+      }[];
+    },
+    time: string
+  ) => void;
   selectedDate: Date;
   setSelectedDate: (date: Date) => void;
 }) => {
-  const [selectedCourt, setSelectedCourt] = useState<Court | null>(
-    club.courts[0] || null
-  );
+  const [selectedCourt, setSelectedCourt] = useState<
+    | (Court & {
+        priceRules: {
+          id: string;
+          startTime: number;
+          endTime: number;
+          price: number;
+          depositPercentage: number;
+        }[];
+      })
+    | null
+  >(club.courts[0] || null);
   const [validStartTimes, setValidStartTimes] = useState<ValidStartTime[]>([]);
   const [isAvailabilityLoading, setIsAvailabilityLoading] = useState(true);
 
@@ -159,8 +192,9 @@ const BookingWidget = ({
         const response = await fetch(
           `/api/complexes/public/${club.id}/availability?date=${dateString}`
         );
-        if (!response.ok) throw new Error("No se pudo cargar la disponibilidad.");
-        
+        if (!response.ok)
+          throw new Error("No se pudo cargar la disponibilidad.");
+
         const data: ValidStartTime[] = await response.json();
         setValidStartTimes(data);
       } catch (error) {
@@ -183,10 +217,14 @@ const BookingWidget = ({
 
   return (
     <div className="bg-white rounded-2xl p-6 border border-gray-200">
-      <h2 className="text-2xl font-bold text-foreground mb-4">Reservar un turno</h2>
+      <h2 className="text-2xl font-bold text-foreground mb-4">
+        Reservar un turno
+      </h2>
       <div className="grid md:grid-cols-2 gap-6 mb-6">
         <div>
-          <label className="text-sm font-semibold text-paragraph mb-2 block">1. Elegí el día</label>
+          <label className="text-sm font-semibold text-paragraph mb-2 block">
+            1. Elegí el día
+          </label>
           <DayPicker
             mode="single"
             selected={selectedDate}
@@ -197,7 +235,9 @@ const BookingWidget = ({
           />
         </div>
         <div>
-          <label className="text-sm font-semibold text-paragraph mb-2 block">2. Elegí la cancha</label>
+          <label className="text-sm font-semibold text-paragraph mb-2 block">
+            2. Elegí la cancha
+          </label>
           <div className="flex flex-wrap gap-2">
             {club.courts.map((court) => (
               <button
@@ -217,13 +257,19 @@ const BookingWidget = ({
         </div>
       </div>
       <div>
-        <label className="text-sm font-semibold text-paragraph mb-2 block">3. Seleccioná un horario de inicio</label>
+        <label className="text-sm font-semibold text-paragraph mb-2 block">
+          3. Seleccioná un horario de inicio
+        </label>
         {isAvailabilityLoading ? (
-          <div className="h-40 flex items-center justify-center text-gray-500">Cargando disponibilidad...</div>
+          <div className="h-40 flex items-center justify-center text-gray-500">
+            Cargando disponibilidad...
+          </div>
         ) : validStartTimes.length > 0 ? (
           <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2">
             {validStartTimes.map((slot) => {
-              const courtStatus = slot.courts.find(c => c.courtId === selectedCourt.id);
+              const courtStatus = slot.courts.find(
+                (c) => c.courtId === selectedCourt.id
+              );
               const isAvailable = courtStatus?.available ?? false;
               const past = isPast(slot.time);
 
@@ -245,7 +291,9 @@ const BookingWidget = ({
             })}
           </div>
         ) : (
-          <p className="text-sm text-gray-500">No hay horarios disponibles para este día.</p>
+          <p className="text-sm text-gray-500">
+            No hay horarios disponibles para este día.
+          </p>
         )}
       </div>
     </div>
@@ -278,7 +326,15 @@ export default function ClubProfilePage() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<{
-    court: Court;
+    court: Court & {
+      priceRules: {
+        id: string;
+        startTime: number;
+        endTime: number;
+        price: number;
+        depositPercentage: number;
+      }[];
+    };
     time: string;
   } | null>(null);
 
@@ -306,7 +362,18 @@ export default function ClubProfilePage() {
     fetchClubProfile();
   }, [clubId]);
 
-  const handleSlotClick = (court: Court, time: string) => {
+  const handleSlotClick = (
+    court: Court & {
+      priceRules: {
+        id: string;
+        startTime: number;
+        endTime: number;
+        price: number;
+        depositPercentage: number;
+      }[];
+    },
+    time: string
+  ) => {
     setSelectedBooking({ court, time });
     setIsModalOpen(true);
   };
@@ -349,7 +416,12 @@ export default function ClubProfilePage() {
 
   const weeklySchedule = club ? generateWeeklySchedule(club) : [];
   const todayIndex = (getDay(new Date()) + 6) % 7;
-  const services = ["Wifi", "Vestuarios", "Estacionamiento", "Bar / Restaurante"];
+  const services = [
+    "Wifi",
+    "Vestuarios",
+    "Estacionamiento",
+    "Bar / Restaurante",
+  ];
 
   return (
     <>

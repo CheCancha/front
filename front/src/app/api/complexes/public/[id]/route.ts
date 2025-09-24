@@ -6,20 +6,24 @@ export async function GET(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await context.params; 
+    const { id } = await context.params;
 
     const complex = await db.complex.findUnique({
       where: {
         id: id,
-        onboardingCompleted: true, 
+        onboardingCompleted: true,
       },
       include: {
         images: {
           orderBy: {
-            isPrimary: "desc", 
+            isPrimary: "desc",
           },
         },
-        courts: true,
+        courts: {
+          include: {
+            priceRules: true,
+          },
+        },
         schedule: true,
       },
     });

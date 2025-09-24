@@ -89,69 +89,82 @@ export const LoginForm = () => {
   };
 
   return (
-    <div className="w-full">
-      <div className="text-center mb-8">
-        <h2 className="font-lora text-3xl font-semibold text-gray-900">
-          Iniciá sesión en tu cuenta
-        </h2>
-        <p className="mt-2 text-gray-600">
-          ¿Aún no tenés una?{" "}
-          <Link
-            href={routes.auth.registro}
-            className="font-medium text-orange-600 hover:underline"
-          >
-            Registrate acá
-          </Link>
-        </p>
-      </div>
-
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-        <CustomInput
-          label="Número de Teléfono"
-          type="tel"
-          register={register("phone")}
-          error={errors.phone?.message}
-        />
-        <PasswordInput
-          label="Contraseña"
-          register={register("password")}
-          error={errors.password?.message}
-        />
-
-        {error && <p className="text-sm text-red-600 text-center">{error}</p>}
-
-        <div className="pt-2">
-          <ButtonPrimary
-            type="submit"
-            className="w-full"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? "Ingresando..." : "Ingresar"}
-          </ButtonPrimary>
-        </div>
-      </form>
-
-      <div className="relative my-8">
-        <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t border-gray-300" />
-        </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-bg-complementario px-3 text-gray-500">
-            O continuá con
-          </span>
-        </div>
-      </div>
-
-      <button
-        onClick={() => signIn("google")}
-        className="w-full flex items-center justify-center gap-3 py-3 px-4 border border-gray-300 rounded-lg bg-white text-gray-700 font-medium text-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-all duration-300 cursor-pointer"
-      >
-        <GoogleIcon />
-        Continuar con Google
-      </button>
+  <div className="w-full">
+    <div className="text-center mb-8">
+      <h2 className="font-lora text-3xl font-semibold text-gray-900">
+        Iniciá sesión en tu cuenta
+      </h2>
+      <p className="mt-2 text-gray-600">
+        ¿Aún no tenés una?{" "}
+        <Link
+          href={routes.auth.registro}
+          className="font-medium text-orange-600 hover:underline"
+        >
+          Registrate acá
+        </Link>
+      </p>
     </div>
-  );
-};
+
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+      <CustomInput
+        label="Número de Teléfono"
+        type="tel"
+        register={register("phone")}
+        error={errors.phone?.message}
+      />
+      <PasswordInput
+        label="Contraseña"
+        register={register("password")}
+        error={errors.password?.message}
+      />
+
+      {/* --- INICIO DEL CAMBIO --- */}
+      <div className="text-right">
+        <Link
+          href={routes.public.forgotPassword}
+          className="text-sm font-medium text-orange-600 hover:underline"
+        >
+          ¿Olvidaste tu contraseña?
+        </Link>
+      </div>
+      {/* --- FIN DEL CAMBIO --- */}
+
+      {error && <p className="text-sm text-red-600 text-center">{error}</p>}
+
+      {/* Se elimina el Link que estaba suelto aquí */}
+
+      <div className="pt-2">
+        <ButtonPrimary
+          type="submit"
+          className="w-full"
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? "Ingresando..." : "Ingresar"}
+        </ButtonPrimary>
+      </div>
+    </form>
+
+    <div className="relative my-8">
+      <div className="absolute inset-0 flex items-center">
+        <span className="w-full border-t border-gray-300" />
+      </div>
+      <div className="relative flex justify-center text-xs uppercase">
+        <span className="bg-bg-complementario px-3 text-gray-500">
+          O continuá con
+        </span>
+      </div>
+    </div>
+
+    <button
+      onClick={() => signIn("google")}
+      className="w-full flex items-center justify-center gap-3 py-3 px-4 border border-gray-300 rounded-lg bg-white text-gray-700 font-medium text-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-all duration-300 cursor-pointer"
+    >
+      <GoogleIcon />
+      Continuar con Google
+    </button>
+  </div>
+);
+}
 
 // --- Esquema de Validación para Registro ---
 const registerSchema = z.object({

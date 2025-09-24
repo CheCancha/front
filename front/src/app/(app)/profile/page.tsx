@@ -18,13 +18,13 @@ import {
 } from "lucide-react";
 import { toast, Toaster } from "react-hot-toast";
 import Image from "next/image";
-import { PasswordInput } from "@/shared/components/ui/Input"; // <-- 1. IMPORTAR EL COMPONENTE
+import { PasswordInput } from "@/shared/components/ui/Input";
 
 // --- TIPOS ---
 type Booking = {
   id: string;
   court: string;
-  date: string;
+  date: string; 
   startTime: string;
   status: string;
   complex: string;
@@ -36,7 +36,7 @@ type ProfileResponse = {
   bookings?: Booking[];
 };
 
-// --- Esquema de validación para el formulario de contraseña ---
+// --- Esquema de validación (sin cambios) ---
 const passwordSchema = z
   .object({
     currentPassword: z.string().min(1, "La contraseña actual es requerida."),
@@ -47,7 +47,7 @@ const passwordSchema = z
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
     message: "Las nuevas contraseñas no coinciden.",
-    path: ["confirmPassword"], // Indica qué campo mostrará el error
+    path: ["confirmPassword"],
   });
 
 type PasswordFormData = z.infer<typeof passwordSchema>;
@@ -68,7 +68,6 @@ export default function ProfilePage() {
 
   const user = session?.user;
 
-  // 2. CONFIGURAR REACT-HOOK-FORM
   const {
     register,
     handleSubmit,
@@ -114,7 +113,7 @@ export default function ProfilePage() {
   if (status === "loading" || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <Loader2 className="h-12 w-12 animate-spin text-indigo-600" />
+        <Loader2 className="h-12 w-12 animate-spin text-brand-orange" />
       </div>
     );
   }
@@ -127,12 +126,10 @@ export default function ProfilePage() {
     );
   }
 
-  // Lógica para actualizar información (sin cambios)
   const handleUpdateInfo = async (e: FormEvent) => {
     e.preventDefault();
     setIsUpdatingInfo(true);
     const toastId = toast.loading("Actualizando información...");
-
     try {
       const formData = new FormData();
       formData.append("phone", phone);
@@ -166,7 +163,6 @@ export default function ProfilePage() {
 
   const handleChangePassword = async (data: PasswordFormData) => {
     const toastId = toast.loading("Cambiando contraseña...");
-
     try {
       const res = await fetch("/api/profile/change-password", {
         method: "POST",
@@ -184,7 +180,7 @@ export default function ProfilePage() {
         );
 
       toast.success("Contraseña cambiada con éxito.", { id: toastId });
-      reset(); // Resetea los campos del formulario
+      reset();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Error desconocido", {
         id: toastId,
@@ -202,31 +198,7 @@ export default function ProfilePage() {
             {/* Tarjeta de Información Personal */}
             <div className="bg-white p-6 rounded-2xl border shadow-sm">
               <div className="flex flex-col items-center text-center">
-                <div className="relative mb-4">
-                  <Image
-                    key={imagePreview}
-                    src={imagePreview}
-                    alt="Foto de perfil"
-                    width={96}
-                    height={96}
-                    className="rounded-full object-cover w-24 h-24"
-                  />
-                  <label
-                    htmlFor="profileImage"
-                    className="absolute -bottom-1 -right-1 bg-indigo-600 text-white p-1.5 rounded-full cursor-pointer hover:bg-indigo-700"
-                  >
-                    <Camera size={16} />
-                    <input
-                      id="profileImage"
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) =>
-                        setProfileImageFile(e.target.files?.[0] || null)
-                      }
-                    />
-                  </label>
-                </div>
+                
                 <h2 className="text-xl font-bold text-gray-800">
                   {user?.name}
                 </h2>
@@ -248,14 +220,14 @@ export default function ProfilePage() {
                       type="tel"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
-                      className="w-full text-gray-800 bg-transparent border-b focus:outline-none focus:border-indigo-500"
+                      className="w-full text-gray-800 bg-transparent border-b focus:outline-none focus:border-brand-orange"
                       readOnly={!isEditingPhone}
                     />
                   </div>
                   <button
                     type="button"
                     onClick={() => setIsEditingPhone(!isEditingPhone)}
-                    className="text-gray-500 hover:text-indigo-600"
+                    className="text-gray-500 hover:text-brand-orange"
                   >
                     {isEditingPhone ? <X size={20} /> : <Edit3 size={18} />}
                   </button>
@@ -263,7 +235,7 @@ export default function ProfilePage() {
                 <button
                   type="submit"
                   disabled={isUpdatingInfo}
-                  className="w-full bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-700 transition-colors disabled:bg-indigo-300 flex items-center justify-center cursor-pointer"
+                  className="w-full bg-brand-orange text-white font-semibold py-2 px-4 rounded-lg hover:bg-brand-orange/90 transition-colors disabled:bg-brand-orange/50 flex items-center justify-center cursor-pointer"
                 >
                   {isUpdatingInfo ? (
                     <Loader2 className="animate-spin" />
@@ -316,11 +288,9 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* Columna Derecha: Reservas (sin cambios) */}
+          {/* Columna Derecha: Reservas */}
           <div className="lg:col-span-2 bg-white p-6 rounded-2xl border shadow-sm">
-            <h2 className="text-xl font-semibold mb-4">
-              Mis Próximas Reservas
-            </h2>
+            <h2 className="text-xl font-semibold mb-4">Mis Últimas Reservas</h2>
             {userBookings.length > 0 ? (
               <ul className="divide-y divide-gray-200">
                 {userBookings.map((booking) => (
@@ -342,7 +312,11 @@ export default function ProfilePage() {
                       className={`px-3 py-1 text-xs font-semibold rounded-full ${
                         booking.status === "CONFIRMADO"
                           ? "bg-blue-100 text-blue-800"
-                          : "bg-green-100 text-green-800"
+                          : booking.status === "PENDIENTE"
+                          ? "bg-yellow-100 text-yellow-800" 
+                          : booking.status === "COMPLETADO"
+                          ? "bg-green-100 text-green-800"
+                          : "bg-gray-100 text-gray-700"
                       }`}
                     >
                       {booking.status}

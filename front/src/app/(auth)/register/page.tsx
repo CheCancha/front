@@ -1,4 +1,3 @@
-// import { RegisterForm } from "@/app/features/auth/components/RegisterForm";
 import { RegisterForm } from "@/app/features/auth/components/AuthForms";
 import Footer from "@/shared/components/Footer";
 import Navbar from "@/shared/components/Navbar";
@@ -14,11 +13,11 @@ export default function RegisterPage() {
           <div className="flex justify-center mb-2">
             <Link href="/">
               <Image
-                src="/logo.png"
+                src="/logochecancha.png"
                 alt="Logo del CheCancha"
                 height={80}
                 width={80}
-                className="rounded-full object-cover"
+                className="rounded-md object-cover"
               />
             </Link>
           </div>

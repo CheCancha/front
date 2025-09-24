@@ -39,16 +39,12 @@ type CourtUpdatePayload = {
   id: string;
   name: string;
   sportId: string;
-  pricePerHour: number;
-  depositAmount: number;
   slotDurationMinutes: number;
 };
 
 type CourtCreatePayload = {
   name: string;
   sportId: string;
-  pricePerHour: number;
-  depositAmount: number;
   slotDurationMinutes: number;
 };
 
@@ -90,6 +86,7 @@ export async function GET(
           orderBy: { name: "asc" },
           include: {
             sport: true,
+            priceRules: true,
           },
         },
         images: { orderBy: [{ isPrimary: "desc" }, { id: "asc" }] },
@@ -207,8 +204,6 @@ export async function PUT(
               data: {
                 name: court.name,
                 sportId: court.sportId,
-                pricePerHour: Number(court.pricePerHour),
-                depositAmount: Number(court.depositAmount),
                 slotDurationMinutes: Number(court.slotDurationMinutes),
               },
             });
@@ -221,8 +216,6 @@ export async function PUT(
             data: courts.create.map((court) => ({
               name: court.name,
               sportId: court.sportId,
-              pricePerHour: Number(court.pricePerHour),
-              depositAmount: Number(court.depositAmount),
               slotDurationMinutes: Number(court.slotDurationMinutes),
               complexId: id,
             })),
@@ -246,14 +239,14 @@ export async function PUT(
       }
 
       const updatedComplexWithDetails = await prisma.complex.findUnique({
-          where: { id },
-          include: {
-              schedule: true,
-              courts: { include: { sport: true } },
-              images: true,
-          }
+        where: { id },
+        include: {
+          schedule: true,
+          courts: { include: { sport: true, priceRules: true } },
+          images: true,
+        },
       });
-      
+
       return updatedComplexWithDetails;
     });
 

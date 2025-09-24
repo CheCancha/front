@@ -1,9 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { db } from "@/shared/lib/db";
-import { Prisma, Sport } from "@prisma/client";
+import { Prisma, Court } from "@prisma/client";
 import { z } from "zod";
+import { getDay } from "date-fns";
 
-// Esquema de validación para los parámetros de búsqueda
 const searchSchema = z.object({
   city: z.string().optional(),
   sport: z.string().optional(),
@@ -11,44 +11,32 @@ const searchSchema = z.object({
   time: z.string().optional(),
 });
 
-type ComplexWithSchedule = {
-  schedule?: {
-    sundayOpen?: number | null;
-    sundayClose?: number | null;
-    mondayOpen?: number | null;
-    mondayClose?: number | null;
-    tuesdayOpen?: number | null;
-    tuesdayClose?: number | null;
-    wednesdayOpen?: number | null;
-    wednesdayClose?: number | null;
-    thursdayOpen?: number | null;
-    thursdayClose?: number | null;
-    fridayOpen?: number | null;
-    fridayClose?: number | null;
-    saturdayOpen?: number | null;
-    saturdayClose?: number | null;
-  } | null;
-  openHour: number | null;
-  closeHour: number | null;
-  slotDurationMinutes: number | null;
-  courts: Array<{
-    bookings: Array<{
-      startTime: number;
-    }>;
-  }>;
+type ComplexWithCourtsAndBookings = Prisma.ComplexGetPayload<{
+  include: {
+    schedule: true;
+    courts: {
+      include: {
+        bookings: true;
+      };
+    };
+  };
+}>;
+
+type AvailableSlot = {
+  time: string;
+  court: Court;
 };
 
-function getNextAvailableSlots(
-  complex: ComplexWithSchedule,
+function findNextAvailableSlots(
+  complex: ComplexWithCourtsAndBookings,
+  searchDate: Date,
   count: number = 3
-): string[] {
+): AvailableSlot[] {
   const now = new Date();
-  now.setHours(now.getUTCHours() - 3);
+  const isToday = now.toDateString() === searchDate.toDateString();
 
-  const currentHour = now.getHours();
-  const dayIndex = now.getDay(); // 0=Dom, 1=Lun, ...
-
-  const dayMap = [
+  const dayOfWeek = getDay(searchDate);
+  const dayKeys = [
     "sunday",
     "monday",
     "tuesday",
@@ -57,59 +45,52 @@ function getNextAvailableSlots(
     "friday",
     "saturday",
   ];
-  const todayKey = dayMap[dayIndex];
+  const key = dayKeys[dayOfWeek] as keyof typeof complex.schedule;
 
-  const openHour =
-    complex.schedule?.[`${todayKey}Open` as keyof typeof complex.schedule] ??
-    complex.openHour;
+  const openHour = complex.schedule?.[`${key}Open`] ?? complex.openHour ?? 9;
   const closeHour =
-    complex.schedule?.[`${todayKey}Close` as keyof typeof complex.schedule] ??
-    complex.closeHour;
-  const { slotDurationMinutes, courts } = complex;
+    complex.schedule?.[`${key}Close`] ?? complex.closeHour ?? 23;
 
-  if (
-    openHour === null ||
-    closeHour === null ||
-    !slotDurationMinutes ||
-    !courts ||
-    courts.length === 0
-  ) {
-    return [];
-  }
-
-  // Agrupamos todas las reservas de hoy para saber cuántas hay en cada horario
-  const bookingsCountByHour: { [hour: number]: number } = {};
-  courts.forEach((court) => {
+  // 1. Crear un mapa de horarios ya reservados para cada cancha para una búsqueda rápida
+  const bookedSlotsByCourtId = new Map<string, Set<string>>();
+  complex.courts.forEach((court) => {
+    const bookedTimes = new Set<string>();
     court.bookings.forEach((booking) => {
-      bookingsCountByHour[booking.startTime] =
-        (bookingsCountByHour[booking.startTime] || 0) + 1;
+      const timeString = `${String(booking.startTime).padStart(
+        2,
+        "0"
+      )}:${String(booking.startMinute || 0).padStart(2, "0")}`;
+      bookedTimes.add(timeString);
     });
+    bookedSlotsByCourtId.set(court.id, bookedTimes);
   });
 
-  const availableSlots: string[] = [];
+  // 2. Iterar desde la hora actual (si es hoy) para encontrar turnos libres
+  const availableSlots: AvailableSlot[] = [];
+  const startHour = isToday ? now.getHours() : openHour;
 
-  // Iteramos por los posibles horarios del día, empezando desde la hora actual
-  for (let hour = currentHour; hour < closeHour; hour++) {
-    // Solo consideramos los minutos si la hora es la actual
-    const startMinute =
-      hour === currentHour
-        ? Math.ceil(now.getMinutes() / slotDurationMinutes) *
-          slotDurationMinutes
-        : 0;
+  for (let hour = startHour; hour < closeHour; hour++) {
+    for (let minute = 0; minute < 60; minute += 30) {
+      const timeString = `${String(hour).padStart(2, "0")}:${String(
+        minute
+      ).padStart(2, "0")}`;
 
-    for (let minute = startMinute; minute < 60; minute += slotDurationMinutes) {
-      const totalBookingsForSlot = bookingsCountByHour[hour] || 0;
+      if (
+        isToday &&
+        (hour < now.getHours() ||
+          (hour === now.getHours() && minute < now.getMinutes()))
+      ) {
+        continue;
+      }
 
-      // Si hay menos reservas que canchas, significa que hay al menos una disponible
-      if (totalBookingsForSlot < courts.length) {
-        const timeString = `${String(hour).padStart(2, "0")}:${String(
-          minute
-        ).padStart(2, "0")}`;
-        availableSlots.push(timeString);
-        // Si ya encontramos los 3 que necesitábamos, terminamos        {activeSection === "requests" && <AdminDashboard />}
+      for (const court of complex.courts) {
+        const courtBookedSlots = bookedSlotsByCourtId.get(court.id);
+        if (!courtBookedSlots?.has(timeString)) {
+          availableSlots.push({ time: timeString, court });
 
-        if (availableSlots.length === count) {
-          return availableSlots;
+          if (availableSlots.length >= count) {
+            return availableSlots;
+          }
         }
       }
     }
@@ -121,99 +102,67 @@ function getNextAvailableSlots(
 export async function GET(req: NextRequest) {
   try {
     const searchParams = req.nextUrl.searchParams;
-
-    const query: { [key: string]: string | undefined } = {};
-    if (searchParams.has("city"))
-      query.city = searchParams.get("city") ?? undefined;
-    if (searchParams.has("sport"))
-      query.sport = searchParams.get("sport") ?? undefined;
-    if (searchParams.has("date"))
-      query.date = searchParams.get("date") ?? undefined;
-    if (searchParams.has("time"))
-      query.time = searchParams.get("time") ?? undefined;
+    const query = Object.fromEntries(searchParams.entries());
 
     const validation = searchSchema.safeParse(query);
     if (!validation.success) {
-      return new NextResponse(validation.error.issues[0].message, {
-        status: 400,
-      });
+      return NextResponse.json(
+        { error: validation.error.format() },
+        { status: 400 }
+      );
     }
 
     const { city, sport, date, time } = validation.data;
+    const searchDate = new Date(
+      `${date || new Date().toISOString().split("T")[0]}T00:00:00.000-03:00`
+    );
 
     const whereClause: Prisma.ComplexWhereInput = {
-      onboardingCompleted: true, // Solo mostrar complejos activos
+      onboardingCompleted: true,
     };
-
-    // --- Construcción de la cláusula de búsqueda ---
-
     if (city) {
-      whereClause.city = {
-        contains: city,
-        mode: "insensitive",
-      };
+      whereClause.city = { contains: city, mode: "insensitive" };
     }
-
-    // El filtro de canchas ('courts') es el más complejo y lo construiremos por partes
-    const courtFilter: Prisma.CourtWhereInput = {};
-
-    if (sport) {
-        courtFilter.sport = { slug: sport };
-    }
-
-    if (date && time) {
-        const bookingDate = new Date(`${date}T00:00:00.000-03:00`);
-        const [hour, minute] = time.split(':').map(Number);
-
-        // Buscamos canchas que NO tengan ('none') una reserva en ese horario exacto.
-        courtFilter.bookings = {
-            none: {
-                date: bookingDate,
-                startTime: hour,
-                startMinute: minute,
-                status: { in: ["CONFIRMADO", "PENDIENTE"] },
-            },
-        };
-    }
-
-    if (Object.keys(courtFilter).length > 0) {
-        whereClause.courts = {
-            some: courtFilter,
-        };
-    }
-
-
-    // const now = new Date();
-    // const startOfToday = new Date(
-    //   now.getFullYear(),
-    //   now.getMonth(),
-    //   now.getDate()
-    // );
-    // const startOfTomorrow = new Date(startOfToday);
-    // startOfTomorrow.setDate(startOfTomorrow.getDate() + 1);
 
     const complexes = await db.complex.findMany({
       where: whereClause,
-      select: {
-        id: true,
-        name: true,
-        address: true,
-        city: true,
+      include: {
         images: { where: { isPrimary: true }, take: 1 },
+        schedule: true,
+        courts: {
+          where: {
+            sport: sport ? { slug: sport } : undefined,
+          },
+          include: {
+            bookings: {
+              where: { date: searchDate },
+            },
+            priceRules: true,
+          },
+        },
       },
     });
 
-    const formattedComplexes = complexes.map((complex) => ({
-      id: complex.id,
-      name: complex.name,
-      address: `${complex.address}, ${complex.city}`,
-      imageUrl: complex.images[0]?.url || "/placeholder.jpg",
-      availableSlots: [time || 'Disponible'], 
-    }));
+    const filteredComplexes = complexes.filter((c) => c.courts.length > 0);
+
+    const formattedComplexes = filteredComplexes.map((complex) => {
+      const availableSlots = findNextAvailableSlots(complex, searchDate, 3);
+
+      return {
+        id: complex.id,
+        name: complex.name,
+        address: `${complex.address}, ${complex.city}`,
+        imageUrl: complex.images[0]?.url || "/placeholder.jpg",
+        availableSlots: availableSlots,
+      };
+    });
 
     return NextResponse.json(formattedComplexes);
   } catch (error) {
     console.error("[SEARCH_GET]", error);
-    return new NextResponse("Error interno del servidor", { status: 500 });
+    return NextResponse.json(
+      { error: "Error interno del servidor" },
+      { status: 500 }
+    );
   }
 }

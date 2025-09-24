@@ -1,11 +1,8 @@
-// src/middleware.ts (Corregido y Refactorizado)
-
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
-import { routes } from "./routes"; // Asegúrate de que este import sea correcto
+import { routes } from "./routes";
 
-// Mapeo de roles a sus redirecciones para evitar `if` anidados.
 const roleRedirects: Record<string, string> = {
   ADMIN: "/admin",
   MANAGER: routes.app.dashboardBase,
@@ -22,19 +19,16 @@ export async function middleware(req: NextRequest) {
 
   // --- 1. Manejo de usuarios YA AUTENTICADOS ---
   if (token) {
-    // Si un usuario logueado intenta ir a /login o /register, redirígelo.
     if (isAuthPage) {
       const redirectUrl = roleRedirects[token.role as string] || routes.public.home;
       return NextResponse.redirect(new URL(redirectUrl, req.url));
     }
 
-    // Proteger rutas de ADMIN
     if (pathname.startsWith("/admin") && token.role !== "ADMIN") {
       const redirectUrl = roleRedirects[token.role as string] || routes.public.home;
       return NextResponse.redirect(new URL(redirectUrl, req.url));
     }
 
-    // Proteger rutas de MANAGER (dashboard)
     if (
       pathname.startsWith(routes.app.dashboardBase) &&
       !["ADMIN", "MANAGER"].includes(token.role as string)

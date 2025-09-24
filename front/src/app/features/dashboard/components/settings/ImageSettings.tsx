@@ -5,7 +5,7 @@ import { toast } from "react-hot-toast";
 import { Upload, X, Star } from "lucide-react";
 import { Spinner } from "@/shared/components/ui/Spinner";
 import type { Image } from "@prisma/client";
-import type { FullComplexData } from "@/app/(app)/dashboard/[complexId]/settings/page";
+import { FullComplexData } from "@/shared/entities/complex/types";
 
 
 interface ImageSettingsProps {

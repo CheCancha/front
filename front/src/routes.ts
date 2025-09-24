@@ -7,6 +7,8 @@ export const routes = {
     clubs: "/clubs",
     canchas: "/courts",
     inscripciones: "/inscriptions",
+    forgotPassword: "/forgot",
+    resetPassword: "/reset",
   },
 
   // --- Rutas de Autenticación (auth) ---
@@ -20,7 +22,6 @@ export const routes = {
     dashboardBase: "/dashboard",
     admin: "/admin",
     
-    // Convertimos las rutas dinámicas en funciones
     dashboard: (complexId: string) => `/dashboard/${complexId}`,
     reservations: (complexId: string) => `/dashboard/${complexId}/booking`,
     analytics: (complexId: string) => `/dashboard/${complexId}/analytics`,

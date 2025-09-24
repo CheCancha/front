@@ -15,11 +15,11 @@ export default function LoginPage() {
           <div className="flex justify-center mb-2">
             <Link href="/">
               <Image
-                src="/logo.png"
+                src="/logochecancha.png"
                 alt="Logo del CheCancha"
                 height={80}
                 width={80}
-                className="rounded-full object-cover"
+                className="rounded-md object-cover"
               />
             </Link>
           </div>

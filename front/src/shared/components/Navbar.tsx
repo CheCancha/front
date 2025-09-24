@@ -65,7 +65,7 @@ const Navbar: React.FC = () => {
           {/* --- Logo --- */}
           <div className="flex-shrink-0">
             <Link href={routes.public.home} className="flex items-center gap-2">
-              <Image src="/logo.png" alt="Logo de Che Cancha" height={40} width={40} onError={(e) => { e.currentTarget.src = "https://placehold.co/40x40/000000/FFFFFF?text=CC"; }}/>
+              <Image src="/logochecancha.png" alt="Logo de Che Cancha" height={50} width={50} onError={(e) => { e.currentTarget.src = "https://placehold.co/40x40/000000/FFFFFF?text=CC"; }}/>
               <span className="text-foreground text-xl font-bold">CheCancha</span>
             </Link>
           </div>

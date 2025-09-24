@@ -19,23 +19,22 @@ export async function GET() {
         },
         courts: {
           select: {
-            pricePerHour: true,
+            priceRules: true,
           },
           orderBy: {
-            pricePerHour: "asc", 
+            name: "asc", 
           },
           take: 1,
         },
       },
     });
 
-    // Mapeamos los resultados para darles un formato más amigable para el frontend
     const formattedComplexes = complexes.map((complex) => ({
       id: complex.id,
       name: complex.name,
       address: `${complex.address}, ${complex.city}`,
       imageUrl: complex.images[0]?.url || "/placeholder.jpg",
-      priceFrom: complex.courts[0]?.pricePerHour || 0, 
+      priceFrom: complex.courts[0]?.priceRules[0]?.price || 0, 
     }));
 
     return NextResponse.json(formattedComplexes);

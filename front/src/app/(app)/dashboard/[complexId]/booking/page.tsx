@@ -17,7 +17,16 @@ import { toast } from "react-hot-toast";
 import AddBookingModal from "@/shared/components/ui/AddBooking";
 
 // --- TIPOS ---
-type CourtWithSport = Court & { sport: Sport };
+type CourtWithSport = Court & {
+  sport: Sport;
+  priceRules: {
+    id: string;
+    startTime: number;
+    endTime: number;
+    price: number;
+    depositPercentage: number;
+  }[];
+};
 type ComplexWithCourts = Complex & { courts: CourtWithSport[] };
 type BookingWithCourtDuration = PrismaBooking & {
   court: { id: string; name: string; slotDurationMinutes: number };

@@ -107,12 +107,11 @@ model Court {
   name          String
   sportId       String     @default("cmfsf71vz0000i02g5a2vvvgd")
   sport         Sport      @relation(fields: [sportId], references: [id])
-  pricePerHour  Int
-  depositAmount Int
   slotDurationMinutes Int  @default(60)
   complexId     String
   bookings      Booking[]
   complex       Complex   @relation(fields: [complexId], references: [id])
+  priceRules          PriceRule[]
 }
 
 model Schedule {
@@ -141,6 +140,7 @@ model Booking {
   startTime        Int
   startMinute      Int           @default(0)
   totalPrice       Int
+  depositAmount    Int
   depositPaid      Int
   remainingBalance Int
   status           BookingStatus @default(PENDIENTE)
@@ -152,6 +152,17 @@ model Booking {
   guestName  String?
   
   @@unique([courtId, date, startTime])
+}
+
+model PriceRule {
+  id        String @id @default(cuid())
+  startTime Int
+  endTime   Int
+  price     Int
+  depositPercentage Int @default(30)
+
+  courtId   String
+  court     Court  @relation(fields: [courtId], references: [id], onDelete: Cascade)
 }
 
 model InscriptionRequest {

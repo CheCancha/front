@@ -3,14 +3,7 @@
 import React, { useState, useEffect, Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import {
-  MapPin,
-  ArrowDownUp,
-  SlidersHorizontal,
-  List,
-  Map,
-  Clock,
-} from "lucide-react";
+import { MapPin, List, Map, Clock } from "lucide-react";
 import Navbar from "@/shared/components/Navbar";
 import Footer from "@/shared/components/Footer";
 import { motion, AnimatePresence } from "framer-motion";
@@ -19,17 +12,38 @@ import { SearchBar } from "@/shared/components/ui/Searchbar";
 import { useSearchParams } from "next/navigation";
 import { toast } from "react-hot-toast";
 import { Spinner } from "@/shared/components/ui/Spinner";
+import { BookingModal } from "@/shared/components/ui/BookingModal";
+import type { Court } from "@prisma/client";
 
-// --- TIPOS (Actualizados para coincidir con la nueva respuesta de la API) ---
+// --- TIPOS DE DATOS ---
+type AvailableSlot = {
+  time: string;
+  court: Court & {
+    priceRules: {
+      id: string;
+      startTime: number;
+      endTime: number;
+      price: number;
+      depositPercentage: number;
+    }[];
+  };
+};
+
 type Club = {
   id: string;
   name: string;
   address: string;
   imageUrl: string;
-  availableSlots: string[];
+  availableSlots: AvailableSlot[];
 };
 
-// --- COMPONENTES REUTILIZABLES ---
+type BookingSelection = {
+  club: Club;
+  slot: AvailableSlot;
+  date: Date;
+};
+
+// --- COMPONENTES DE LA INTERFAZ ---
 const FilterBar = ({
   view,
   setView,
@@ -37,113 +51,126 @@ const FilterBar = ({
   view: "list" | "map";
   setView: (v: "list" | "map") => void;
 }) => (
-  <div className="flex flex-wrap items-center justify-between gap-4 text-sm">
-    <div className="flex items-center gap-2">
-      <button className="px-4 py-2 bg-white border border-gray-300 rounded-full flex items-center gap-2 hover:bg-gray-100">
-        <ArrowDownUp size={16} /> Ordenar
-      </button>
-      <button className="px-4 py-2 bg-white border border-gray-300 rounded-full flex items-center gap-2 hover:bg-gray-100">
-        <SlidersHorizontal size={16} /> Filtros
-      </button>
-    </div>
-    <div className="flex items-center gap-2 p-1 bg-gray-200 rounded-full">
-      <button
-        onClick={() => setView("list")}
-        className={cn(
-          "p-2 rounded-full transition-colors",
-          view === "list" ? "bg-white shadow" : "text-gray-500"
-        )}
-      >
-        <List size={16} />
-      </button>
-      <button
-        onClick={() => setView("map")}
-        className={cn(
-          "p-2 rounded-full transition-colors",
-          view === "map" ? "bg-white shadow" : "text-gray-500"
-        )}
-      >
-        <Map size={16} />
-      </button>
-    </div>
+  <div className="flex items-center gap-2 p-1 bg-gray-200 rounded-full w-fit">
+    <button
+      onClick={() => setView("list")}
+      className={cn(
+        "p-2 rounded-full transition-colors",
+        view === "list" ? "bg-white shadow" : "text-gray-500"
+      )}
+      aria-label="Vista de lista"
+    >
+      <List size={16} />
+    </button>
+    <button
+      onClick={() => setView("map")}
+      className={cn(
+        "p-2 rounded-full transition-colors",
+        view === "map" ? "bg-white shadow" : "text-gray-500"
+      )}
+      aria-label="Vista de mapa"
+    >
+      <Map size={16} />
+    </button>
   </div>
 );
 
-const ClubCard = ({ club }: { club: Club }) => (
-  <Link href={`/courts/${club.id}`} className="block">
-    <div className="group bg-white rounded-xl shadow-md overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 flex flex-col h-full">
-      <div className="block relative h-48 cursor-pointer">
+const ClubCard = ({
+  club,
+  onBookSlot,
+}: {
+  club: Club;
+  onBookSlot: (slot: AvailableSlot) => void;
+}) => {
+  const handleSlotClick = (e: React.MouseEvent, slot: AvailableSlot) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onBookSlot(slot);
+  };
+
+  return (
+    <div className="group bg-white rounded-xl shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 flex flex-col h-full">
+      <Link href={`/courts/${club.id}`} className="block relative h-48">
         <Image
           src={club.imageUrl}
-          alt={`Cancha de ${club.name}`}
+          alt={`Imagen de ${club.name}`}
           fill
-          className="object-cover transition-transform duration-500 group-hover:scale-110"
+          className="object-cover transition-transform duration-500"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-      </div>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+      </Link>
       <div className="p-4 flex flex-col flex-grow">
-        <h3 className="font-bold text-lg text-foreground hover:text-brand-orange transition-colors">
-          {club.name}
-        </h3>
-        <p className="text-sm text-paragraph flex items-center gap-1 mt-1">
+        <Link href={`/courts/${club.id}`}>
+          <h3 className="font-bold text-lg text-foreground hover:text-brand-orange transition-colors">
+            {club.name}
+          </h3>
+        </Link>
+        <p className="text-sm text-paragraph flex items-center gap-1.5 mt-1">
           <MapPin size={14} /> {club.address}
         </p>
-
-        {/* --- NUEVA SECCIÓN DE TURNOS DISPONIBLES --- */}
         <div className="mt-4 pt-4 border-t border-gray-100 flex-grow flex flex-col justify-end">
           {club.availableSlots.length > 0 ? (
             <>
               <p className="text-xs font-semibold text-gray-500 mb-2">
-                Próximos turnos hoy:
+                Próximos turnos disponibles:
               </p>
               <div className="flex flex-wrap gap-2">
                 {club.availableSlots.map((slot) => (
-                  <div
-                    key={slot}
-                    className="px-3 py-1 bg-green-100 text-green-800 font-bold rounded-md text-sm"
+                  <button
+                    key={`${slot.time}-${slot.court.id}`}
+                    onClick={(e) => handleSlotClick(e, slot)}
+                    className="px-3 py-1 bg-green-100 text-green-800 font-bold rounded-md text-sm transition-colors hover:bg-green-200 hover:text-green-900 cursor-pointer"
                   >
-                    {slot}
-                  </div>
+                    {slot.time}
+                  </button>
                 ))}
               </div>
             </>
           ) : (
             <div className="flex items-center gap-2 text-sm text-gray-500">
               <Clock size={14} />
-              <span>No hay turnos disponibles hoy</span>
+              <span>No hay turnos para la fecha</span>
             </div>
           )}
         </div>
       </div>
     </div>
-  </Link>
-);
+  );
+};
 
 const SkeletonCard = () => (
   <div className="bg-white rounded-xl shadow-md overflow-hidden animate-pulse">
-    <div className="h-48 bg-gray-200"></div>
+    <div className="h-48 bg-gray-200" />
     <div className="p-4">
-      <div className="h-6 w-3/4 bg-gray-200 rounded"></div>
-      <div className="h-4 w-1/2 bg-gray-200 rounded mt-2"></div>
+      <div className="h-6 w-3/4 bg-gray-200 rounded" />
+      <div className="h-4 w-1/2 bg-gray-200 rounded mt-2" />
       <div className="mt-4 pt-4 border-t border-gray-100">
-        <div className="h-4 w-1/3 bg-gray-200 rounded mb-2"></div>
+        <div className="h-4 w-1/3 bg-gray-200 rounded mb-2" />
         <div className="flex flex-wrap gap-2">
-          <div className="h-7 w-16 bg-gray-200 rounded-md"></div>
-          <div className="h-7 w-16 bg-gray-200 rounded-md"></div>
-          <div className="h-7 w-16 bg-gray-200 rounded-md"></div>
+          <div className="h-7 w-16 bg-gray-200 rounded-md" />
+          <div className="h-7 w-16 bg-gray-200 rounded-md" />
+          <div className="h-7 w-16 bg-gray-200 rounded-md" />
         </div>
       </div>
     </div>
   </div>
 );
 
+// --- COMPONENTE PRINCIPAL DE LA PÁGINA ---
 const SearchResultsComponent = () => {
   const searchParams = useSearchParams();
   const [view, setView] = useState<"list" | "map">("list");
   const [isLoading, setIsLoading] = useState(true);
   const [complexes, setComplexes] = useState<Club[]>([]);
 
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedBooking, setSelectedBooking] =
+    useState<BookingSelection | null>(null);
+
   const city = searchParams.get("city");
+  const dateParam =
+    searchParams.get("date") || new Date().toISOString().split("T")[0];
+  const searchDate = new Date(`${dateParam}T00:00:00`);
 
   useEffect(() => {
     const fetchComplexes = async () => {
@@ -151,59 +178,77 @@ const SearchResultsComponent = () => {
       try {
         const response = await fetch(`/api/search?${searchParams.toString()}`);
         if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(errorText || "No se pudieron cargar los complejos.");
+          const errorData = await response.json();
+          throw new Error(
+            errorData.error || "No se pudieron cargar los complejos."
+          );
         }
         const data = await response.json();
         setComplexes(data);
       } catch (error) {
         toast.error(
-          error instanceof Error ? error.message : "Error desconocido"
+          error instanceof Error
+            ? error.message
+            : "Ocurrió un error inesperado."
         );
         setComplexes([]);
       } finally {
         setIsLoading(false);
       }
     };
-
     fetchComplexes();
   }, [searchParams]);
 
+  const handleBookSlot = (club: Club, slot: AvailableSlot) => {
+    setSelectedBooking({ club, slot, date: searchDate });
+    setIsModalOpen(true);
+  };
+
   return (
-    <div className="bg-background min-h-screen">
-      <Navbar />
-      <main className="container mx-auto px-6 py-8">
-        <div className="mb-8">
-          <SearchBar />
-        </div>
-        <div className="mb-8">
-          <FilterBar view={view} setView={setView} />
-        </div>
-        <h2 className="text-2xl font-semibold text-foreground mb-6">
-          {isLoading
-            ? "Buscando complejos..."
-            : `${complexes.length} clubes encontrados ${
-                city ? `en ${city}` : ""
-              }`}
-        </h2>
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={view}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            {view === "list" ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {isLoading ? (
-                  Array.from({ length: 8 }).map((_, i) => (
-                    <SkeletonCard key={i} />
-                  ))
+    <>
+      <div className="bg-background min-h-screen flex flex-col">
+        <Navbar />
+        <main className="container mx-auto px-6 py-8 flex-grow">
+          <div className="mb-8">
+            <SearchBar />
+          </div>
+          <div className="mb-8">
+            <FilterBar view={view} setView={setView} />
+          </div>
+
+          <h2 className="text-2xl font-semibold text-foreground mb-6">
+            {isLoading
+              ? "Buscando complejos..."
+              : `${complexes.length} clubes encontrados ${
+                  city ? `en ${city}` : ""
+                }`}
+          </h2>
+
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={view}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              {view === "list" ? (
+                isLoading ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {Array.from({ length: 8 }).map((_, i) => (
+                      <SkeletonCard key={i} />
+                    ))}
+                  </div>
                 ) : complexes.length > 0 ? (
-                  complexes.map((club) => (
-                    <ClubCard key={club.id} club={club} />
-                  ))
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {complexes.map((club) => (
+                      <ClubCard
+                        key={club.id}
+                        club={club}
+                        onBookSlot={(slot) => handleBookSlot(club, slot)}
+                      />
+                    ))}
+                  </div>
                 ) : (
                   <div className="col-span-full text-center py-12 text-paragraph">
                     <p className="font-semibold">
@@ -213,27 +258,37 @@ const SearchResultsComponent = () => {
                       Intentá ajustar los filtros o buscá en otra ciudad.
                     </p>
                   </div>
-                )}
-              </div>
-            ) : (
-              <div className="h-[60vh] bg-white rounded-xl shadow-md flex items-center justify-center text-paragraph">
-                <p>Vista de Mapa (Próximamente)</p>
-              </div>
-            )}
-          </motion.div>
-        </AnimatePresence>
-      </main>
-      <Footer />
-    </div>
+                )
+              ) : (
+                <div className="h-[60vh] bg-white rounded-xl shadow-md flex items-center justify-center text-paragraph">
+                  <p>Vista de Mapa (Próximamente)</p>
+                </div>
+              )}
+            </motion.div>
+          </AnimatePresence>
+        </main>
+        <Footer />
+      </div>
+
+      {selectedBooking && (
+        <BookingModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          club={selectedBooking.club}
+          court={selectedBooking.slot.court}
+          time={selectedBooking.slot.time}
+          date={selectedBooking.date}
+        />
+      )}
+    </>
   );
 };
 
-// --- PÁGINA PRINCIPAL DE RESULTADOS ---
 export default function SearchResultsPage() {
   return (
     <Suspense
       fallback={
-        <div>
+        <div className="flex h-screen w-full items-center justify-center">
           <Spinner />
         </div>
       }

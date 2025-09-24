@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { Clock, Frown } from "lucide-react";
-import type { Booking, Court } from "@prisma/client";
+import type { Booking } from "@prisma/client";
 
 // --- TIPOS ---
 type BookingWithCourt = Booking & {
@@ -83,7 +83,7 @@ export function Reservations({ complexId }: { complexId: string }) {
             const isValidStatus = booking.status === "PENDIENTE" || booking.status === "CONFIRMADO";
             return isFuture && isValidStatus;
           })
-          .sort((a, b) => { // Ordenar por hora
+          .sort((a, b) => {
             const timeA = a.startTime * 60 + (a.startMinute || 0);
             const timeB = b.startTime * 60 + (b.startMinute || 0);
             return timeA - timeB;
