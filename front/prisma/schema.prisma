@@ -28,6 +28,17 @@ model User {
   accounts       Account[]
   bookings       Booking[]
   managedComplex Complex?  @relation("ManagedBy")
+
+  passwordResetToken PasswordResetToken?
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  expires   DateTime
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
 }
 
 model Account {

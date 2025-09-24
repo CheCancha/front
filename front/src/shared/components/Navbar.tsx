@@ -13,13 +13,13 @@ import {
   Loader2,
   Menu,
   X,
+  ChevronDown, 
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const Navbar: React.FC = () => {
   const { data: session, status } = useSession();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  // ✨ 1. AÑADIMOS UN ESTADO SEPARADO PARA EL MENÚ DE ESCRITORIO
   const [isDesktopMenuOpen, setIsDesktopMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -27,7 +27,6 @@ const Navbar: React.FC = () => {
   const isLoggedIn = status === "authenticated";
   const isAuthLoading = status === "loading";
 
-  // --- LÓGICA DE ENLACE DINÁMICO ---
   const getDashboardUrl = () => {
     if (!user) return routes.public.home;
     switch (user.role) {
@@ -41,7 +40,6 @@ const Navbar: React.FC = () => {
     }
   };
 
-  // Efecto para cerrar el menú de escritorio si se hace clic fuera de él
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -81,14 +79,19 @@ const Navbar: React.FC = () => {
                     <Search size={16} />
                     Buscar Cancha
                   </Link>
-                  {/* ✨ 2. MENÚ DE USUARIO DE ESCRITORIO RESTAURADO */}
+                  
                   <div className="relative" ref={menuRef}>
-                    <button onClick={() => setIsDesktopMenuOpen(!isDesktopMenuOpen)} className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-gray-700">{user?.name || "Usuario"}</span>
-                      <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
-                        <UserCircle size={20} className="text-gray-500" />
-                      </div>
+                    <button 
+                      onClick={() => setIsDesktopMenuOpen(!isDesktopMenuOpen)} 
+                      className="flex items-center gap-1.5 cursor-pointer rounded-md p-2 transition-colors hover:bg-gray-100"
+                    >
+                      <span className="text-sm font-medium text-gray-800">{user?.name || "Usuario"}</span>
+                      <ChevronDown 
+                        size={16} 
+                        className={`text-gray-500 transition-transform duration-200 ${isDesktopMenuOpen ? 'rotate-180' : ''}`}
+                      />
                     </button>
+                    
                     <AnimatePresence>
                       {isDesktopMenuOpen && (
                         <motion.div
@@ -103,7 +106,7 @@ const Navbar: React.FC = () => {
                           <Link href={getDashboardUrl()} onClick={() => setIsDesktopMenuOpen(false)} className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                             <LayoutDashboard size={16} />Mi Panel
                           </Link>
-                          <button onClick={() => { signOut({ callbackUrl: routes.public.home }); setIsDesktopMenuOpen(false); }} className="w-full text-left flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                          <button onClick={() => { signOut({ callbackUrl: routes.public.home }); setIsDesktopMenuOpen(false); }} className="w-full text-left flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 cursor-pointer">
                             <LogOut size={16} />Cerrar Sesión
                           </button>
                         </motion.div>
@@ -152,9 +155,9 @@ const Navbar: React.FC = () => {
               {isLoggedIn ? (
                 <>
                   <div className="px-3 py-2 flex items-center gap-3"><div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center"><UserCircle size={24} className="text-gray-500" /></div><span className="font-semibold text-gray-800">{user?.name || "Usuario"}</span></div><hr/>
-                  <Link href={routes.public.canchas} onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 text-gray-700 hover:bg-gray-100  px-3 py-2 rounded-md text-base font-medium"><Search size={18}/> Buscar Cancha</Link>
-                  <Link href={routes.app.perfil} onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 text-gray-700 hover:bg-gray-100  px-3 py-2 rounded-md text-base font-medium"><UserCircle size={18}/> Mi Perfil</Link>
-                  <Link href={getDashboardUrl()} onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 text-gray-700 hover:bg-gray-100  px-3 py-2 rounded-md text-base font-medium"><LayoutDashboard size={18}/> Mi Panel</Link>
+                  <Link href={routes.public.canchas} onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 text-gray-700 hover:bg-gray-100  px-3 py-2 rounded-md text-base font-medium"><Search size={18}/> Buscar Cancha</Link>
+                  <Link href={routes.app.perfil} onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 text-gray-700 hover:bg-gray-100  px-3 py-2 rounded-md text-base font-medium"><UserCircle size={18}/> Mi Perfil</Link>
+                  <Link href={getDashboardUrl()} onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 text-gray-700 hover:bg-gray-100  px-3 py-2 rounded-md text-base font-medium"><LayoutDashboard size={18}/> Mi Panel</Link>
                   <button onClick={() => { signOut({ callbackUrl: routes.public.home }); setIsMobileMenuOpen(false); }} className="w-full text-left flex items-center gap-3 px-3 py-2 text-base font-medium text-red-600 hover:bg-red-50 rounded-md"><LogOut size={18} />Cerrar Sesión</button>
                 </>
               ) : (
@@ -172,4 +175,3 @@ const Navbar: React.FC = () => {
 };
 
 export default Navbar;
-

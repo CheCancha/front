@@ -295,7 +295,7 @@ export default function BookingCalendarPage() {
                 onClick={() =>
                   openModalForSlot(filteredCourts[0]?.id, timeSlots[0])
                 }
-                className="flex items-center justify-center w-full h-full text-sm font-semibold text-white bg-black hover:bg-gray-800 rounded-md"
+                className="flex items-center justify-center w-full h-full text-sm font-semibold text-white bg-black hover:bg-gray-800 rounded-md cursor-pointer"
                 title="Añadir nueva reserva"
               >
                 <PlusCircle size={16} />

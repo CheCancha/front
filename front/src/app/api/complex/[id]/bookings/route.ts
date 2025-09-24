@@ -25,7 +25,6 @@ export async function GET(
       });
     }
 
-    // Se mantiene la lógica para interpretar la fecha en la zona horaria local del servidor
     const requestedDate = new Date(`${dateString}T00:00:00`);
 
     const startOfRequestedDay = startOfDay(requestedDate);
@@ -161,7 +160,6 @@ export async function PATCH(
       return new NextResponse("Falta el ID de la reserva", { status: 400 });
     }
 
-    // Prevenir la modificación de datos que podrían causar inconsistencias
     delete updateData.courtId;
     delete updateData.time;
     delete updateData.date;

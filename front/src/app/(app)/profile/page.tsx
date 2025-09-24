@@ -1,9 +1,26 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useState, useEffect } from "react";
-import { Calendar, User, Mail, Phone, Loader2, Edit3 } from "lucide-react";
+import { useState, useEffect, useMemo, type FormEvent } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import {
+  Calendar,
+  User,
+  Mail,
+  Phone,
+  Loader2,
+  Edit3,
+  ShieldCheck,
+  Camera,
+  X,
+} from "lucide-react";
+import { toast, Toaster } from "react-hot-toast";
+import Image from "next/image";
+import { PasswordInput } from "@/shared/components/ui/Input"; // <-- 1. IMPORTAR EL COMPONENTE
 
+// --- TIPOS ---
 type Booking = {
   id: string;
   court: string;
@@ -13,216 +30,335 @@ type Booking = {
   complex: string;
 };
 
-type BookingResponse = {
-  id: string;
-  court: string;
-  date: string;
-  startTime: string;
-  status: string;
-  complex?: string;
-};
-
 type ProfileResponse = {
   phone?: string;
-  bookings?: BookingResponse[];
+  image?: string;
+  bookings?: Booking[];
 };
 
+// --- Esquema de validación para el formulario de contraseña ---
+const passwordSchema = z
+  .object({
+    currentPassword: z.string().min(1, "La contraseña actual es requerida."),
+    newPassword: z
+      .string()
+      .min(6, "La nueva contraseña debe tener al menos 6 caracteres."),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "Las nuevas contraseñas no coinciden.",
+    path: ["confirmPassword"], // Indica qué campo mostrará el error
+  });
+
+type PasswordFormData = z.infer<typeof passwordSchema>;
+
 export default function ProfilePage() {
-  const { data: session, status } = useSession();
+  const { data: session, status, update } = useSession();
   const [userBookings, setUserBookings] = useState<Booking[]>([]);
   const [phone, setPhone] = useState("");
   const [isEditingPhone, setIsEditingPhone] = useState(false);
-  const [password, setPassword] = useState("");
-  const [profileImage, setProfileImage] = useState<File | null>(null);
+
+  const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
+  const [profileImageUrl, setProfileImageUrl] = useState(
+    session?.user?.image || ""
+  );
+
   const [loading, setLoading] = useState(true);
-  const [updating, setUpdating] = useState(false);
+  const [isUpdatingInfo, setIsUpdatingInfo] = useState(false);
 
   const user = session?.user;
 
-  // --- Cargar datos del backend ---
+  // 2. CONFIGURAR REACT-HOOK-FORM
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting: isUpdatingPassword },
+    reset,
+  } = useForm<PasswordFormData>({
+    resolver: zodResolver(passwordSchema),
+  });
+
+  const imagePreview = useMemo(() => {
+    if (profileImageFile) {
+      return URL.createObjectURL(profileImageFile);
+    }
+    return (
+      profileImageUrl ||
+      `https://ui-avatars.com/api/?name=${
+        user?.name || "User"
+      }&background=random`
+    );
+  }, [profileImageFile, profileImageUrl, user?.name]);
+
   useEffect(() => {
-    if (!user) return;
-
-    const fetchProfile = async () => {
-      setLoading(true);
-      try {
-        const res = await fetch("/api/profile");
-        if (!res.ok) throw new Error("Error al cargar el perfil");
-        const data: ProfileResponse = await res.json();
-
-        setPhone(data.phone || "");
-        // Mapear reservas para asegurarnos de que startTime sea string formateado
-        const bookings: Booking[] = (data.bookings || []).map((b: BookingResponse) => ({
-          id: b.id,
-          court: b.court,
-          date: b.date,
-          startTime: b.startTime,
-          status: b.status,
-          complex: b.complex || "Complejo sin nombre",
-        }));
-        setUserBookings(bookings);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProfile();
-  }, [user]);
+    if (status === "authenticated") {
+      const fetchProfile = async () => {
+        setLoading(true);
+        try {
+          const res = await fetch("/api/profile");
+          if (!res.ok) throw new Error("Error al cargar el perfil");
+          const data: ProfileResponse = await res.json();
+          setPhone(data.phone || "");
+          setProfileImageUrl(data.image || user?.image || "");
+          setUserBookings(data.bookings || []);
+        } catch (err) {
+          toast.error("No se pudo cargar tu información.");
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchProfile();
+    }
+  }, [status, user?.image]);
 
   if (status === "loading" || loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <Loader2 className="h-12 w-12 animate-spin text-indigo-600" />
       </div>
     );
   }
 
   if (status === "unauthenticated") {
-    return <p>Acceso denegado.</p>;
+    return (
+      <p className="text-center mt-10">
+        Acceso denegado. Por favor, inicia sesión.
+      </p>
+    );
   }
 
-  // --- Actualizar datos del perfil ---
-  const handleUpdateProfile = async () => {
-    setUpdating(true);
+  // Lógica para actualizar información (sin cambios)
+  const handleUpdateInfo = async (e: FormEvent) => {
+    e.preventDefault();
+    setIsUpdatingInfo(true);
+    const toastId = toast.loading("Actualizando información...");
+
     try {
       const formData = new FormData();
       formData.append("phone", phone);
-      if (password) formData.append("password", password);
-      if (profileImage) formData.append("profileImage", profileImage);
-
+      if (profileImageFile) {
+        formData.append("profileImage", profileImageFile);
+      }
       const res = await fetch("/api/profile/update", {
         method: "POST",
         body: formData,
       });
+      const data = await res.json();
+      if (!res.ok)
+        throw new Error(data.error || "No se pudo actualizar el perfil");
 
-      if (!res.ok) throw new Error("Error al actualizar el perfil");
-      alert("Perfil actualizado correctamente");
-      setPassword("");
-      setProfileImage(null);
+      if (data.profileImageUrl) {
+        setProfileImageUrl(data.profileImageUrl);
+      }
+
+      await update({ image: data.profileImageUrl });
+      toast.success("Perfil actualizado con éxito.", { id: toastId });
+      setIsEditingPhone(false);
+      setProfileImageFile(null);
     } catch (err) {
-      console.error(err);
-      alert("No se pudo actualizar el perfil");
+      toast.error(err instanceof Error ? err.message : "Error desconocido", {
+        id: toastId,
+      });
     } finally {
-      setUpdating(false);
+      setIsUpdatingInfo(false);
+    }
+  };
+
+  const handleChangePassword = async (data: PasswordFormData) => {
+    const toastId = toast.loading("Cambiando contraseña...");
+
+    try {
+      const res = await fetch("/api/profile/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          currentPassword: data.currentPassword,
+          newPassword: data.newPassword,
+        }),
+      });
+
+      const responseData = await res.json();
+      if (!res.ok)
+        throw new Error(
+          responseData.error || "No se pudo cambiar la contraseña"
+        );
+
+      toast.success("Contraseña cambiada con éxito.", { id: toastId });
+      reset(); // Resetea los campos del formulario
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Error desconocido", {
+        id: toastId,
+      });
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <main className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-8">
-        {/* Información Personal */}
-        <div className="bg-white p-6 rounded-lg border shadow-sm space-y-4">
-          <h2 className="text-xl font-semibold mb-4">Información Personal</h2>
-
-          {/* Nombre */}
-          <div className="flex items-center gap-3">
-            <User size={18} className="text-gray-500" />
-            <span className="text-gray-800">
-              {user?.name || "No especificado"}
-            </span>
-          </div>
-
-          {/* Email */}
-          <div className="flex items-center gap-3">
-            <Mail size={18} className="text-gray-500" />
-            <span className="text-gray-800">
-              {user?.email || "No especificado"}
-            </span>
-          </div>
-
-          {/* Teléfono editable */}
-          <div className="flex items-center gap-3">
-            <Phone size={18} className="text-gray-500" />
-            {isEditingPhone ? (
-              <input
-                type="text"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className="border rounded px-2 py-1 text-gray-800"
-              />
-            ) : (
-              <span className="text-gray-800">
-                {phone || "No especificado"}
-              </span>
-            )}
-            <button
-              className="ml-2 text-gray-500 hover:text-gray-700"
-              onClick={() => setIsEditingPhone(!isEditingPhone)}
-            >
-              <Edit3 size={16} />
-            </button>
-          </div>
-
-          {/* Contraseña editable */}
-          <div className="flex items-center gap-3">
-            <span className="text-gray-500">Contraseña</span>
-            <input
-              type="password"
-              placeholder="Nueva contraseña"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="border rounded px-2 py-1 text-gray-800 flex-1"
-            />
-          </div>
-
-          {/* Imagen de perfil */}
-          <div className="flex items-center gap-3">
-            <span className="text-gray-500">Imagen de Perfil</span>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => setProfileImage(e.target.files?.[0] || null)}
-              className="border rounded px-2 py-1 text-gray-800"
-            />
-          </div>
-
-          {/* Botón guardar */}
-          <button
-            onClick={handleUpdateProfile}
-            disabled={updating}
-            className="bg-black text-white px-4 py-2 rounded hover:opacity-90 transition duration-300"
-          >
-            {updating ? "Guardando..." : "Guardar Cambios"}
-          </button>
-        </div>
-
-        {/* Historial de Reservas */}
-        <div className="bg-white p-6 rounded-lg border shadow-sm">
-          <h2 className="text-xl font-semibold mb-4">Mis Próximas Reservas</h2>
-          <ul className="divide-y divide-gray-200">
-            {userBookings.map((booking) => (
-              <li
-                key={booking.id}
-                className="py-4 flex items-center justify-between"
-              >
-                <div>
-                  <p className="font-semibold text-gray-900">
-                    {booking.complex}
-                  </p>{" "}
-                  {/* Nombre del complejo */}
-                  <p className="text-gray-700">{booking.court}</p>{" "}
-                  {/* Nombre de la cancha */}
-                  <p className="text-sm text-gray-600 flex items-center gap-2">
-                    <Calendar size={14} />
-                    {booking.date} a las {booking.startTime} hs
-                  </p>
+    <>
+      <Toaster position="bottom-center" />
+      <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
+        <main className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Columna Izquierda: Perfil y Seguridad */}
+          <div className="lg:col-span-1 space-y-8">
+            {/* Tarjeta de Información Personal */}
+            <div className="bg-white p-6 rounded-2xl border shadow-sm">
+              <div className="flex flex-col items-center text-center">
+                <div className="relative mb-4">
+                  <Image
+                    key={imagePreview}
+                    src={imagePreview}
+                    alt="Foto de perfil"
+                    width={96}
+                    height={96}
+                    className="rounded-full object-cover w-24 h-24"
+                  />
+                  <label
+                    htmlFor="profileImage"
+                    className="absolute -bottom-1 -right-1 bg-indigo-600 text-white p-1.5 rounded-full cursor-pointer hover:bg-indigo-700"
+                  >
+                    <Camera size={16} />
+                    <input
+                      id="profileImage"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) =>
+                        setProfileImageFile(e.target.files?.[0] || null)
+                      }
+                    />
+                  </label>
                 </div>
-                <span
-                  className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                    booking.status === "Confirmado"
-                      ? "bg-blue-100 text-blue-800"
-                      : "bg-green-100 text-green-800"
-                  }`}
+                <h2 className="text-xl font-bold text-gray-800">
+                  {user?.name}
+                </h2>
+                <p className="text-sm text-gray-500">{user?.email}</p>
+              </div>
+              <hr className="my-6" />
+              <form onSubmit={handleUpdateInfo} className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <Phone size={20} className="text-gray-400" />
+                  <div className="flex-grow">
+                    <label
+                      htmlFor="phone"
+                      className="text-sm font-medium text-gray-500"
+                    >
+                      Teléfono
+                    </label>
+                    <input
+                      id="phone"
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      className="w-full text-gray-800 bg-transparent border-b focus:outline-none focus:border-indigo-500"
+                      readOnly={!isEditingPhone}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingPhone(!isEditingPhone)}
+                    className="text-gray-500 hover:text-indigo-600"
+                  >
+                    {isEditingPhone ? <X size={20} /> : <Edit3 size={18} />}
+                  </button>
+                </div>
+                <button
+                  type="submit"
+                  disabled={isUpdatingInfo}
+                  className="w-full bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-700 transition-colors disabled:bg-indigo-300 flex items-center justify-center cursor-pointer"
                 >
-                  {booking.status}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </main>
-    </div>
+                  {isUpdatingInfo ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    "Guardar Información"
+                  )}
+                </button>
+              </form>
+            </div>
+
+            {/* Tarjeta de Seguridad */}
+            <div className="bg-white p-6 rounded-2xl border shadow-sm">
+              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                <ShieldCheck size={20} /> Seguridad
+              </h3>
+              <form
+                onSubmit={handleSubmit(handleChangePassword)}
+                className="space-y-4"
+              >
+                <PasswordInput
+                  label="Contraseña Actual"
+                  register={register("currentPassword")}
+                  error={errors.currentPassword?.message}
+                  autoComplete="current-password"
+                />
+                <PasswordInput
+                  label="Nueva Contraseña"
+                  register={register("newPassword")}
+                  error={errors.newPassword?.message}
+                  autoComplete="new-password"
+                />
+                <PasswordInput
+                  label="Confirmar Nueva Contraseña"
+                  register={register("confirmPassword")}
+                  error={errors.confirmPassword?.message}
+                  autoComplete="new-password"
+                />
+                <button
+                  type="submit"
+                  disabled={isUpdatingPassword}
+                  className="w-full bg-gray-800 text-white font-semibold py-2 px-4 rounded-lg hover:bg-gray-900 transition-colors disabled:bg-gray-400 flex items-center justify-center cursor-pointer"
+                >
+                  {isUpdatingPassword ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    "Cambiar Contraseña"
+                  )}
+                </button>
+              </form>
+            </div>
+          </div>
+
+          {/* Columna Derecha: Reservas (sin cambios) */}
+          <div className="lg:col-span-2 bg-white p-6 rounded-2xl border shadow-sm">
+            <h2 className="text-xl font-semibold mb-4">
+              Mis Próximas Reservas
+            </h2>
+            {userBookings.length > 0 ? (
+              <ul className="divide-y divide-gray-200">
+                {userBookings.map((booking) => (
+                  <li
+                    key={booking.id}
+                    className="py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+                  >
+                    <div>
+                      <p className="font-semibold text-gray-900">
+                        {booking.complex}
+                      </p>
+                      <p className="text-gray-700">{booking.court}</p>
+                      <p className="text-sm text-gray-600 flex items-center gap-2 mt-1">
+                        <Calendar size={14} />
+                        {booking.date} a las {booking.startTime} hs
+                      </p>
+                    </div>
+                    <span
+                      className={`px-3 py-1 text-xs font-semibold rounded-full ${
+                        booking.status === "CONFIRMADO"
+                          ? "bg-blue-100 text-blue-800"
+                          : "bg-green-100 text-green-800"
+                      }`}
+                    >
+                      {booking.status}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="text-center py-10 text-gray-500">
+                <p>Todavía no tenés reservas.</p>
+                <p className="text-sm">¡Buscá una cancha y empezá a jugar!</p>
+              </div>
+            )}
+          </div>
+        </main>
+      </div>
+    </>
   );
 }

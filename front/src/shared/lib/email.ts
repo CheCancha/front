@@ -76,3 +76,48 @@ export const sendWelcomeEmail = async (
     throw new Error("No se pudo enviar el email de bienvenida.");
   }
 };
+
+const resetPasswordUrl = (token: string) =>
+  process.env.NEXTAUTH_URL
+    ? `${process.env.NEXTAUTH_URL}/reset-password?token=${token}`
+    : `http://localhost:3000/reset-password?token=${token}`;
+
+export const sendPasswordResetEmail = async (email: string, token: string) => {
+  try {
+    const recipientEmail = process.env.RESEND_TEST_RECIPIENT_EMAIL || email;
+    const resetUrl = resetPasswordUrl(token);
+
+    const emailHtml = `
+      <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+        <div style="max-width: 600px; margin: 20px auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+          <h1 style="font-size: 24px; color: #1a1a1a;">Solicitud de Reseteo de Contraseña</h1>
+          <p>
+            Recibimos una solicitud para restablecer la contraseña de tu cuenta. Hacé clic en el botón de abajo para elegir una nueva.
+          </p>
+          <a
+            href="${resetUrl}"
+            style="display: inline-block; padding: 12px 24px; font-size: 16px; color: white; background-color: #e67e22; text-decoration: none; border-radius: 5px; font-weight: bold; margin: 20px 0;"
+          >
+            Resetear Contraseña
+          </a>
+          <p>
+            Si no solicitaste un cambio de contraseña, podés ignorar este correo sin problemas.
+          </p>
+          <p style="margin-top: 30px; font-size: 12px; color: #888;">
+            Este enlace es válido por 1 hora.
+          </p>
+        </div>
+      </div>
+    `;
+
+    await resend.emails.send({
+      from: fromEmail,
+      to: recipientEmail,
+      subject: "Restablecé tu contraseña de CheCancha",
+      html: emailHtml,
+    });
+  } catch (error) {
+    console.error("Error al enviar el email de reseteo:", error);
+    throw new Error("No se pudo enviar el email de reseteo.");
+  }
+};

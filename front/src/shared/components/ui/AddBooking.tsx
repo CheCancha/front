@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Loader2, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
+// Se importa el tipo Court directamente de Prisma, ya que contiene los campos necesarios
 import type { Court, BookingStatus } from "@prisma/client";
 import { cn } from "@/shared/lib/utils";
 
@@ -11,7 +12,7 @@ interface AddBookingModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (bookingData: SubmitPayload) => Promise<void>;
-  courts: Court[];
+  courts: Court[]; // Se usa el tipo Court importado de Prisma
   timeSlots: string[];
   selectedDate: Date;
   isEditing?: boolean;
@@ -25,6 +26,7 @@ interface AddBookingModalProps {
   };
 }
 
+// Los payloads no cambian, la API sigue esperando un número en `depositPaid`
 type CreateBookingPayload = {
   guestName: string;
   courtId: string;
@@ -35,7 +37,6 @@ type CreateBookingPayload = {
 };
 
 type UpdateBookingPayload = CreateBookingPayload & { bookingId: string };
-
 type SubmitPayload = CreateBookingPayload | UpdateBookingPayload;
 
 const AddBookingModal: React.FC<AddBookingModalProps> = ({
@@ -56,13 +57,15 @@ const AddBookingModal: React.FC<AddBookingModalProps> = ({
   const [status, setStatus] = useState<BookingStatus>(
     initialValues?.status || "PENDIENTE"
   );
-  const [depositPaid, setDepositPaid] = useState<number>(
-    initialValues?.depositPaid || 0
-  );
+  const [paymentOption, setPaymentOption] = useState<
+    "none" | "deposit" | "total"
+  >("none");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
 
   const bookingDate = format(selectedDate, "yyyy-MM-dd");
+
+  const selectedCourt = courts.find((c) => c.id === courtId);
 
   useEffect(() => {
     if (isOpen) {
@@ -70,13 +73,32 @@ const AddBookingModal: React.FC<AddBookingModalProps> = ({
         setCourtId(initialValues.courtId);
         setTime(initialValues.time);
         setStatus(initialValues.status || "PENDIENTE");
-        setDepositPaid(initialValues.depositPaid || 0);
         setGuestName(initialValues.guestName || "");
+
+        const initialCourt = courts.find((c) => c.id === initialValues.courtId);
+        const amountPaid = initialValues.depositPaid || 0;
+
+        if (initialCourt) {
+          // CORRECCIÓN: Usar `pricePerHour` en lugar de `price`
+          if (amountPaid >= initialCourt.pricePerHour) {
+            setPaymentOption("total");
+            // CORRECCIÓN: Usar `depositAmount` en lugar de `deposit`
+          } else if (
+            amountPaid >= initialCourt.depositAmount &&
+            amountPaid > 0
+          ) {
+            setPaymentOption("deposit");
+          } else {
+            setPaymentOption("none");
+          }
+        } else {
+          setPaymentOption("none");
+        }
       } else {
         setCourtId(initialValues?.courtId || courts[0]?.id || "");
         setTime(initialValues?.time || timeSlots[0]);
         setStatus("PENDIENTE");
-        setDepositPaid(0);
+        setPaymentOption("none");
         setGuestName("");
       }
       setIsSubmitting(false);
@@ -86,10 +108,19 @@ const AddBookingModal: React.FC<AddBookingModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!guestName.trim() || !courtId || isSubmitting) return;
+    if (!guestName.trim() || !courtId || isSubmitting || !selectedCourt) return;
 
     setIsSubmitting(true);
     setApiError(null);
+
+    let finalAmountPaid = 0;
+    if (paymentOption === "deposit") {
+      // CORRECCIÓN: Usar `depositAmount`
+      finalAmountPaid = selectedCourt.depositAmount;
+    } else if (paymentOption === "total") {
+      // CORRECCIÓN: Usar `pricePerHour`
+      finalAmountPaid = selectedCourt.pricePerHour;
+    }
 
     const baseData: CreateBookingPayload = {
       guestName,
@@ -97,7 +128,7 @@ const AddBookingModal: React.FC<AddBookingModalProps> = ({
       time,
       date: bookingDate,
       status,
-      depositPaid,
+      depositPaid: finalAmountPaid,
     };
 
     const submissionData: SubmitPayload =
@@ -141,7 +172,7 @@ const AddBookingModal: React.FC<AddBookingModalProps> = ({
               {isEditing ? "Editar Reserva" : "Añadir Reserva Manual"}
             </h2>
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Campos del formulario (sin cambios) */}
+              {/* --- Campos de Nombre, Cancha, Horario y Estado (SIN CAMBIOS) --- */}
               <div>
                 <label
                   htmlFor="customerName"
@@ -222,24 +253,42 @@ const AddBookingModal: React.FC<AddBookingModalProps> = ({
                 </select>
               </div>
 
+              {/* --- CAMBIO PRINCIPAL: Input de seña reemplazado por Select de Pago --- */}
               <div>
                 <label
-                  htmlFor="deposit"
+                  htmlFor="paymentOption"
                   className="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  Señal pagada
+                  Estado del Pago
                 </label>
-                <input
-                  id="deposit"
-                  type="number"
-                  min={0}
-                  value={depositPaid}
-                  onChange={(e) => setDepositPaid(Number(e.target.value))}
+                <select
+                  id="paymentOption"
+                  value={paymentOption}
+                  onChange={(e) =>
+                    setPaymentOption(
+                      e.target.value as "none" | "deposit" | "total"
+                    )
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                />
+                  disabled={!selectedCourt}
+                >
+                  <option value="none">No Pagado</option>
+                  {selectedCourt && (
+                    <>
+                      <option value="deposit">
+                        {/* CORRECCIÓN: Usar `depositAmount` */}
+                        Seña (${selectedCourt.depositAmount})
+                      </option>
+                      <option value="total">
+                        {/* CORRECCIÓN: Usar `pricePerHour` */}
+                        Total (${selectedCourt.pricePerHour})
+                      </option>
+                    </>
+                  )}
+                </select>
               </div>
 
-              {/* Contenedor para el mensaje de error */}
+              {/* --- Mensaje de error y botón de envío (SIN CAMBIOS) --- */}
               {apiError && (
                 <div
                   className="bg-red-50 border-l-4 border-red-400 text-red-700 p-4 rounded-md flex items-start"

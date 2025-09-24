@@ -1,13 +1,13 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { db } from "@/shared/lib/db";
-import { startOfDay, endOfDay, parseISO, format } from "date-fns";
+import { BookingStatus } from "@prisma/client";
+import {
+  eachDayOfInterval,
+  eachMonthOfInterval,
+  format,
+  parseISO,
+} from "date-fns";
 import { es } from "date-fns/locale";
-
-// Función para obtener el nombre del día (Ej: "Lun") a partir de una fecha
-const getDayName = (date: Date) => {
-  const day = format(date, 'eee', { locale: es });
-  return day.charAt(0).toUpperCase() + day.slice(1);
-};
 
 export async function GET(
   req: NextRequest,
@@ -16,55 +16,78 @@ export async function GET(
   try {
     const { id } = await context.params;
     const { searchParams } = new URL(req.url);
-    const startDateString = searchParams.get("startDate");
-    const endDateString = searchParams.get("endDate");
+    const startDate = searchParams.get("startDate");
+    const endDate = searchParams.get("endDate");
 
-    if (!startDateString || !endDateString) {
-      return new NextResponse("Los parámetros 'startDate' y 'endDate' son obligatorios", { status: 400 });
+    if (!startDate || !endDate) {
+      return new NextResponse("Faltan los parámetros de fecha.", {
+        status: 400,
+      });
     }
 
-    const startDate = startOfDay(parseISO(startDateString));
-    const endDate = endOfDay(parseISO(endDateString));
+    const start = parseISO(startDate);
+    const end = parseISO(endDate);
 
-    // Busca reservas confirmadas o completadas en el rango de fechas
     const bookings = await db.booking.findMany({
       where: {
         court: { complexId: id },
-        date: {
-          gte: startDate,
-          lte: endDate,
-        },
         status: {
-          in: ["CONFIRMADO", "COMPLETADO"],
+          in: [BookingStatus.CONFIRMADO, BookingStatus.COMPLETADO],
+        },
+        date: {
+          gte: start,
+          lte: end,
         },
       },
       select: {
+        depositPaid: true,
         date: true,
-        totalPrice: true,
       },
-      orderBy: {
-        date: 'asc',
-      }
     });
 
-    // Agrupa las ventas por día para sumar los totales
-    const dailySales = new Map<string, number>();
-    for (const booking of bookings) {
-      const dayKey = format(booking.date, 'yyyy-MM-dd');
-      const currentSales = dailySales.get(dayKey) || 0;
-      dailySales.set(dayKey, currentSales + booking.totalPrice);
+    let formattedData: { name: string; total: number }[] = [];
+
+    const differenceInDays =
+      (end.getTime() - start.getTime()) / (1000 * 3600 * 24);
+
+    if (differenceInDays < 32) {
+      const days = eachDayOfInterval({ start, end });
+      const dailyIncome: { [key: string]: number } = {};
+
+      for (const booking of bookings) {
+        const dayKey = format(booking.date, "dd/MM");
+        dailyIncome[dayKey] = (dailyIncome[dayKey] || 0) + booking.depositPaid;
+      }
+
+      formattedData = days.map((day) => {
+        const dayKey = format(day, "dd/MM");
+        return {
+          name: format(day, "d MMM", { locale: es }),
+          total: dailyIncome[dayKey] || 0,
+        };
+      });
+    } else {
+      const months = eachMonthOfInterval({ start, end });
+      const monthlyIncome: { [key: string]: number } = {};
+
+      for (const booking of bookings) {
+        const monthKey = format(booking.date, "yyyy-MM");
+        monthlyIncome[monthKey] =
+          (monthlyIncome[monthKey] || 0) + booking.depositPaid;
+      }
+
+      formattedData = months.map((month) => {
+        const monthKey = format(month, "yyyy-MM");
+        return {
+          name: format(month, "MMM", { locale: es }),
+          total: monthlyIncome[monthKey] || 0,
+        };
+      });
     }
-    
-    // Formatea los datos para que el gráfico los pueda usar
-    const chartData = Array.from(dailySales.entries()).map(([dateStr, total]) => ({
-        name: getDayName(parseISO(dateStr)),
-        total: total,
-    }));
 
-    return NextResponse.json(chartData);
-
+    return NextResponse.json(formattedData);
   } catch (error) {
-    console.error("[COMPLEX_FINANCIALS_GET]", error);
-    return new NextResponse("Error interno del servidor", { status: 500 });
+    console.error("[FINANCIALS_GET]", error);
+    return new NextResponse("Error interno del servidor.", { status: 500 });
   }
 }

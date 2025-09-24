@@ -9,7 +9,6 @@ import { SalesChart } from "@/app/features/dashboard/components/SalesChart";
 import { Reservations } from "@/app/features/dashboard/components/Reservations";
 import { OnboardingPrompt } from "@/app/features/dashboard/components/OnboardingPrompt";
 
-// 👇 Usamos directamente PageProps genérico de Next.js
 export default async function DashboardPage({
   params,
   searchParams,
