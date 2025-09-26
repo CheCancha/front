@@ -7,16 +7,23 @@ import { format } from "date-fns";
 import { BookingStatus } from "@prisma/client";
 import SimpleCrypto from "simple-crypto-js";
 
-
-
 export async function POST(req: Request) {
   try {
+    // --- VALIDACIÓN CRÍTICA DE LA VARIABLE DE ENTORNO ---
+    const baseURL = process.env.NEXT_PUBLIC_BASE_URL;
+    if (!baseURL) {
+      console.error("Error Crítico: NEXT_PUBLIC_BASE_URL no está definida en las variables de entorno.");
+      return new NextResponse(
+        "Error de configuración del servidor: La URL base no está definida.",
+        { status: 500 }
+      );
+    }
+
     const session = await getServerSession(authOptions);
     const userId = session?.user?.id;
 
     const body = await req.json();
-    const { complexId, courtId, date, time, price, depositAmount, guestName } =
-      body;
+    const { complexId, courtId, date, time, price, depositAmount, guestName } = body;
 
     if (!userId && !guestName) {
       return new NextResponse("El nombre es requerido para los invitados", {
@@ -56,10 +63,7 @@ export async function POST(req: Request) {
     let accessToken = "";
     if (complex.mp_access_token) {
       const secretKey = process.env.ENCRYPTION_KEY!;
-      if (!secretKey)
-        throw new Error(
-          "ENCRYPTION_KEY no está definida en las variables de entorno."
-        );
+      if (!secretKey) throw new Error("ENCRYPTION_KEY no está definida.");
       const crypto = new SimpleCrypto(secretKey);
       accessToken = crypto.decrypt(complex.mp_access_token) as string;
       console.log("Usando Access Token del complejo (producción).");
@@ -78,8 +82,7 @@ export async function POST(req: Request) {
     const [hour, minute] = time.split(":").map(Number);
 
     const requestedStartMinutes = hour * 60 + minute;
-    const requestedEndMinutes =
-      requestedStartMinutes + court.slotDurationMinutes;
+    const requestedEndMinutes = requestedStartMinutes + court.slotDurationMinutes;
 
     const conflictingBookings = await db.booking.findMany({
       where: {
@@ -93,11 +96,8 @@ export async function POST(req: Request) {
     });
 
     const isConflict = conflictingBookings.some((booking) => {
-      const existingStartMinutes =
-        booking.startTime * 60 + (booking.startMinute || 0);
-      const existingEndMinutes =
-        existingStartMinutes + booking.court.slotDurationMinutes;
-
+      const existingStartMinutes = booking.startTime * 60 + (booking.startMinute || 0);
+      const existingEndMinutes = existingStartMinutes + booking.court.slotDurationMinutes;
       return (
         requestedStartMinutes < existingEndMinutes &&
         requestedEndMinutes > existingStartMinutes
@@ -106,9 +106,9 @@ export async function POST(req: Request) {
 
     if (isConflict) {
       return new NextResponse(
-        "Lo sentimos, este horario ya no está disponible o se superpone con otra reserva.",
+        "Lo sentimos, este horario ya no está disponible.",
         { status: 409 }
-      ); // 409 Conflict
+      );
     }
 
     const pendingBooking = await db.booking.create({
@@ -128,7 +128,7 @@ export async function POST(req: Request) {
 
     const preferenceClient = getMercadoPagoPreferenceClient(accessToken);
 
-        try {
+    try {
       const preference = await preferenceClient.create({
         body: {
           items: [
@@ -145,44 +145,27 @@ export async function POST(req: Request) {
             },
           ],
           external_reference: pendingBooking.id,
-          notification_url: `${process.env.NEXT_PUBLIC_BASE_URL}/api/webhooks/mercado-pago`,
+          notification_url: `${baseURL}/api/webhooks/mercado-pago`,
           back_urls: {
-            success: `${process.env.NEXT_PUBLIC_BASE_URL}/courts/${complexId}?status=success&booking_id=${pendingBooking.id}`,
-            failure: `${process.env.NEXT_PUBLIC_BASE_URL}/courts/${complexId}?status=failure`,
-            pending: `${process.env.NEXT_PUBLIC_BASE_URL}/courts/${complexId}?status=pending`,
+            success: `${baseURL}/courts/${complexId}?status=success&booking_id=${pendingBooking.id}`,
+            failure: `${baseURL}/courts/${complexId}?status=failure`,
+            pending: `${baseURL}/courts/${complexId}?status=pending`,
           },
           auto_return: "approved",
         },
       });
       return NextResponse.json({ preferenceId: preference.id });
     } catch (mpError: unknown) {
-      if (mpError instanceof Error) {
-        const maybeWithCause = mpError as Error & {
-          cause?: { message?: string } | { message?: string }[];
-        };
-
-        const errorMessage =
-          Array.isArray(maybeWithCause.cause)
-            ? maybeWithCause.cause[0]?.message
-            : maybeWithCause.cause?.message ||
-              mpError.message ||
-              "Error al comunicarse con Mercado Pago.";
-
-        await db.booking.delete({ where: { id: pendingBooking.id } });
-        return new NextResponse(`Error de Mercado Pago: ${errorMessage}`, {
-          status: 400,
-        });
-      }
-
-      console.error("Error inesperado:", mpError);
       await db.booking.delete({ where: { id: pendingBooking.id } });
-      return new NextResponse(
-        "Error desconocido al comunicarse con Mercado Pago.",
-        { status: 400 }
-      );
+       console.error("Error al crear preferencia en Mercado Pago:", mpError);
+       return new NextResponse(
+         "Error al comunicarse con Mercado Pago. Verifique las credenciales y los datos enviados.",
+         { status: 400 }
+       );
     }
   } catch (error) {
     console.error("Error en create-preference:", error);
     return new NextResponse("Error interno del servidor.", { status: 500 });
   }
 }
+

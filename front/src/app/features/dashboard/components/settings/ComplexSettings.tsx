@@ -34,10 +34,11 @@ export const ComplexSettings = () => {
   const [data, setData] = useState<FullComplexData | null>(null);
   const [originalData, setOriginalData] = useState<FullComplexData | null>(
     null
-  ); // Para restaurar cambios
+  );
   const [allSports, setAllSports] = useState<Sport[]>([]);
   const [newCourts, setNewCourts] = useState<NewCourt[]>([]);
   const [courtsToDelete, setCourtsToDelete] = useState<string[]>([]);
+  const [imagesToDelete, setImagesToDelete] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState("general");
@@ -66,6 +67,7 @@ export const ComplexSettings = () => {
       setAllSports(sportsData);
       setNewCourts([]);
       setCourtsToDelete([]);
+      setImagesToDelete([]);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Error desconocido");
     } finally {
@@ -95,6 +97,39 @@ export const ComplexSettings = () => {
       };
       return { ...prev, schedule: newSchedule as Schedule };
     });
+  };
+
+  // --- MANEJADORES PARA IMÁGENES ---
+  const deleteImage = (imageId: string) => {
+    const imageToDelete = data?.images.find((img) => img.id === imageId);
+    if (imageToDelete?.isPrimary) {
+      toast.error(
+        "No puedes eliminar la imagen de portada. Elige otra primero."
+      );
+      return;
+    }
+
+    setImagesToDelete((prev) => [...prev, imageId]);
+    setData((prev) =>
+      prev
+        ? { ...prev, images: prev.images.filter((img) => img.id !== imageId) }
+        : null
+    );
+  };
+
+  const restoreImage = (imageId: string) => {
+    const imageToRestore = originalData?.images.find(
+      (img) => img.id === imageId
+    );
+    if (imageToRestore && data) {
+      setImagesToDelete((prev) => prev.filter((id) => id !== imageId));
+      setData({
+        ...data,
+        images: [...data.images, imageToRestore].sort((a, b) =>
+          a.id.localeCompare(b.id)
+        ),
+      });
+    }
   };
 
   // --- MANEJADORES PARA CANCHAS Y REGLAS DE PRECIOS ---
@@ -274,104 +309,166 @@ export const ComplexSettings = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!data) return;
+    if (!data || !originalData) return;
 
     setIsSaving(true);
     toast.loading("Guardando cambios...");
 
     try {
-      const payload = {
-        basicInfo: {
-          name: data.name,
-          address: data.address,
-          city: data.city,
-          province: data.province,
-        },
-        schedule: data.schedule,
-        courts: {
-          update: data.courts.map((c) => {
-            const originalCourt = originalData?.courts.find(
-              (oc) => oc.id === c.id
-            );
-            return {
-              id: c.id,
-              name: c.name,
-              sportId: c.sportId,
-              slotDurationMinutes: c.slotDurationMinutes,
-              priceRules: {
-                delete:
-                  originalCourt?.priceRules
-                    .filter((rule): rule is PriceRule => "id" in rule)
-                    .filter(
-                      (opr) =>
-                        !c.priceRules.some(
-                          (pr) => "id" in pr && pr.id === opr.id
-                        )
-                    )
-                    .map((pr) => ({ id: pr.id })) || [],
+      if (activeTab === "images") {
+        if (imagesToDelete.length > 0) {
+          const deletePromises = imagesToDelete.map((id) =>
+            fetch(`/api/complex/${complexId}/image/${id}`, { method: "DELETE" })
+          );
+          const deleteResults = await Promise.all(deletePromises);
 
-                update: c.priceRules
-                  .filter((pr): pr is PriceRule => "id" in pr)
-                  .map((pr) => ({
-                    where: { id: pr.id },
-                    data: {
+          const failedDeletes = deleteResults.filter((res) => !res.ok);
+          if (failedDeletes.length > 0) {
+            throw new Error(
+              `No se pudieron eliminar ${failedDeletes.length} imágenes.`
+            );
+          }
+        }
+
+        const updatePayload = {
+          images: data.images.map((img) => ({
+            id: img.id,
+            isPrimary: img.isPrimary,
+          })),
+        };
+
+        const updateResponse = await fetch(
+          `/api/complex/${complexId}/settings/images`,
+          {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(updatePayload),
+          }
+        );
+
+        if (!updateResponse.ok) {
+          const errorData = await updateResponse.json();
+          throw new Error(
+            errorData.error || `Error al actualizar la imagen principal.`
+          );
+        }
+      } else {
+        let endpoint = "";
+        let payload = {};
+
+        switch (activeTab) {
+          case "general":
+            endpoint = `/api/complex/${complexId}/settings/general`;
+            payload = {
+              basicInfo: {
+                name: data.name,
+                address: data.address,
+                city: data.city,
+                province: data.province,
+              },
+            };
+            break;
+
+          case "schedule":
+            endpoint = `/api/complex/${complexId}/settings/schedule`;
+            payload = { schedule: data.schedule };
+            break;
+
+          case "courts":
+            endpoint = `/api/complex/${complexId}/settings/courts`;
+            payload = {
+              courts: {
+                update: data.courts.map((c) => {
+                  const originalCourt = originalData.courts.find(
+                    (oc) => oc.id === c.id
+                  );
+                  return {
+                    id: c.id,
+                    name: c.name,
+                    sportId: c.sportId,
+                    slotDurationMinutes: c.slotDurationMinutes,
+                    priceRules: {
+                      delete:
+                        originalCourt?.priceRules
+                          .filter((rule): rule is PriceRule => "id" in rule)
+                          .filter(
+                            (opr) =>
+                              !c.priceRules.some(
+                                (pr) => "id" in pr && pr.id === opr.id
+                              )
+                          )
+                          .map((pr) => ({ id: pr.id })) || [],
+                      update: c.priceRules
+                        .filter((pr): pr is PriceRule => "id" in pr)
+                        .map((pr) => ({
+                          where: { id: pr.id },
+                          data: {
+                            startTime: pr.startTime,
+                            endTime: pr.endTime,
+                            price: pr.price,
+                            depositPercentage: pr.depositPercentage,
+                          },
+                        })),
+                      create: c.priceRules
+                        .filter((pr): pr is NewPriceRule => "tempId" in pr)
+                        .map((pr) => ({
+                          startTime: pr.startTime,
+                          endTime: pr.endTime,
+                          price: pr.price,
+                          depositPercentage: pr.depositPercentage,
+                        })),
+                    },
+                  };
+                }),
+                create: newCourts.map((c) => ({
+                  name: c.name,
+                  sportId: c.sportId,
+                  slotDurationMinutes: c.slotDurationMinutes,
+                  priceRules: {
+                    create: c.priceRules.map((pr) => ({
                       startTime: pr.startTime,
                       endTime: pr.endTime,
                       price: pr.price,
                       depositPercentage: pr.depositPercentage,
-                    },
-                  })),
-
-                // Esta línea ya era correcta
-                create: c.priceRules
-                  .filter((pr): pr is NewPriceRule => "tempId" in pr)
-                  .map((pr) => ({
-                    startTime: pr.startTime,
-                    endTime: pr.endTime,
-                    price: pr.price,
-                    depositPercentage: pr.depositPercentage,
-                  })),
+                    })),
+                  },
+                })),
+                delete: courtsToDelete.map((id) => ({ id })),
               },
             };
-          }),
-          create: newCourts.map((c) => ({
-            name: c.name,
-            sportId: c.sportId,
-            slotDurationMinutes: c.slotDurationMinutes,
-            priceRules: {
-              create: c.priceRules.map((pr) => ({
-                startTime: pr.startTime,
-                endTime: pr.endTime,
-                price: pr.price,
-                depositPercentage: pr.depositPercentage,
-              })),
-            },
-          })),
-          delete: courtsToDelete.map((id) => ({ id })),
-        },
-        images: data.images.map((img) => ({
-          id: img.id,
-          isPrimary: img.isPrimary,
-        })),
-      };
+            break;
 
-      const response = await fetch(`/api/complex/${complexId}/settings`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+          default:
+            toast.dismiss();
+            setIsSaving(false);
+            toast.error(
+              `La pestaña "${activeTab}" no tiene una acción de guardado.`
+            );
+            return;
+        }
 
-      toast.dismiss();
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Error al guardar los cambios.");
+        const response = await fetch(endpoint, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(
+            errorData.error || `Error al guardar en la pestaña ${activeTab}`
+          );
+        }
       }
 
-      toast.success("¡Ajustes guardados con éxito!");
+      toast.dismiss();
+      toast.success("¡Cambios guardados con éxito!");
       fetchComplexData();
     } catch (error) {
       toast.dismiss();
-      toast.error(error instanceof Error ? error.message : "Error desconocido");
+      toast.error(
+        error instanceof Error ? error.message : "Error desconocido al guardar"
+      );
     } finally {
       setIsSaving(false);
     }
@@ -441,11 +538,15 @@ export const ComplexSettings = () => {
               onRemovePriceRule={removePriceRule}
             />
           )}
-          {activeTab === "images" && (
+          {activeTab === "images" && data && originalData && (
             <ImageSettings
               data={data}
               setData={setData}
               complexId={complexId}
+              originalData={originalData}
+              imagesToDelete={imagesToDelete}
+              onDeleteImage={deleteImage}
+              onRestoreImage={restoreImage}
             />
           )}
           {activeTab === "payments" && <PaymentsSettings data={data} />}

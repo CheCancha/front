@@ -2,237 +2,186 @@
 
 import React, { useState, useMemo } from "react";
 import { toast } from "react-hot-toast";
-import { Upload, X, Star } from "lucide-react";
-import { Spinner } from "@/shared/components/ui/Spinner";
+import { Upload, Star, Image as ImageIcon, Trash2, RotateCcw } from "lucide-react";
 import type { Image } from "@prisma/client";
 import { FullComplexData } from "@/shared/entities/complex/types";
 
+// Componente Spinner local para evitar problemas de importación.
+const Spinner = () => (
+  <svg className="animate-spin h-8 w-8 text-gray-900" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+  </svg>
+);
 
+// --- Props actualizados para recibir todo del padre ---
 interface ImageSettingsProps {
   data: FullComplexData;
   setData: React.Dispatch<React.SetStateAction<FullComplexData | null>>;
   complexId: string;
+  originalData: FullComplexData;
+  imagesToDelete: string[];
+  onDeleteImage: (imageId: string) => void;
+  onRestoreImage: (imageId: string) => void;
 }
 
 export default function ImageSettings({
   data,
   setData,
   complexId,
+  originalData,
+  imagesToDelete,
+  onDeleteImage,
+  onRestoreImage,
 }: ImageSettingsProps) {
   const [isUploading, setIsUploading] = useState(false);
 
-  const { primaryImage, otherImages } = useMemo(() => {
-    const primary = data.images.find((img) => img.isPrimary);
-    const others = data.images.filter((img) => !img.isPrimary);
-    return { primaryImage: primary, otherImages: others };
-  }, [data.images]);
-
+  const primaryImage = useMemo(
+    () => data.images.find((img) => img.isPrimary),
+    [data.images]
+  );
+  
   const handleImageUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
+    if (!complexId) {
+        toast.error("No se pudo identificar el complejo. Refresca la página.");
+        return;
+    }
 
     setIsUploading(true);
     toast.loading("Subiendo imágenes...");
-
-    const uploadPromises = Array.from(files).map((file) => {
-      const formData = new FormData();
-      formData.append("file", file);
-      return fetch(`/api/complex/${complexId}/upload-image`, {
-        method: "POST",
-        body: formData,
-      });
-    });
-
     try {
-      const results = await Promise.allSettled(uploadPromises);
-      const newImages: Image[] = [];
-      let successfulUploads = 0;
-      let failedUploads = 0;
-
-      for (const result of results) {
-        if (result.status === "fulfilled" && result.value.ok) {
-          newImages.push(await result.value.json());
-          successfulUploads++;
-        } else {
-          failedUploads++;
-        }
-      }
-
-      if (newImages.length > 0) {
-        setData((prev) => {
-          if (!prev) return null;
-          const isFirstUpload = prev.images.length === 0;
-          const processedNewImages = newImages.map((img, index) => ({
-            ...img,
-            isPrimary: isFirstUpload && index === 0,
-          }));
-          return { ...prev, images: [...prev.images, ...processedNewImages] };
+      const uploadPromises = Array.from(files).map(async (file) => {
+        const formData = new FormData();
+        formData.append("file", file);
+        const response = await fetch(`/api/complex/${complexId}/upload-image`, {
+          method: "POST",
+          body: formData,
         });
-      }
+        if (!response.ok) throw new Error(`Fallo al subir ${file.name}`);
+        return response.json() as Promise<Image>;
+      });
 
+      const newImages = await Promise.all(uploadPromises);
+
+      setData((prev) => {
+        if (!prev) return null;
+        const allImages = [...prev.images, ...newImages];
+        const hasPrimary = allImages.some((img) => img.isPrimary);
+        if (!hasPrimary && allImages.length > 0) {
+          allImages[0].isPrimary = true;
+        }
+        return { ...prev, images: allImages };
+      });
       toast.dismiss();
-      if (successfulUploads > 0)
-        toast.success(`${successfulUploads} imagen(es) subida(s) con éxito.`);
-      if (failedUploads > 0)
-        toast.error(`${failedUploads} imagen(es) no pudieron subirse.`);
+      toast.success(`${newImages.length} imagen(es) subida(s).`);
     } catch (error) {
       toast.dismiss();
-      toast.error("Ocurrió un error inesperado al subir las imágenes.");
+      toast.error(error instanceof Error ? error.message : "Ocurrió un error al subir.");
     } finally {
       setIsUploading(false);
     }
   };
-
-  const removeImage = async (imageId: string) => {
-    const originalImages = data.images;
-    const imageToRemove = originalImages.find((img) => img.id === imageId);
-
-    setData((prev) => {
-      if (!prev) return null;
-      const newImages = prev.images.filter((img) => img.id !== imageId);
-      if (imageToRemove?.isPrimary && newImages.length > 0) {
-        newImages[0].isPrimary = true;
-      }
-      return { ...prev, images: newImages };
-    });
-
-    try {
-      const response = await fetch(
-        `/api/complex/${complexId}/image/${imageId}`,
-        { method: "DELETE" }
-      );
-      if (!response.ok) throw new Error("Fallo en la API");
-      toast.success("Imagen eliminada permanentemente.");
-    } catch (error) {
-      toast.error("No se pudo eliminar la imagen. Se restaurará.");
-      setData((prev) => (prev ? { ...prev, images: originalImages } : null));
-    }
-  };
-
+  
   const setPrimaryImage = (imageId: string) => {
     setData((prev) => {
       if (!prev) return null;
-      return {
-        ...prev,
-        images: prev.images.map((img) => ({
-          ...img,
-          isPrimary: img.id === imageId,
-        })),
-      };
+      const newImages = prev.images.map((img) => ({
+        ...img,
+        isPrimary: img.id === imageId,
+      }));
+      return { ...prev, images: newImages };
     });
-    toast.success(
-      "Imagen de portada actualizada. Guarda los cambios para hacerlo permanente."
-    );
+    toast.success("Imagen de portada actualizada. Recuerda guardar los cambios.");
   };
+
+  const imagesMarkedForDeletion = useMemo(() => {
+    return originalData.images.filter(img => imagesToDelete.includes(img.id));
+  }, [originalData.images, imagesToDelete]);
+
 
   return (
     <div className="space-y-8">
       <div>
-        <h3 className="text-lg font-semibold leading-6 text-gray-900">
-          Imagen de Portada
-        </h3>
-        <p className="text-sm text-gray-500 mt-1">
-          Esta es la imagen principal que verán los usuarios al buscar tu
-          complejo.
-        </p>
-        <div className="mt-4 w-full h-64 rounded-lg bg-gray-200 flex items-center justify-center border">
+        <h3 className="text-lg font-semibold">Imagen de Portada</h3>
+        <div className="mt-4 w-full aspect-[16/7] relative rounded-lg bg-gray-100 flex items-center justify-center border overflow-hidden">
           {primaryImage ? (
-            <img
-              src={primaryImage.url}
-              alt="Imagen de portada"
-              className="w-full h-full object-cover rounded-lg"
-            />
+            <img src={primaryImage.url} alt="Imagen de portada" className="absolute inset-0 w-full h-full object-cover" />
           ) : (
-            <span className="text-gray-500">
-              No hay una imagen de portada seleccionada
-            </span>
+            <div className="text-center text-gray-500"><ImageIcon className="mx-auto h-12 w-12" /><span>No hay imagen de portada</span></div>
           )}
         </div>
       </div>
 
       <div>
-        <h3 className="text-lg font-semibold leading-6 text-gray-900">
-          Galería de Imágenes
-        </h3>
-        <p className="text-sm text-gray-500 mt-1">
-          Añade más fotos para mostrar tus instalaciones.
-        </p>
-        <div
-          className={`mt-4 border-2 border-dashed border-gray-300 rounded-lg p-6 ${
-            isUploading ? "bg-gray-50" : ""
-          }`}
-        >
-          <div className="text-center">
-            {isUploading ? (
-              <Spinner />
-            ) : (
-              <Upload className="mx-auto h-12 w-12 text-gray-400" />
-            )}
-            <div className="mt-4">
-              <label
-                htmlFor="file-upload"
-                className={`cursor-pointer ${
-                  isUploading ? "cursor-not-allowed text-gray-500" : ""
-                }`}
-              >
-                <span className="mt-2 block text-sm font-medium text-gray-900 hover:text-blue-600">
-                  {isUploading ? "Subiendo..." : "Seleccionar imágenes"}
-                </span>
-                <input
-                  id="file-upload"
-                  name="file-upload"
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  className="sr-only"
-                  onChange={handleImageUpload}
-                  disabled={isUploading}
-                />
-              </label>
-              <p className="mt-1 text-xs text-gray-500">
-                PNG, JPG, GIF hasta 10MB cada una
-              </p>
-            </div>
-          </div>
+        <h3 className="text-lg font-semibold">Galería de Imágenes</h3>
+        <p className="text-sm text-gray-500 mt-1">Gestiona todas las fotos de tu complejo.</p>
+
+        <div className="mt-4">
+          {data.images.length > 0 ? (
+            <ul className="space-y-3">
+              {data.images.map((image) => (
+                <li key={image.id} className="flex items-center gap-4 bg-white p-2 border rounded-lg shadow-sm">
+                  <div className="w-16 h-16 relative rounded-md overflow-hidden bg-gray-100 flex-shrink-0">
+                    <img src={image.url} alt="Miniatura" className="absolute inset-0 w-full h-full object-cover" />
+                  </div>
+                  <div className="flex-grow text-sm text-gray-600 truncate" title={image.url}>{image.url.split("/").pop()}</div>
+                  <div className="flex items-center gap-2">
+                    <button type="button" onClick={() => setPrimaryImage(image.id)} disabled={image.isPrimary} title="Marcar como portada"
+                      className={`p-2 rounded-full transition-colors cursor-pointer ${image.isPrimary ? "bg-amber-400 text-white cursor-default" : "bg-gray-200 hover:bg-amber-400 hover:text-white"}`}>
+                      <Star className="w-5 h-5" />
+                    </button>
+                    {/* El botón de eliminar ahora llama a la función del padre */}
+                    <button type="button" onClick={() => onDeleteImage(image.id)} title="Eliminar imagen"
+                      className="p-2 rounded-full bg-gray-200 text-gray-600 hover:bg-red-500 hover:text-white transition-colors cursor-pointer">
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="text-center py-8 text-gray-500 border-2 border-dashed rounded-lg mt-4"><p>No hay imágenes en la galería.</p></div>
+          )}
         </div>
-        {otherImages.length > 0 && (
-          <div className="mt-4 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            {otherImages.map((image) => (
-              <div key={image.id} className="relative group aspect-square">
-                <img
-                  src={image.url}
-                  alt="Imagen del complejo"
-                  className="w-full h-full object-cover rounded-lg bg-gray-200"
-                />
-                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-300 rounded-lg flex items-center justify-center space-x-2">
-                  <button
-                    type="button"
-                    onClick={() => setPrimaryImage(image.id)}
-                    className="bg-blue-500 text-white p-2 rounded-full hover:bg-blue-600 shadow-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                    title="Marcar como portada"
-                  >
-                    <Star className="w-5 h-5" />
+        
+        {imagesMarkedForDeletion.length > 0 && (
+          <div className="mt-6">
+             <h4 className="text-md font-semibold text-gray-800">Imágenes a eliminar</h4>
+             <p className="text-sm text-gray-500 mt-1">Estas imágenes se eliminarán permanentemente cuando guardes los cambios.</p>
+             <ul className="space-y-3 mt-3">
+              {imagesMarkedForDeletion.map((image) => (
+                <li key={image.id} className="flex items-center gap-4 bg-red-50 p-2 border border-red-200 rounded-lg shadow-sm">
+                  <div className="w-16 h-16 relative rounded-md overflow-hidden bg-gray-100 flex-shrink-0 opacity-60">
+                    <img src={image.url} alt="Miniatura a eliminar" className="absolute inset-0 w-full h-full object-cover" />
+                  </div>
+                  <div className="flex-grow text-sm text-red-700 truncate" title={image.url}>{image.url.split("/").pop()}</div>
+                  <button type="button" onClick={() => onRestoreImage(image.id)} title="Restaurar imagen"
+                      className="p-2 rounded-full bg-gray-200 text-gray-600 hover:bg-gray-300 transition-colors">
+                      <RotateCcw className="w-5 h-5" />
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => removeImage(image.id)}
-                    className="bg-red-500 text-white p-2 rounded-full hover:bg-red-600 shadow-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                    title="Eliminar imagen"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-            ))}
+                </li>
+              ))}
+            </ul>
           </div>
         )}
-        {data.images.length === 0 && (
-          <div className="text-center py-8 text-gray-500">
-            <p>No hay imágenes cargadas aún.</p>
-          </div>
-        )}
+
+        <div className={`mt-6 border-2 border-dashed rounded-lg p-6 text-center transition-colors ${isUploading ? "bg-gray-50" : "hover:border-gray-400"}`}>
+          {isUploading ? (
+            <div className="flex flex-col items-center gap-2"><Spinner /><span>Subiendo...</span></div>
+          ) : (
+            <>
+              <Upload className="mx-auto h-12 w-12 text-gray-400" />
+              <label htmlFor="file-upload" className="mt-2 block text-sm font-medium text-blue-600 hover:text-blue-500 cursor-pointer">
+                Seleccionar imágenes
+                <input id="file-upload" name="file-upload" type="file" multiple accept="image/*" className="sr-only" onChange={handleImageUpload} disabled={isUploading} />
+              </label>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

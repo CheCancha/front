@@ -1,10 +1,6 @@
 import React from "react";
 import { Trash2, X, PlusCircle } from "lucide-react";
-import {
-  CourtWithRelations,
-  NewCourt,
-  
-} from "@/shared/entities/complex/types";
+import { CourtWithRelations, NewCourt } from "@/shared/entities/complex/types";
 import { Sport } from "@prisma/client";
 import {
   durationOptions,
@@ -114,7 +110,7 @@ export const CourtFormRow = ({
           return (
             <div
               key={ruleId}
-              className="grid grid-cols-12 gap-x-3 gap-y-2 items-center bg-white p-3 rounded-md border"
+              className="grid grid-cols-12 gap-x-3 gap-y-2 items-center bg-white p-3"
             >
               <div className="col-span-6 sm:col-span-3">
                 <label className="text-xs font-medium">Desde</label>
@@ -128,7 +124,7 @@ export const CourtFormRow = ({
                       Number(e.target.value)
                     )
                   }
-                  className="w-full text-xs rounded-md border-gray-300"
+                  className="w-full p-1 text-xs border-1 rounded-md border-gray-300"
                 >
                   {hoursOptions.map((opt) => (
                     <option key={`start-${opt.value}`} value={opt.value}>
@@ -149,7 +145,7 @@ export const CourtFormRow = ({
                       Number(e.target.value)
                     )
                   }
-                  className="w-full text-xs rounded-md border-gray-300"
+                  className="w-full p-1 text-xs border-1 rounded-md border-gray-300"
                 >
                   {hoursOptions.map((opt) => (
                     <option key={`end-${opt.value}`} value={opt.value}>
@@ -162,7 +158,7 @@ export const CourtFormRow = ({
                 <label className="text-xs font-medium">Precio</label>
                 <input
                   type="number"
-                  placeholder="5000"
+                  placeholder="20000"
                   value={rule.price}
                   onChange={(e) =>
                     onPriceRuleChange(
@@ -172,14 +168,14 @@ export const CourtFormRow = ({
                       Number(e.target.value)
                     )
                   }
-                  className="w-full text-xs rounded-md border-gray-300"
+                  className="w-full p-1 text-xs border-1 rounded-md border-gray-300"
                 />
               </div>
               <div className="col-span-6 sm:col-span-3">
-                <label className="text-xs font-medium">% Seña</label>
+                <label className="text-xs font-medium">$ Seña</label>
                 <input
                   type="number"
-                  placeholder="30"
+                  placeholder="5000"
                   value={rule.depositPercentage}
                   onChange={(e) =>
                     onPriceRuleChange(
@@ -189,14 +185,14 @@ export const CourtFormRow = ({
                       Number(e.target.value)
                     )
                   }
-                  className="w-full text-xs rounded-md border-gray-300"
+                  className="w-full p-1 text-xs border-1 rounded-md border-gray-300"
                 />
               </div>
               <div className="col-span-12 sm:col-span-1">
                 <button
                   type="button"
                   onClick={() => onRemovePriceRule(id, ruleId)}
-                  className="w-full h-8 flex items-center justify-center text-gray-500 hover:bg-gray-100 rounded-md text-xs"
+                  className="w-full h-8 flex items-center justify-center text-gray-500 hover:bg-gray-100 rounded-md text-xs cursor-pointer"
                 >
                   Quitar
                 </button>

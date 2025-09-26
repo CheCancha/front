@@ -73,9 +73,27 @@ export async function POST(
     }
 
     const [hour, minute] = time.split(":").map(Number);
-    const court = await db.court.findUnique({ where: { id: courtId } });
+    
+    // --- CORRECCIÓN: Incluir priceRules al buscar la cancha ---
+    const court = await db.court.findUnique({
+      where: { id: courtId },
+      include: { priceRules: true }, // Incluimos las reglas de precio
+    });
+
     if (!court)
       return new NextResponse("Cancha no encontrada", { status: 404 });
+
+    // --- Lógica para encontrar la regla de precio aplicable ---
+    const applicableRule = court.priceRules.find(
+      (rule) => hour >= rule.startTime && hour < rule.endTime
+    );
+
+    if (!applicableRule) {
+      return new NextResponse(
+        `No hay un precio configurado para las ${time} hs. en esta cancha.`,
+        { status: 400 }
+      );
+    }
 
     // --- VALIDACIÓN DE SUPERPOSICIÓN EN BACKEND ---
     const bookingDate = new Date(`${date}T00:00:00`);
@@ -87,6 +105,7 @@ export async function POST(
       where: {
         courtId: courtId,
         date: bookingDate,
+        status: { not: "CANCELADO" } // No considerar reservas canceladas
       },
       include: {
         court: { select: { slotDurationMinutes: true } },
@@ -111,8 +130,8 @@ export async function POST(
         { status: 409 }
       );
     }
-
-    const totalPrice = 0; // Placeholder - should be calculated from priceRules
+    
+    const totalPrice = applicableRule.price;
     const depositAmount = depositPaid || 0;
 
     const newBooking = await db.booking.create({
@@ -166,6 +185,7 @@ export async function PATCH(
     delete updateData.courtId;
     delete updateData.time;
     delete updateData.date;
+    delete updateData.totalPrice;
 
     const updatedBooking = await db.booking.update({
       where: { id: bookingId },

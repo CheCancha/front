@@ -16,19 +16,18 @@ enum SubscriptionPlan {
 }
 
 model User {
-  id             String    @id @default(cuid())
-  name           String?
-  phone          String?   @unique
-  role           Role      @default(USER)
-  hashedPassword String?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  email          String?   @unique
-  image          String?
-  accounts       Account[]
-  bookings       Booking[]
-  managedComplex Complex?  @relation("ManagedBy")
-
+  id                 String              @id @default(cuid())
+  name               String?
+  phone              String?             @unique
+  role               Role                @default(USER)
+  hashedPassword     String?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  email              String?             @unique
+  image              String?
+  accounts           Account[]
+  bookings           Booking[]
+  managedComplex     Complex?            @relation("ManagedBy")
   passwordResetToken PasswordResetToken?
 }
 
@@ -57,65 +56,84 @@ model Account {
   user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
+  
+  @@index([userId])
 }
 
 model Complex {
-  id                  String    @id @default(cuid())
+  id                  String   @id @default(cuid())
   name                String
   address             String
   city                String
   province            String
-  managerId           String    @unique
-  onboardingCompleted Boolean   @default(false)
-  // slotDurationMinutes Int?
+  managerId           String   @unique
+  onboardingCompleted Boolean  @default(false)
   openHour            Int?
   closeHour           Int?
   courtCount          Int?
+
+  // Geolocalización para mapas
+  latitude            Float?
+  longitude           Float?
+  
+  // Mercado Pago
   mp_access_token     String?
   mp_refresh_token    String?
   mp_public_key       String?
   mp_user_id          String?
   mp_connected_at     DateTime?
-  manager             User      @relation("ManagedBy", fields: [managerId], references: [id])
+
+  // Relaciones
+  manager             User     @relation("ManagedBy", fields: [managerId], references: [id])
   courts              Court[]
   images              Image[]
   schedule            Schedule?
-  subscriptionPlan    SubscriptionPlan  @default(FREE)
+  subscriptionPlan    SubscriptionPlan @default(FREE)
+
+  
+  @@index([managerId])
 }
 
 model Image {
   id        String   @id @default(uuid())
   url       String
-  path      String   
-  complex   Complex  @relation(fields: [complexId], references: [id])
+  path      String
+  complex   Complex  @relation(fields: [complexId], references: [id], onDelete: Cascade)
   complexId String
   isPrimary Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  
+  @@index([complexId])
 }
 
 model Sport {
-  id          String   @id @default(cuid())
-  name        String   
-  slug        String   @unique 
-  icon        String?  
-
-  courts      Court[]
+  id     String  @id @default(cuid())
+  name   String
+  slug   String  @unique
+  icon   String?
+  courts Court[]
 }
+
 model Court {
-  id            String     @id @default(cuid())
-  name          String
-  sportId       String     @default("cmfsf71vz0000i02g5a2vvvgd")
-  sport         Sport      @relation(fields: [sportId], references: [id])
-  slotDurationMinutes Int  @default(60)
-  complexId     String
-  bookings      Booking[]
-  complex       Complex   @relation(fields: [complexId], references: [id])
+  id                  String      @id @default(cuid())
+  name                String
+  sportId             String      @default("cmfsf71vz0000i02g5a2vvvgd")
+  sport               Sport       @relation(fields: [sportId], references: [id])
+  slotDurationMinutes Int         @default(60)
+  complexId           String
+  bookings            Booking[]
+  complex             Complex     @relation(fields: [complexId], references: [id], onDelete: Cascade)
   priceRules          PriceRule[]
+
+  // --- ÍNDICES AÑADIDOS ---
+  @@index([complexId])
+  @@index([sportId])
 }
 
 model Schedule {
-  id             String  @id @default(cuid())
+  id             String    @id @default(cuid())
   mondayOpen     Int?
   mondayClose    Int?
   tuesdayOpen    Int?
@@ -130,15 +148,15 @@ model Schedule {
   saturdayClose  Int?
   sundayOpen     Int?
   sundayClose    Int?
-  complexId      String  @unique
-  complex        Complex @relation(fields: [complexId], references: [id])
+  complexId      String    @unique
+  complex        Complex   @relation(fields: [complexId], references: [id], onDelete: Cascade)
 }
 
 model Booking {
   id               String        @id @default(cuid())
   date             DateTime
   startTime        Int
-  startMinute      Int           @default(0)
+  startMinute      Int           @default(0)
   totalPrice       Int
   depositAmount    Int
   depositPaid      Int
@@ -147,22 +165,27 @@ model Booking {
   createdAt        DateTime      @default(now())
   courtId          String
   userId           String?
-  court            Court         @relation(fields: [courtId], references: [id])
-  user             User?          @relation(fields: [userId], references: [id])
-  guestName  String?
-  
+  court            Court         @relation(fields: [courtId], references: [id], onDelete: Cascade)
+  user             User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  guestName        String?
+
   @@unique([courtId, date, startTime])
+  @@index([courtId])
+  @@index([userId])
+  @@index([date])
 }
 
 model PriceRule {
-  id        String @id @default(cuid())
-  startTime Int
-  endTime   Int
-  price     Int
-  depositPercentage Int @default(30)
+  id                String @id @default(cuid())
+  startTime         Int
+  endTime           Int
+  price             Int
+  depositPercentage Int    @default(30)
+  courtId           String
+  court             Court  @relation(fields: [courtId], references: [id], onDelete: Cascade)
 
-  courtId   String
-  court     Court  @relation(fields: [courtId], references: [id], onDelete: Cascade)
+  
+  @@index([courtId])
 }
 
 model InscriptionRequest {
