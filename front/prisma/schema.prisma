@@ -180,7 +180,7 @@ model PriceRule {
   startTime         Int
   endTime           Int
   price             Int
-  depositPercentage Int    @default(30)
+  depositAmount     Float @default(0)
   courtId           String
   court             Court  @relation(fields: [courtId], references: [id], onDelete: Cascade)
 

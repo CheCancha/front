@@ -176,12 +176,12 @@ export const CourtFormRow = ({
                 <input
                   type="number"
                   placeholder="5000"
-                  value={rule.depositPercentage}
+                  value={rule.depositAmount}
                   onChange={(e) =>
                     onPriceRuleChange(
                       id,
                       ruleId,
-                      "depositPercentage",
+                      "depositAmount",
                       Number(e.target.value)
                     )
                   }

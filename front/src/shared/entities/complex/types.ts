@@ -16,7 +16,7 @@ export interface NewPriceRule {
   startTime: number;
   endTime: number;
   price: number;
-  depositPercentage: number;
+  depositAmount: number;
 }
 
 export interface NewCourt {

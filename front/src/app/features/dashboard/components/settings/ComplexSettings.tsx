@@ -201,7 +201,7 @@ export const ComplexSettings = () => {
       startTime: 9,
       endTime: 23,
       price: 0,
-      depositPercentage: 30,
+      depositAmount: 0,
     };
 
     if (courtId.startsWith("new_")) {
@@ -273,7 +273,7 @@ export const ComplexSettings = () => {
           startTime: 9,
           endTime: 23,
           price: 0,
-          depositPercentage: 30,
+          depositAmount: 0,
         },
       ],
       isNew: true,
@@ -406,7 +406,7 @@ export const ComplexSettings = () => {
                             startTime: pr.startTime,
                             endTime: pr.endTime,
                             price: pr.price,
-                            depositPercentage: pr.depositPercentage,
+                            depositAmount: pr.depositAmount,
                           },
                         })),
                       create: c.priceRules
@@ -415,7 +415,7 @@ export const ComplexSettings = () => {
                           startTime: pr.startTime,
                           endTime: pr.endTime,
                           price: pr.price,
-                          depositPercentage: pr.depositPercentage,
+                          depositAmount: pr.depositAmount,
                         })),
                     },
                   };
@@ -429,7 +429,7 @@ export const ComplexSettings = () => {
                       startTime: pr.startTime,
                       endTime: pr.endTime,
                       price: pr.price,
-                      depositPercentage: pr.depositPercentage,
+                      depositAmount: pr.depositAmount,
                     })),
                   },
                 })),

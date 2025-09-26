@@ -12,21 +12,27 @@ import { SearchBar } from "@/shared/components/ui/Searchbar";
 import { useSearchParams } from "next/navigation";
 import { toast } from "react-hot-toast";
 import { Spinner } from "@/shared/components/ui/Spinner";
-import { BookingModal } from "@/shared/components/ui/BookingModal";
-import type { Court } from "@prisma/client";
+import BookingModal from "@/shared/components/ui/BookingModal";
 
-// --- TIPOS DE DATOS ---
+// --- TIPOS DE DATOS (CORREGIDOS Y EXPLÍCITOS) ---
+type PriceRule = {
+  id: string;
+  startTime: number;
+  endTime: number;
+  price: number;
+  depositAmount: number;
+};
+
+type CourtInfo = {
+  id: string;
+  name: string;
+  slotDurationMinutes: number;
+  priceRules: PriceRule[];
+};
+
 type AvailableSlot = {
   time: string;
-  court: Court & {
-    priceRules: {
-      id: string;
-      startTime: number;
-      endTime: number;
-      price: number;
-      depositPercentage: number;
-    }[];
-  };
+  court: CourtInfo;
 };
 
 type Club = {
@@ -38,8 +44,9 @@ type Club = {
 };
 
 type BookingSelection = {
-  club: Club;
-  slot: AvailableSlot;
+  club: { id: string; name: string }; // Usamos un tipo simple para el club
+  court: CourtInfo;
+  time: string;
   date: Date;
 };
 
@@ -95,6 +102,7 @@ const ClubCard = ({
           src={club.imageUrl}
           alt={`Imagen de ${club.name}`}
           fill
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           className="object-cover transition-transform duration-500"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
@@ -200,7 +208,12 @@ const SearchResultsComponent = () => {
   }, [searchParams]);
 
   const handleBookSlot = (club: Club, slot: AvailableSlot) => {
-    setSelectedBooking({ club, slot, date: searchDate });
+    setSelectedBooking({
+      club: { id: club.id, name: club.name },
+      court: slot.court,
+      time: slot.time,
+      date: searchDate,
+    });
     setIsModalOpen(true);
   };
 
@@ -275,8 +288,8 @@ const SearchResultsComponent = () => {
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           club={selectedBooking.club}
-          court={selectedBooking.slot.court}
-          time={selectedBooking.slot.time}
+          court={selectedBooking.court}
+          time={selectedBooking.time}
           date={selectedBooking.date}
         />
       )}

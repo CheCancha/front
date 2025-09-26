@@ -15,7 +15,7 @@ import Navbar from "@/shared/components/Navbar";
 import Footer from "@/shared/components/Footer";
 import { cn } from "@/shared/lib/utils";
 import { useParams } from "next/navigation";
-import { BookingModal } from "@/shared/components/ui/BookingModal";
+import BookingModal from "@/shared/components/ui/BookingModal";
 import type {
   Complex,
   Court,
@@ -37,7 +37,7 @@ type ComplexProfileData = Complex & {
       startTime: number;
       endTime: number;
       price: number;
-      depositPercentage: number;
+      depositAmount: number;
     }[];
   })[];
   schedule: Schedule | null;
@@ -148,7 +148,7 @@ const BookingWidget = ({
         startTime: number;
         endTime: number;
         price: number;
-        depositPercentage: number;
+        depositAmount: number;
       }[];
     },
     time: string
@@ -163,7 +163,7 @@ const BookingWidget = ({
           startTime: number;
           endTime: number;
           price: number;
-          depositPercentage: number;
+          depositAmount: number;
         }[];
       })
     | null
@@ -332,7 +332,7 @@ export default function ClubProfilePage() {
         startTime: number;
         endTime: number;
         price: number;
-        depositPercentage: number;
+        depositAmount: number;
       }[];
     };
     time: string;
@@ -369,7 +369,7 @@ export default function ClubProfilePage() {
         startTime: number;
         endTime: number;
         price: number;
-        depositPercentage: number;
+        depositAmount: number;
       }[];
     },
     time: string

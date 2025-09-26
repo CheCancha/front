@@ -11,7 +11,7 @@ interface PriceRuleState {
   startTime: number;
   endTime: number;
   price: number;
-  depositPercentage: number;
+  depositAmount: number;
 }
 
 interface CourtState {
@@ -62,7 +62,7 @@ export function CompleteOnboardingForm({ complex }: CompleteOnboardingFormProps)
                 startTime: 9,
                 endTime: 23,
                 price: 0,
-                depositPercentage: 30
+                depositAmount: 0
             }]
           }]);
         }
@@ -94,7 +94,7 @@ export function CompleteOnboardingForm({ complex }: CompleteOnboardingFormProps)
         startTime: 9,
         endTime: 23,
         price: 0,
-        depositPercentage: 30,
+        depositAmount: 0,
     });
     setCourts(newCourts);
   };
@@ -116,7 +116,7 @@ export function CompleteOnboardingForm({ complex }: CompleteOnboardingFormProps)
       name: "",
       sportId: allSports[0].id,
       slotDurationMinutes: 60,
-      priceRules: [{ tempId: `price_${Date.now()}`, startTime: 9, endTime: 23, price: 0, depositPercentage: 30 }]
+      priceRules: [{ tempId: `price_${Date.now()}`, startTime: 9, endTime: 23, price: 0, depositAmount: 0 }]
     }]);
   };
 
@@ -166,7 +166,7 @@ export function CompleteOnboardingForm({ complex }: CompleteOnboardingFormProps)
                     startTime: rule.startTime,
                     endTime: rule.endTime,
                     price: rule.price,
-                    depositPercentage: rule.depositPercentage
+                    depositAmount: rule.depositAmount
                 }))
             }
           })),
@@ -240,7 +240,7 @@ export function CompleteOnboardingForm({ complex }: CompleteOnboardingFormProps)
                         <div className="col-span-6 sm:col-span-3"><label className="text-xs font-medium">Desde</label><select value={rule.startTime} onChange={(e) => handlePriceRuleChange(courtIndex, ruleIndex, 'startTime', e.target.value)} className="w-full text-xs rounded-md border-gray-300">{hoursOptions.map(opt => <option key={`start-${opt.value}`} value={opt.value}>{opt.label}</option>)}</select></div>
                         <div className="col-span-6 sm:col-span-3"><label className="text-xs font-medium">Hasta</label><select value={rule.endTime} onChange={(e) => handlePriceRuleChange(courtIndex, ruleIndex, 'endTime', e.target.value)} className="w-full text-xs rounded-md border-gray-300">{hoursOptions.map(opt => <option key={`end-${opt.value}`} value={opt.value}>{opt.label}</option>)}</select></div>
                         <div className="col-span-6 sm:col-span-2"><label className="text-xs font-medium">Precio</label><input type="number" placeholder="5000" value={rule.price} onChange={(e) => handlePriceRuleChange(courtIndex, ruleIndex, 'price', e.target.value)} className="w-full text-xs rounded-md border-gray-300" /></div>
-                        <div className="col-span-6 sm:col-span-3"><label className="text-xs font-medium">$ Seña</label><input type="number" placeholder="30" value={rule.depositPercentage} onChange={(e) => handlePriceRuleChange(courtIndex, ruleIndex, 'depositPercentage', e.target.value)} className="w-full text-xs rounded-md border-gray-300" /></div>
+                        <div className="col-span-6 sm:col-span-3"><label className="text-xs font-medium">$ Seña</label><input type="number" placeholder="30" value={rule.depositAmount} onChange={(e) => handlePriceRuleChange(courtIndex, ruleIndex, 'depositAmount', e.target.value)} className="w-full text-xs rounded-md border-gray-300" /></div>
                         <div className="col-span-12 sm:col-span-1"><button type="button" onClick={() => removePriceRule(courtIndex, ruleIndex)} className="w-full h-8 flex items-center justify-center text-gray-500 hover:bg-gray-100 rounded-md text-xs">Quitar</button></div>
                     </div>
                  ))}

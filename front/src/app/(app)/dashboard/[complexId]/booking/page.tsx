@@ -24,7 +24,7 @@ type CourtWithSport = Court & {
     startTime: number;
     endTime: number;
     price: number;
-    depositPercentage: number;
+    depositAmount: number;
   }[];
 };
 type ComplexWithCourts = Complex & { courts: CourtWithSport[] };
@@ -39,7 +39,7 @@ type SubmitPayload = {
   status: BookingStatus;
   depositPaid: number;
   bookingId?: string;
-  date?: string; // opcional: el cliente la agrega en creación
+  date?: string; 
 };
 
 // --- SKELETON ---
@@ -413,25 +413,10 @@ export default function BookingCalendarPage() {
             setIsModalOpen(false);
             setEditingBooking(null);
           }}
-          onSubmit={handleBookingSubmit}
-          courts={complex.courts}
-          timeSlots={timeSlots}
-          selectedDate={currentDate}
-          initialValues={
-            editingBooking
-              ? {
-                  ...editingBooking,
-                  time: `${String(editingBooking.startTime).padStart(
-                    2,
-                    "0"
-                  )}:${String(editingBooking.startMinute || 0).padStart(
-                    2,
-                    "0"
-                  )}`,
-                }
-              : modalInitialValues
-          }
-          isEditing={!!editingBooking}
+          club={complex}
+          court={complex.courts[0]} 
+          time={timeSlots[0]}
+          date={currentDate}
         />
       )}
     </>
