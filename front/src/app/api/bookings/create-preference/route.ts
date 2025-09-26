@@ -12,7 +12,9 @@ export async function POST(req: Request) {
     // --- VALIDACIÓN CRÍTICA DE LA VARIABLE DE ENTORNO ---
     const baseURL = process.env.NEXT_PUBLIC_BASE_URL;
     if (!baseURL) {
-      console.error("Error Crítico: NEXT_PUBLIC_BASE_URL no está definida en las variables de entorno.");
+      console.error(
+        "Error Crítico: NEXT_PUBLIC_BASE_URL no está definida en las variables de entorno."
+      );
       return new NextResponse(
         "Error de configuración del servidor: La URL base no está definida.",
         { status: 500 }
@@ -23,7 +25,8 @@ export async function POST(req: Request) {
     const userId = session?.user?.id;
 
     const body = await req.json();
-    const { complexId, courtId, date, time, price, depositAmount, guestName } = body;
+    const { complexId, courtId, date, time, price, depositAmount, guestName } =
+      body;
 
     if (!userId && !guestName) {
       return new NextResponse("El nombre es requerido para los invitados", {
@@ -82,7 +85,8 @@ export async function POST(req: Request) {
     const [hour, minute] = time.split(":").map(Number);
 
     const requestedStartMinutes = hour * 60 + minute;
-    const requestedEndMinutes = requestedStartMinutes + court.slotDurationMinutes;
+    const requestedEndMinutes =
+      requestedStartMinutes + court.slotDurationMinutes;
 
     const conflictingBookings = await db.booking.findMany({
       where: {
@@ -96,8 +100,10 @@ export async function POST(req: Request) {
     });
 
     const isConflict = conflictingBookings.some((booking) => {
-      const existingStartMinutes = booking.startTime * 60 + (booking.startMinute || 0);
-      const existingEndMinutes = existingStartMinutes + booking.court.slotDurationMinutes;
+      const existingStartMinutes =
+        booking.startTime * 60 + (booking.startMinute || 0);
+      const existingEndMinutes =
+        existingStartMinutes + booking.court.slotDurationMinutes;
       return (
         requestedStartMinutes < existingEndMinutes &&
         requestedEndMinutes > existingStartMinutes
@@ -157,15 +163,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ preferenceId: preference.id });
     } catch (mpError: unknown) {
       await db.booking.delete({ where: { id: pendingBooking.id } });
-       console.error("Error al crear preferencia en Mercado Pago:", mpError);
-       return new NextResponse(
-         "Error al comunicarse con Mercado Pago. Verifique las credenciales y los datos enviados.",
-         { status: 400 }
-       );
+      console.error("Error al crear preferencia en Mercado Pago:", mpError);
+      return new NextResponse(
+        "Error al comunicarse con Mercado Pago. Verifique las credenciales y los datos enviados.",
+        { status: 400 }
+      );
     }
   } catch (error) {
     console.error("Error en create-preference:", error);
     return new NextResponse("Error interno del servidor.", { status: 500 });
   }
 }
-
