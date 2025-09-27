@@ -14,7 +14,7 @@ import type {
   BookingStatus,
 } from "@prisma/client";
 import { toast } from "react-hot-toast";
-import AddBookingModal from "@/shared/components/ui/AddBooking";
+import BookingFormModal from "@/shared/components/ui/BookingFormModal";
 
 // --- TIPOS ---
 type CourtWithSport = Court & {
@@ -39,7 +39,7 @@ type SubmitPayload = {
   status: BookingStatus;
   depositPaid: number;
   bookingId?: string;
-  date?: string; 
+  date?: string;
 };
 
 // --- SKELETON ---
@@ -169,47 +169,44 @@ export default function BookingCalendarPage() {
           date: format(currentDate, "yyyy-MM-dd"),
         };
 
-    const response = await fetch(endpoint, {
-      method: method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
+    try {
+      const response = await fetch(endpoint, {
+        method: method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
 
-    if (!response.ok) {
-      let errorMessage = "Ocurrió un error en el servidor.";
-      const contentType = response.headers.get("content-type");
-
-      // Verificamos si la respuesta es JSON o texto plano
-      if (contentType && contentType.includes("application/json")) {
+      if (!response.ok) {
         const errorData = await response.json();
-        errorMessage = errorData.message || errorMessage;
-      } else {
-        const textError = await response.text();
-        if (textError) {
-          errorMessage = textError;
-        }
+        throw new Error(errorData.message || "Ocurrió un error.");
       }
-      throw new Error(errorMessage);
-    }
 
-    const savedBooking = await response.json();
+      const savedBooking = await response.json();
 
-    if (isEditing) {
-      setBookings((prev) =>
-        prev.map((b) => (b.id === savedBooking.id ? savedBooking : b))
+      if (isEditing) {
+        setBookings((prev) =>
+          prev.map((b) => (b.id === savedBooking.id ? savedBooking : b))
+        );
+      } else {
+        setBookings((prev) =>
+          [...prev, savedBooking].sort(
+            (a, b) =>
+              a.startTime - b.startTime ||
+              (a.startMinute || 0) - (b.startMinute || 0)
+          )
+        );
+      }
+
+      toast.success(successMessage);
+      setIsModalOpen(false);
+      setEditingBooking(null);
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "No se pudo guardar la reserva."
       );
-    } else {
-      setBookings((prev) =>
-        [...prev, savedBooking].sort(
-          (a, b) =>
-            a.startTime - b.startTime ||
-            (a.startMinute || 0) - (b.startMinute || 0)
-        )
-      );
     }
-
-    toast.success(successMessage);
-    setIsModalOpen(false);
   };
 
   const openModalForSlot = (courtId: string, time: string) => {
@@ -220,6 +217,7 @@ export default function BookingCalendarPage() {
 
   const openModalForEdit = (booking: BookingWithCourtDuration) => {
     setEditingBooking(booking);
+    setModalInitialValues(undefined);
     setIsModalOpen(true);
   };
 
@@ -406,17 +404,32 @@ export default function BookingCalendarPage() {
           </div>
         </div>
       </div>
+      {/* --- LLAMADA AL MODAL DE ADMIN CORRECTO --- */}
       {complex && (
-        <AddBookingModal
+        <BookingFormModal
           isOpen={isModalOpen}
           onClose={() => {
             setIsModalOpen(false);
             setEditingBooking(null);
           }}
-          club={complex}
-          court={complex.courts[0]} 
-          time={timeSlots[0]}
-          date={currentDate}
+          onSubmit={handleBookingSubmit}
+          courts={complex.courts}
+          timeSlots={timeSlots}
+          initialValues={
+            editingBooking
+              ? {
+                  ...editingBooking,
+                  time: `${String(editingBooking.startTime).padStart(
+                    2,
+                    "0"
+                  )}:${String(editingBooking.startMinute || 0).padStart(
+                    2,
+                    "0"
+                  )}`,
+                }
+              : modalInitialValues
+          }
+          isEditing={!!editingBooking}
         />
       )}
     </>

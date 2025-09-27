@@ -9,21 +9,16 @@ import SimpleCrypto from "simple-crypto-js";
 
 export async function POST(req: Request) {
   try {
-    // --- VALIDACIÓN CRÍTICA DE LA VARIABLE DE ENTORNO ---
     const baseURL = process.env.NEXT_PUBLIC_BASE_URL;
     if (!baseURL) {
-      console.error(
-        "Error Crítico: NEXT_PUBLIC_BASE_URL no está definida en las variables de entorno."
-      );
-      return new NextResponse(
-        "Error de configuración del servidor: La URL base no está definida.",
-        { status: 500 }
-      );
+      console.error("Error Crítico: NEXT_PUBLIC_BASE_URL no está definida.");
+      return new NextResponse("Error de configuración del servidor.", {
+        status: 500,
+      });
     }
 
     const session = await getServerSession(authOptions);
     const userId = session?.user?.id;
-
     const body = await req.json();
     const { complexId, courtId, date, time, price, depositAmount, guestName } =
       body;
@@ -51,7 +46,11 @@ export async function POST(req: Request) {
       select: {
         name: true,
         mp_access_token: true,
-        courts: { where: { id: courtId } },
+        mp_public_key: true,
+        courts: {
+          where: { id: courtId },
+          include: { sport: true }
+        },
       },
     });
 
@@ -63,19 +62,25 @@ export async function POST(req: Request) {
     }
     const court = complex.courts[0];
 
+    // --- Determinar qué credenciales usar ---
     let accessToken = "";
-    if (complex.mp_access_token) {
+    let publicKey = "";
+
+    if (complex.mp_access_token && complex.mp_public_key) {
       const secretKey = process.env.ENCRYPTION_KEY!;
       if (!secretKey) throw new Error("ENCRYPTION_KEY no está definida.");
       const crypto = new SimpleCrypto(secretKey);
       accessToken = crypto.decrypt(complex.mp_access_token) as string;
-      console.log("Usando Access Token del complejo (producción).");
+      publicKey = complex.mp_public_key; // <-- USAR LA PUBLIC KEY DEL CLUB
+      console.log("Usando credenciales de producción del complejo.");
     } else {
+      // Fallback a credenciales de prueba globales si el club no tiene las suyas
       accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN!;
-      console.log("Usando Access Token de prueba (fallback).");
-      if (!accessToken) {
+      publicKey = process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY!;
+      console.log("Usando credenciales de prueba (fallback).");
+      if (!accessToken || !publicKey) {
         return new NextResponse(
-          "El complejo no tiene Mercado Pago configurado y no hay token de prueba.",
+          "El complejo no tiene Mercado Pago configurado y no hay credenciales de prueba.",
           { status: 400 }
         );
       }
@@ -83,10 +88,6 @@ export async function POST(req: Request) {
 
     const bookingDate = new Date(date);
     const [hour, minute] = time.split(":").map(Number);
-
-    const requestedStartMinutes = hour * 60 + minute;
-    const requestedEndMinutes =
-      requestedStartMinutes + court.slotDurationMinutes;
 
     const conflictingBookings = await db.booking.findMany({
       where: {
@@ -98,6 +99,10 @@ export async function POST(req: Request) {
         court: { select: { slotDurationMinutes: true } },
       },
     });
+
+    const requestedStartMinutes = hour * 60 + minute;
+    const requestedEndMinutes =
+      requestedStartMinutes + court.slotDurationMinutes;
 
     const isConflict = conflictingBookings.some((booking) => {
       const existingStartMinutes =
@@ -125,8 +130,8 @@ export async function POST(req: Request) {
         startMinute: minute,
         totalPrice: price,
         depositAmount: depositAmount,
-        depositPaid: depositAmount,
-        remainingBalance: price - depositAmount,
+        depositPaid: 0, // Inicia en 0, se actualiza con el webhook
+        remainingBalance: price,
         status: BookingStatus.PENDIENTE,
         ...(userId ? { userId: userId } : { guestName: guestName }),
       },
@@ -140,8 +145,8 @@ export async function POST(req: Request) {
           items: [
             {
               id: courtId,
-              title: `Seña para reserva en ${complex.name}`,
-              description: `Turno para el día ${format(
+              title: `Seña para ${court.sport.name} en ${complex.name}`,
+              description: `Turno para ${court.name} el ${format(
                 bookingDate,
                 "dd/MM/yyyy"
               )} a las ${time}hs`,
@@ -153,21 +158,25 @@ export async function POST(req: Request) {
           external_reference: pendingBooking.id,
           notification_url: `${baseURL}/api/webhooks/mercado-pago`,
           back_urls: {
-            success: `${baseURL}/courts/${complexId}?status=success&booking_id=${pendingBooking.id}`,
-            failure: `${baseURL}/courts/${complexId}?status=failure`,
-            pending: `${baseURL}/courts/${complexId}?status=pending`,
+            success: `${baseURL}/booking-status?status=success&booking_id=${pendingBooking.id}`,
+            failure: `${baseURL}/booking-status?status=failure&booking_id=${pendingBooking.id}`,
+            pending: `${baseURL}/booking-status?status=pending&booking_id=${pendingBooking.id}`,
           },
           auto_return: "approved",
         },
       });
-      return NextResponse.json({ preferenceId: preference.id });
+
+      // --- DEVOLVER AMBOS DATOS AL FRONTEND ---
+      return NextResponse.json({
+        preferenceId: preference.id,
+        publicKey: publicKey,
+      });
     } catch (mpError: unknown) {
       await db.booking.delete({ where: { id: pendingBooking.id } });
       console.error("Error al crear preferencia en Mercado Pago:", mpError);
-      return new NextResponse(
-        "Error al comunicarse con Mercado Pago. Verifique las credenciales y los datos enviados.",
-        { status: 400 }
-      );
+      return new NextResponse("Error al comunicarse con Mercado Pago.", {
+        status: 400,
+      });
     }
   } catch (error) {
     console.error("Error en create-preference:", error);

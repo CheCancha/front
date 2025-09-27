@@ -37,19 +37,34 @@ export async function GET(
     }
 
     const dayOfWeek = getDay(requestedDate);
-    const dayKeys = [
-      "sunday",
-      "monday",
-      "tuesday",
-      "wednesday",
-      "thursday",
-      "friday",
-      "saturday",
-    ];
-    const key = dayKeys[dayOfWeek] as keyof typeof complex.schedule;
-    const openHour = complex.schedule?.[`${key}Open`] ?? complex.openHour ?? 9;
-    const closeHour =
-      complex.schedule?.[`${key}Close`] ?? complex.closeHour ?? 23;
+const dayKeys = [
+  "sunday",
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+];
+const key = dayKeys[dayOfWeek];
+
+let openHour: number | null | undefined;
+let closeHour: number | null | undefined;
+
+if (complex.schedule) {
+  const rawOpenHour = complex.schedule[`${key}Open` as keyof typeof complex.schedule];
+  const rawCloseHour = complex.schedule[`${key}Close` as keyof typeof complex.schedule];
+  openHour = typeof rawOpenHour === "string" ? Number(rawOpenHour) : rawOpenHour;
+  closeHour = typeof rawCloseHour === "string" ? Number(rawCloseHour) : rawCloseHour;
+} else {
+  // Si no hay cronograma específico, usamos los horarios generales del club como respaldo.
+  openHour = complex.openHour;
+  closeHour = complex.closeHour;
+}
+
+if (typeof openHour !== "number" || typeof closeHour !== "number") {
+  return NextResponse.json([]); // Devuelve un array vacío para indicar que no hay turnos.
+}
 
     // --- LÓGICA DE DISPONIBILIDAD MEJORADA ---
 
