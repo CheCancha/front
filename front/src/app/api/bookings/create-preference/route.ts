@@ -4,100 +4,68 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/authOptions";
 import { db } from "@/shared/lib/db";
 import { getMercadoPagoPreferenceClient } from "@/shared/lib/mercadopago";
 import { format } from "date-fns";
-import { BookingStatus } from "@prisma/client";
+import { Booking, BookingStatus, Court } from "@prisma/client";
 import SimpleCrypto from "simple-crypto-js";
+import { z } from "zod";
 
-export async function POST(req: Request) {
-  try {
-    const baseURL = process.env.NEXT_PUBLIC_BASE_URL;
-    if (!baseURL) {
-      console.error("Error Crítico: NEXT_PUBLIC_BASE_URL no está definida.");
-      return new NextResponse("Error de configuración del servidor.", {
-        status: 500,
-      });
-    }
+// --- 1. Esquema de Validación con Zod ---
+const createBookingSchema = z.object({
+  complexId: z.string().min(1),
+  courtId: z.string().min(1),
+  date: z.string().datetime(),
+  time: z.string().regex(/^\d{2}:\d{2}$/), 
+  price: z.number().min(0),
+  depositAmount: z.number().min(0),
+  guestName: z.string().optional(),
+});
 
-    const session = await getServerSession(authOptions);
-    const userId = session?.user?.id;
-    const body = await req.json();
-    const { complexId, courtId, date, time, price, depositAmount, guestName } =
-      body;
+type BookingRequest = z.infer<typeof createBookingSchema>;
 
-    if (!userId && !guestName) {
-      return new NextResponse("El nombre es requerido para los invitados", {
-        status: 400,
-      });
-    }
-    if (
-      !complexId ||
-      !courtId ||
-      !date ||
-      !time ||
-      price === undefined ||
-      depositAmount === undefined
-    ) {
-      return new NextResponse("Faltan datos para crear la reserva", {
-        status: 400,
-      });
-    }
 
-    const complex = await db.complex.findUnique({
-      where: { id: complexId },
-      select: {
-        name: true,
-        mp_access_token: true,
-        mp_public_key: true,
-        courts: {
-          where: { id: courtId },
-          include: { sport: true }
-        },
-      },
-    });
+function getMercadoPagoCredentials(complex: {
+  mp_access_token: string | null;
+  mp_public_key: string | null;
+}) {
+  if (complex.mp_access_token && complex.mp_public_key) {
+    console.log("Usando credenciales de producción del complejo.");
+    const secretKey = process.env.ENCRYPTION_KEY;
+    if (!secretKey) throw new Error("ENCRYPTION_KEY no está definida.");
 
-    if (!complex || complex.courts.length === 0) {
-      return new NextResponse(
-        "El complejo o la cancha no fueron encontrados.",
-        { status: 404 }
-      );
-    }
-    const court = complex.courts[0];
+    const crypto = new SimpleCrypto(secretKey);
+    const accessToken = crypto.decrypt(complex.mp_access_token) as string;
 
-    // --- Determinar qué credenciales usar ---
-    let accessToken = "";
-    let publicKey = "";
+    return { accessToken, publicKey: complex.mp_public_key };
+  }
 
-    if (complex.mp_access_token && complex.mp_public_key) {
-      const secretKey = process.env.ENCRYPTION_KEY!;
-      if (!secretKey) throw new Error("ENCRYPTION_KEY no está definida.");
-      const crypto = new SimpleCrypto(secretKey);
-      accessToken = crypto.decrypt(complex.mp_access_token) as string;
-      publicKey = complex.mp_public_key; // <-- USAR LA PUBLIC KEY DEL CLUB
-      console.log("Usando credenciales de producción del complejo.");
-    } else {
-      // Fallback a credenciales de prueba globales si el club no tiene las suyas
-      accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN!;
-      publicKey = process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY!;
-      console.log("Usando credenciales de prueba (fallback).");
-      if (!accessToken || !publicKey) {
-        return new NextResponse(
-          "El complejo no tiene Mercado Pago configurado y no hay credenciales de prueba.",
-          { status: 400 }
-        );
-      }
-    }
+  console.log("Usando credenciales de prueba (fallback).");
+  const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
+  const publicKey = process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY;
 
-    const bookingDate = new Date(date);
-    const [hour, minute] = time.split(":").map(Number);
+  if (!accessToken || !publicKey) {
+    throw new Error(
+      "El complejo no tiene Mercado Pago configurado y no hay credenciales de prueba."
+    );
+  }
 
-    const conflictingBookings = await db.booking.findMany({
+  return { accessToken, publicKey };
+}
+
+async function createPendingBookingInTransaction(
+  data: BookingRequest,
+  userId: string | undefined,
+  court: Court
+): Promise<Booking> {
+  const bookingDate = new Date(data.date);
+  const [hour, minute] = data.time.split(":").map(Number);
+
+  return db.$transaction(async (prisma) => {
+    const conflictingBookings = await prisma.booking.findMany({
       where: {
-        courtId: courtId,
+        courtId: data.courtId,
         date: bookingDate,
         status: { in: ["CONFIRMADO", "PENDIENTE"] },
       },
-      include: {
-        court: { select: { slotDurationMinutes: true } },
-      },
+      include: { court: { select: { slotDurationMinutes: true } } },
     });
 
     const requestedStartMinutes = hour * 60 + minute;
@@ -116,69 +84,122 @@ export async function POST(req: Request) {
     });
 
     if (isConflict) {
-      return new NextResponse(
-        "Lo sentimos, este horario ya no está disponible.",
-        { status: 409 }
-      );
+      throw new Error("Lo sentimos, este horario ya no está disponible.");
     }
 
-    const pendingBooking = await db.booking.create({
+    return prisma.booking.create({
       data: {
-        courtId,
+        courtId: data.courtId,
         date: bookingDate,
         startTime: hour,
         startMinute: minute,
-        totalPrice: price,
-        depositAmount: depositAmount,
-        depositPaid: 0, // Inicia en 0, se actualiza con el webhook
-        remainingBalance: price,
+        totalPrice: data.price,
+        depositAmount: data.depositAmount,
+        depositPaid: 0,
+        remainingBalance: data.price,
         status: BookingStatus.PENDIENTE,
-        ...(userId ? { userId: userId } : { guestName: guestName }),
+        ...(userId ? { userId: userId } : { guestName: data.guestName }),
       },
     });
+  });
+}
 
-    const preferenceClient = getMercadoPagoPreferenceClient(accessToken);
-
-    try {
-      const preference = await preferenceClient.create({
-        body: {
-          items: [
-            {
-              id: courtId,
-              title: `Seña para ${court.sport.name} en ${complex.name}`,
-              description: `Turno para ${court.name} el ${format(
-                bookingDate,
-                "dd/MM/yyyy"
-              )} a las ${time}hs`,
-              quantity: 1,
-              currency_id: "ARS",
-              unit_price: depositAmount,
-            },
-          ],
-          external_reference: pendingBooking.id,
-          notification_url: `${baseURL}/api/webhooks/mercado-pago`,
-          back_urls: {
-            success: `${baseURL}/booking-status?status=success&booking_id=${pendingBooking.id}`,
-            failure: `${baseURL}/booking-status?status=failure&booking_id=${pendingBooking.id}`,
-            pending: `${baseURL}/booking-status?status=pending&booking_id=${pendingBooking.id}`,
-          },
-          auto_return: "approved",
-        },
+// --- 3. Handler Principal (Orquestador) ---
+export async function POST(req: Request) {
+  try {
+    const baseURL = process.env.NEXT_PUBLIC_BASE_URL;
+    if (!baseURL) {
+      console.error("Error Crítico: NEXT_PUBLIC_BASE_URL no está definida.");
+      return new NextResponse("Error de configuración del servidor.", {
+        status: 500,
       });
+    }
 
-      // --- DEVOLVER AMBOS DATOS AL FRONTEND ---
-      return NextResponse.json({
-        preferenceId: preference.id,
-        publicKey: publicKey,
-      });
-    } catch (mpError: unknown) {
-      await db.booking.delete({ where: { id: pendingBooking.id } });
-      console.error("Error al crear preferencia en Mercado Pago:", mpError);
-      return new NextResponse("Error al comunicarse con Mercado Pago.", {
+    const session = await getServerSession(authOptions);
+    const userId = session?.user?.id;
+    const body = await req.json();
+
+    const bookingData = createBookingSchema.parse(body);
+
+    if (!userId && !bookingData.guestName) {
+      return new NextResponse("El nombre es requerido para los invitados", {
         status: 400,
       });
     }
-  } catch (error) {
+
+    const complexData = await db.complex.findUnique({
+      where: { id: bookingData.complexId },
+      select: {
+        name: true,
+        mp_access_token: true,
+        mp_public_key: true,
+        courts: {
+          where: { id: bookingData.courtId },
+          include: { sport: true },
+        },
+      },
+    });
+
+    if (!complexData || complexData.courts.length === 0) {
+      return new NextResponse(
+        "El complejo o la cancha no fueron encontrados.",
+        { status: 404 }
+      );
+    }
+    const court = complexData.courts[0];
+
+    const pendingBooking = await createPendingBookingInTransaction(
+      bookingData,
+      userId,
+      court
+    );
+
+    const { accessToken, publicKey } = getMercadoPagoCredentials(complexData);
+    const preferenceClient = getMercadoPagoPreferenceClient(accessToken);
+
+    const preference = await preferenceClient.create({
+      body: {
+        items: [
+          {
+            id: bookingData.courtId,
+            title: `Seña para ${court.sport.name} en ${complexData.name}`,
+            description: `Turno para ${court.name} el ${format(
+              new Date(bookingData.date),
+              "dd/MM/yyyy"
+            )} a las ${bookingData.time}hs`,
+            quantity: 1,
+            currency_id: "ARS",
+            unit_price: bookingData.depositAmount,
+          },
+        ],
+        external_reference: pendingBooking.id,
+        notification_url: `${baseURL}/api/webhooks/mercado-pago`,
+        back_urls: {
+          success: `${baseURL}/booking-status?status=success&booking_id=${pendingBooking.id}`,
+          failure: `${baseURL}/booking-status?status=failure&booking_id=${pendingBooking.id}`,
+          pending: `${baseURL}/booking-status?status=pending&booking_id=${pendingBooking.id}`,
+        },
+        auto_return: "approved",
+      },
+    });
+
+    return NextResponse.json({
+      preferenceId: preference.id,
+      publicKey: publicKey,
+    });
+  } catch (error: unknown) {
+    if (error instanceof z.ZodError) {
+      return new NextResponse(`Datos inválidos: ${error.message}`, {
+        status: 400,
+      });
+    }
+    if (
+      error instanceof Error &&
+      error.message.includes("horario ya no está disponible")
+    ) {
+      return new NextResponse(error.message, { status: 409 });
+    }
+
     console.error("Error en create-preference:", error);
     return new NextResponse("Error interno del servidor.", { status: 500 });
   }
