@@ -58,24 +58,45 @@ function findNextAvailableSlots(
   const isToday = now.toDateString() === searchDate.toDateString();
 
   const dayOfWeek = getDay(searchDate);
-  const dayKeys = [ "sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday" ];
+  const dayKeys = [
+    "sunday",
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+  ];
   const key = dayKeys[dayOfWeek] as keyof typeof complex.schedule;
 
-  const openHour = complex.schedule?.[`${key}Open`] ?? complex.openHour ?? 9;
-  const closeHour = complex.schedule?.[`${key}Close`] ?? complex.closeHour ?? 23;
+  const openHourForDay = complex.schedule?.[`${key}Open`];
+  const closeHourForDay = complex.schedule?.[`${key}Close`];
+
+  // 2. ¡Esta es la validación clave! Si no hay hora de apertura o cierre, está cerrado.
+  if (openHourForDay == null || closeHourForDay == null) {
+    // 3. Si está cerrado, devolvemos un array vacío INMEDIATAMENTE.
+    return [];
+  }
+
+  // Si llegamos aquí, el club está abierto. Usamos los horarios del día.
+  const openHour = openHourForDay;
+  const closeHour = closeHourForDay;
 
   const bookedSlotsByCourtId = new Map<string, Set<string>>();
   complex.courts.forEach((court) => {
     const bookedTimes = new Set<string>();
     court.bookings.forEach((booking) => {
-      const timeString = `${String(booking.startTime).padStart( 2, "0" )}:${String(booking.startMinute || 0).padStart(2, "0")}`;
+      const timeString = `${String(booking.startTime).padStart(
+        2,
+        "0"
+      )}:${String(booking.startMinute || 0).padStart(2, "0")}`;
       bookedTimes.add(timeString);
     });
     bookedSlotsByCourtId.set(court.id, bookedTimes);
   });
 
   const availableSlots: AvailableSlot[] = [];
-  
+
   // --- LÓGICA CORREGIDA ---
   // La hora de inicio es la más tardía entre la hora actual (si es hoy) y la hora de apertura del club.
   const startHour = isToday ? Math.max(now.getHours(), openHour) : openHour;
@@ -84,7 +105,9 @@ function findNextAvailableSlots(
     for (let minute = 0; minute < 60; minute += 30) {
       if (availableSlots.length >= count) return availableSlots;
 
-      const timeString = `${String(hour).padStart(2, "0")}:${String( minute ).padStart(2, "0")}`;
+      const timeString = `${String(hour).padStart(2, "0")}:${String(
+        minute
+      ).padStart(2, "0")}`;
 
       if (
         isToday &&
@@ -96,7 +119,7 @@ function findNextAvailableSlots(
 
       for (const court of complex.courts) {
         if (availableSlots.length >= count) break;
-        
+
         const courtBookedSlots = bookedSlotsByCourtId.get(court.id);
         if (!courtBookedSlots?.has(timeString)) {
           const priceRule = getPriceRuleForTime(court, timeString);
@@ -128,11 +151,16 @@ export async function GET(req: NextRequest) {
 
     const validation = searchSchema.safeParse(query);
     if (!validation.success) {
-      return NextResponse.json( { error: validation.error.format() }, { status: 400 } );
+      return NextResponse.json(
+        { error: validation.error.format() },
+        { status: 400 }
+      );
     }
 
     const { city, sport, date } = validation.data;
-    const searchDate = new Date( `${date || new Date().toISOString().split("T")[0]}T00:00:00.000-03:00` );
+    const searchDate = new Date(
+      `${date || new Date().toISOString().split("T")[0]}T00:00:00.000-03:00`
+    );
 
     const whereClause: Prisma.ComplexWhereInput = {
       onboardingCompleted: true,
@@ -162,20 +190,25 @@ export async function GET(req: NextRequest) {
 
     const filteredComplexes = complexes.filter((c) => c.courts.length > 0);
 
-    const formattedComplexes = filteredComplexes.map((complex) => {
-      const availableSlots = findNextAvailableSlots(complex, searchDate, 3);
-      return {
-        id: complex.id,
-        name: complex.name,
-        address: `${complex.address}, ${complex.city}`,
-        imageUrl: complex.images[0]?.url || "/placeholder.jpg",
-        availableSlots: availableSlots,
-      };
-    });
+    const formattedComplexes = filteredComplexes
+      .map((complex) => {
+        const availableSlots = findNextAvailableSlots(complex, searchDate, 3);
+        return {
+          id: complex.id,
+          name: complex.name,
+          address: `${complex.address}, ${complex.city}`,
+          imageUrl: complex.images[0]?.url || "/placeholder.jpg",
+          availableSlots: availableSlots,
+        };
+      })
+      .filter((complex) => complex.availableSlots.length > 0);
 
     return NextResponse.json(formattedComplexes);
   } catch (error) {
     console.error("[SEARCH_GET]", error);
-    return NextResponse.json( { error: "Error interno del servidor" }, { status: 500 } );
+    return NextResponse.json(
+      { error: "Error interno del servidor" },
+      { status: 500 }
+    );
   }
 }
