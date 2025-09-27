@@ -9,7 +9,11 @@ import { Role } from "@prisma/client";
 
 declare module "next-auth" {
   interface Session {
-    user: { id: string; role: Role; complexId?: string | null } & DefaultSession["user"];
+    user: {
+      id: string;
+      role: Role;
+      complexId?: string | null;
+    } & DefaultSession["user"];
   }
   interface User {
     role: Role;
@@ -35,20 +39,40 @@ export const authOptions: NextAuthOptions = {
     CredentialsProvider({
       name: "Credentials",
       credentials: {
-        phone: { label: "Teléfono", type: "text" },
+        login: { label: "Email o Teléfono", type: "text" },
         password: { label: "Contraseña", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.phone || !credentials?.password) return null;
+        if (!credentials?.login || !credentials?.password) return null;
 
-        const normalizedPhone = normalizePhoneNumber(credentials.phone);
-        const user = await db.user.findUnique({
-          where: { phone: normalizedPhone },
-          include: { managedComplex: { select: { id: true } } },
-        });
+        const { login, password } = credentials;
+
+        // --- LÓGICA DE BÚSQUEDA INTELIGENTE ---
+        // Verificamos si el 'login' parece un email
+        const isEmail = login.includes("@");
+
+        let user;
+        if (isEmail) {
+          // Si es un email, buscamos por email
+          user = await db.user.findUnique({
+            where: { email: login.toLowerCase() },
+            include: { managedComplex: { select: { id: true } } },
+          });
+        } else {
+          // Si no, asumimos que es un teléfono y lo normalizamos
+          const normalizedPhone = normalizePhoneNumber(login);
+          user = await db.user.findUnique({
+            where: { phone: normalizedPhone },
+            include: { managedComplex: { select: { id: true } } },
+          });
+        }
+
         if (!user || !user.hashedPassword) return null;
 
-        const passwordMatch = await bcrypt.compare(credentials.password, user.hashedPassword);
+        const passwordMatch = await bcrypt.compare(
+          password,
+          user.hashedPassword
+        );
         if (!passwordMatch) return null;
 
         return {
@@ -66,14 +90,14 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         const dbUser = await db.user.findUnique({
-            where: { id: user.id },
-            include: { managedComplex: { select: { id: true } } },
+          where: { id: user.id },
+          include: { managedComplex: { select: { id: true } } },
         });
 
         if (dbUser) {
-            token.id = dbUser.id;
-            token.role = dbUser.role;
-            token.complexId = dbUser.managedComplex?.id || null;
+          token.id = dbUser.id;
+          token.role = dbUser.role;
+          token.complexId = dbUser.managedComplex?.id || null;
         }
       }
       return token;

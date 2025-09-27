@@ -1,7 +1,14 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/authOptions";
 import { notFound, redirect } from "next/navigation";
-import { DollarSign, CreditCard, Clock } from "lucide-react";
+import {
+  DollarSign,
+  Clock,
+  BarChart,
+  Users,
+  TrendingUp,
+  Star,
+} from "lucide-react";
 import { routes } from "@/routes";
 import { getComplexDataForManager } from "@/app/features/dashboard/services/dashboard.service";
 import { MetricCard } from "@/app/features/dashboard/components/MetricCard";
@@ -11,14 +18,10 @@ import { OnboardingPrompt } from "@/app/features/dashboard/components/Onboarding
 
 export default async function DashboardPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ complexId: string }>;
-  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const { complexId } = await params;
-  const resolvedSearchParams = searchParams ? await searchParams : {};
-
   const session = await getServerSession(authOptions);
 
   if (!session || session.user.role !== "MANAGER") {
@@ -34,42 +37,64 @@ export default async function DashboardPage({
     return notFound();
   }
 
-  const formattedIncome = new Intl.NumberFormat("es-AR", {
-    style: "currency",
-    currency: "ARS",
-  }).format(complexData.totalIncomeToday);
+  // --- Funciones para formatear los valores ---
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat("es-AR", {
+      style: "currency",
+      currency: "ARS",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
 
   return (
     <div className="flex-1 space-y-6 mx-auto">
       {!complexData.onboardingCompleted && (
         <OnboardingPrompt complexId={complexId} />
       )}
+
+      {/* --- SECCIÓN DE KPIs --- */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        <MetricCard
+          title="Reservas de Hoy"
+          value={complexData.reservationsToday.toString()}
+          icon={<Clock />}
+        />
+        <MetricCard
+          title="Ingresos del Día"
+          value={formatCurrency(complexData.totalIncomeToday)}
+          icon={<DollarSign />}
+        />
+        <MetricCard
+          title="Ocupación de Hoy"
+          value={`${complexData.occupancyRate}%`}
+          icon={<BarChart />}
+        />
+        <MetricCard
+          title="Turnos Próx. 7 Días"
+          value={complexData.reservationsNext7Days.toString()}
+          icon={<Users />}
+        />
+        <MetricCard
+          title="Ingresos a Confirmar"
+          value={formatCurrency(complexData.pendingIncomeNext7Days)}
+          icon={<TrendingUp />}
+        />
+        <MetricCard
+          title="Calificación"
+          value={`${complexData.averageRating.toFixed(1)} (${
+            complexData.reviewCount
+          })`}
+          icon={<Star />}
+        />
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        <div className="lg:col-span-8 space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 ">
-            <MetricCard
-              title="Reservas de Hoy"
-              value={complexData.reservationsToday.toString()}
-              icon={<Clock className="h-4 w-4 text-gray-500" />}
-              description="Total de turnos del día"
-            />
-            <MetricCard
-              title="Ocupación de Hoy"
-              value={`${complexData.occupancyRate}%`}
-              icon={<CreditCard className="h-4 w-4 text-gray-500" />}
-              description="Sobre las horas disponibles"
-            />
-            <MetricCard
-              title="Ingresos del Día"
-              value={formattedIncome}
-              icon={<DollarSign className="h-4 w-4 text-gray-500" />}
-              description="Ingresos confirmados"
-            />
-          </div>
+        <div className="lg:col-span-8">
           <SalesChart complexId={complexId} />
         </div>
         <div className="lg:col-span-4">
-          <Reservations complexId={complexId} />
+          {/* Pasamos los datos como prop */}
+          <Reservations bookings={complexData.upcomingBookings} />
         </div>
       </div>
     </div>

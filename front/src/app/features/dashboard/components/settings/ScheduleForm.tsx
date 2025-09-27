@@ -7,15 +7,39 @@ type ScheduleDayKey = Exclude<keyof Schedule, "id" | "complexId">;
 
 interface Props {
     data: FullComplexData;
-    onChange: (dayKey: ScheduleDayKey, value: string | null) => void;
+    onScheduleChange: (key: ScheduleDayKey, value: string | null) => void;
+    onComplexChange: (key: 'timeSlotInterval', value: number) => void;
 }
 
-export const ScheduleForm = ({ data, onChange }: Props) => (
+export const ScheduleForm = ({ data, onScheduleChange, onComplexChange }: Props) => (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="p-6">
-            <h3 className="text-lg font-semibold">Horarios de Apertura por Día</h3>
-            <p className="text-sm text-gray-500 mt-1">Define las horas de apertura y cierre. Si un día no se completa, se considerará cerrado.</p>
-            <div className="space-y-4 mt-6">
+            <h3 className="text-lg font-semibold">Horarios y Reservas</h3>
+            <p className="text-sm text-gray-500 mt-1">
+                Define las horas de apertura y la visualización de los turnos en el calendario.
+            </p>
+            
+            {/* --- NUEVO SELECTOR DE INTERVALO --- */}
+            <div className="mt-6 border-t pt-6">
+                <label htmlFor="timeSlotInterval" className="block text-sm font-medium text-gray-900">
+                    Intervalo de turnos en el calendario
+                </label>
+                <select
+                    id="timeSlotInterval"
+                    name="timeSlotInterval"
+                    value={data.timeSlotInterval || 30}
+                    onChange={(e) => onComplexChange('timeSlotInterval', Number(e.target.value))}
+                    className="mt-2 block w-full max-w-xs rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                >
+                    <option value={30}>Cada 30 minutos</option>
+                    <option value={60}>Cada 1 hora</option>
+                </select>
+                <p className="mt-2 text-sm text-gray-500">
+                    Define cómo se muestran los horarios disponibles para reservar.
+                </p>
+            </div>
+
+            <div className="space-y-4 mt-6 border-t pt-6">
                 {Object.entries(dayMapping).map(([dayName, { open: openKey, close: closeKey }]) => {
                     const openValue = data.schedule?.[openKey] ?? "";
                     const closeValue = data.schedule?.[closeKey] ?? "";
@@ -27,11 +51,11 @@ export const ScheduleForm = ({ data, onChange }: Props) => (
                                 <div className={`w-3 h-3 rounded-full ${isOpen ? "bg-green-500" : "bg-gray-300"}`}></div>
                                 <span className="font-medium text-gray-900">{dayName}</span>
                             </div>
-                            <select value={openValue} onChange={(e) => onChange(openKey, e.target.value)} className="w-full p-2 rounded-md border border-neutral-300 text-sm">
+                            <select value={openValue} onChange={(e) => onScheduleChange(openKey, e.target.value)} className="w-full ...">
                                 <option value="">Apertura</option>
                                 {hoursOptions.map(h => <option key={`${dayName}-open-${h.value}`} value={h.value}>{h.label}</option>)}
                             </select>
-                            <select value={closeValue} onChange={(e) => onChange(closeKey, e.target.value)} className="w-full p-2 rounded-md border border-neutral-300 text-sm">
+                            <select value={closeValue} onChange={(e) => onScheduleChange(closeKey, e.target.value)} className="w-full ...">
                                 <option value="">Cierre</option>
                                 {hoursOptions.map(h => <option key={`${dayName}-close-${h.value}`} value={h.value}>{h.label}</option>)}
                             </select>

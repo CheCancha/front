@@ -24,7 +24,10 @@ const HeroSection: FC = () => {
   };
 
   return (
-    <section className="relative w-full min-h-[85vh] flex items-center justify-center text-white py-20 px-4 lg:h-[80vh] lg:min-h-[600px] lg:my-16 lg:py-0 lg:px-8 lg:bg-background">
+    <section
+      className="relative w-full min-h-[85vh] flex items-center justify-center text-white py-20 px-4 lg:h-[80vh] lg:min-h-[600px] lg:my-16 lg:py-0 lg:px-8 lg:bg-background"
+      id="inicio"
+    >
       <div className="absolute inset-0 lg:relative lg:w-full lg:h-full lg:max-w-7xl lg:rounded-xl lg:overflow-hidden">
         <Image
           src="/paddle.webp"
@@ -54,7 +57,8 @@ const HeroSection: FC = () => {
           variants={itemVariants}
           className="font-satoshi text-base sm:text-lg md:text-xl text-gray-200 max-w-2xl mx-auto mb-10"
         >
-          La forma más fácil de buscar, comparar y reservar canchas de tu deporte favorito en tu ciudad.
+          La forma más fácil de buscar, comparar y reservar canchas de tu
+          deporte favorito en tu ciudad.
         </motion.p>
 
         <motion.div variants={itemVariants}>
@@ -66,4 +70,3 @@ const HeroSection: FC = () => {
 };
 
 export default HeroSection;
-

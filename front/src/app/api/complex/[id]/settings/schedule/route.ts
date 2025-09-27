@@ -4,21 +4,26 @@ import { z } from "zod";
 import { authorizeAndVerify } from "@/shared/lib/authorize";
 
 // Esquema para validar el payload de entrada
-const scheduleSchema = z.object({
-  mondayOpen: z.number().nullable().optional(),
-  mondayClose: z.number().nullable().optional(),
-  tuesdayOpen: z.number().nullable().optional(),
-  tuesdayClose: z.number().nullable().optional(),
-  wednesdayOpen: z.number().nullable().optional(),
-  wednesdayClose: z.number().nullable().optional(),
-  thursdayOpen: z.number().nullable().optional(),
-  thursdayClose: z.number().nullable().optional(),
-  fridayOpen: z.number().nullable().optional(),
-  fridayClose: z.number().nullable().optional(),
-  saturdayOpen: z.number().nullable().optional(),
-  saturdayClose: z.number().nullable().optional(),
-  sundayOpen: z.number().nullable().optional(),
-  sundayClose: z.number().nullable().optional(),
+const settingsSchema = z.object({
+  schedule: z
+    .object({
+      mondayOpen: z.number().nullable().optional(),
+      mondayClose: z.number().nullable().optional(),
+      tuesdayOpen: z.number().nullable().optional(),
+      tuesdayClose: z.number().nullable().optional(),
+      wednesdayOpen: z.number().nullable().optional(),
+      wednesdayClose: z.number().nullable().optional(),
+      thursdayOpen: z.number().nullable().optional(),
+      thursdayClose: z.number().nullable().optional(),
+      fridayOpen: z.number().nullable().optional(),
+      fridayClose: z.number().nullable().optional(),
+      saturdayOpen: z.number().nullable().optional(),
+      saturdayClose: z.number().nullable().optional(),
+      sundayOpen: z.number().nullable().optional(),
+      sundayClose: z.number().nullable().optional(),
+    })
+    .optional(),
+  timeSlotInterval: z.literal(30).or(z.literal(60)).optional(),
 });
 
 export async function PUT(
@@ -31,7 +36,7 @@ export async function PUT(
     if (error) return error;
 
     const body = await req.json();
-    const validation = scheduleSchema.safeParse(body.schedule);
+    const validation = settingsSchema.safeParse(body);
 
     if (!validation.success) {
       return new NextResponse(
@@ -40,18 +45,32 @@ export async function PUT(
       );
     }
 
-    const scheduleData = validation.data;
+    const { schedule, timeSlotInterval } = validation.data;
 
-    await db.schedule.upsert({
-      where: { complexId: id },
-      update: scheduleData,
-      create: {
-        complexId: id,
-        ...scheduleData,
-      },
-    });
+    const updatePromises = [];
 
-    return NextResponse.json({ message: "Horarios actualizados exitosamente" });
+    if (timeSlotInterval !== undefined) {
+      updatePromises.push(
+        db.complex.update({
+          where: { id },
+          data: { timeSlotInterval },
+        })
+      );
+    }
+
+    if (schedule) {
+      updatePromises.push(
+        db.schedule.upsert({
+          where: { complexId: id },
+          update: schedule,
+          create: { complexId: id, ...schedule },
+        })
+      );
+    }
+
+    await Promise.all(updatePromises);
+
+    return NextResponse.json({ message: "Ajustes de horarios actualizados" });
   } catch (error) {
     console.error("[SETTINGS_SCHEDULE_PUT]", error);
     return new NextResponse("Error interno del servidor", { status: 500 });

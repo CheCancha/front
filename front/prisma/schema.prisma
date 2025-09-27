@@ -17,18 +17,19 @@ enum SubscriptionPlan {
 
 model User {
   id                 String              @id @default(cuid())
-  name               String?
+  name               String
   phone              String?             @unique
   role               Role                @default(USER)
   hashedPassword     String?
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
-  email              String?             @unique
+  email              String              @unique
   image              String?
   accounts           Account[]
   bookings           Booking[]
   managedComplex     Complex?            @relation("ManagedBy")
   passwordResetToken PasswordResetToken?
+  reviews            Review[]
 }
 
 model PasswordResetToken {
@@ -60,6 +61,25 @@ model Account {
   @@index([userId])
 }
 
+
+model Review {
+  id        String   @id @default(cuid())
+  rating    Int      
+  comment   String?  
+  createdAt DateTime @default(now())
+
+  complexId String
+  complex   Complex  @relation(fields: [complexId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  bookingId String   @unique
+  booking   Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([complexId])
+  @@index([userId])
+}
+
 model Complex {
   id                  String   @id @default(cuid())
   name                String
@@ -71,7 +91,7 @@ model Complex {
   openHour            Int?
   closeHour           Int?
   courtCount          Int?
-
+  timeSlotInterval    Int      @default(30)
   // Geolocalización para mapas
   latitude            Float?
   longitude           Float?
@@ -89,6 +109,11 @@ model Complex {
   images              Image[]
   schedule            Schedule?
   subscriptionPlan    SubscriptionPlan @default(FREE)
+
+  reviews          Review[]
+
+  averageRating    Float    @default(0)
+  reviewCount      Int      @default(0)
 
   
   @@index([managerId])
@@ -169,6 +194,7 @@ model Booking {
   user             User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
   guestName        String?
   paymentId        String?
+  review           Review?
 
   @@unique([courtId, date, startTime])
   @@index([courtId])

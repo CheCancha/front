@@ -85,7 +85,18 @@ export const ComplexSettings = () => {
       prev ? { ...prev, [e.target.name]: e.target.value } : null
     );
   };
-  const handleScheduleChange = (
+
+  const handleComplexChange = (key: "timeSlotInterval", value: number) => {
+    setData((prev) => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        [key]: value,
+      };
+    });
+  };
+
+  const handleScheduleDayChange = (
     dayKey: ScheduleDayKey,
     value: string | null
   ) => {
@@ -310,7 +321,6 @@ export const ComplexSettings = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!data || !originalData) return;
-
     setIsSaving(true);
     toast.loading("Guardando cambios...");
 
@@ -371,7 +381,10 @@ export const ComplexSettings = () => {
 
           case "schedule":
             endpoint = `/api/complex/${complexId}/settings/schedule`;
-            payload = { schedule: data.schedule };
+            payload = {
+              schedule: data.schedule,
+              timeSlotInterval: data.timeSlotInterval,
+            };
             break;
 
           case "courts":
@@ -520,7 +533,11 @@ export const ComplexSettings = () => {
             <GeneralInfoForm data={data} onChange={handleBasicInfoChange} />
           )}
           {activeTab === "schedule" && (
-            <ScheduleForm data={data} onChange={handleScheduleChange} />
+            <ScheduleForm
+              data={data}
+              onComplexChange={handleComplexChange}
+              onScheduleChange={handleScheduleDayChange}
+            />
           )}
           {activeTab === "courts" && (
             <CourtsManager

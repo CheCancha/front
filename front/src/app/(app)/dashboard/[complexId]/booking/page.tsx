@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { ChevronLeft, ChevronRight, Calendar, PlusCircle } from "lucide-react";
-import { format, add, startOfDay } from "date-fns";
+import { format, add, startOfDay, isBefore, isToday } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn } from "@/shared/lib/utils";
 import type {
@@ -17,7 +17,7 @@ import { toast } from "react-hot-toast";
 import BookingFormModal from "@/shared/components/ui/BookingFormModal";
 
 // --- TIPOS ---
-type CourtWithSport = Court & {
+type CourtWithSportAndPriceRules = Court & {
   sport: Sport;
   priceRules: {
     id: string;
@@ -27,13 +27,11 @@ type CourtWithSport = Court & {
     depositAmount: number;
   }[];
 };
-type ComplexWithCourts = Complex & { courts: CourtWithSport[] };
-
+type ComplexWithCourts = Complex & { courts: CourtWithSportAndPriceRules[] };
 type BookingWithDetails = PrismaBooking & {
   court: { id: string; name: string; slotDurationMinutes: number };
   user?: { name: string | null } | null;
 };
-
 type SubmitPayload = {
   guestName: string;
   courtId: string;
@@ -66,45 +64,48 @@ export default function BookingCalendarPage() {
   const complexId = params.complexId as string;
 
   const [complex, setComplex] = useState<ComplexWithCourts | null>(null);
-  // --- Usamos el nuevo tipo para el estado de las reservas ---
   const [bookings, setBookings] = useState<BookingWithDetails[]>([]);
   const [currentDate, setCurrentDate] = useState(startOfDay(new Date()));
-  const [editingBooking, setEditingBooking] =
-    useState<BookingWithDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalInitialValues, setModalInitialValues] = useState<
-    { courtId: string; time: string } | undefined
-  >();
   const [sportFilter, setSportFilter] = useState<string>("Todos");
+  const [isEditing, setIsEditing] = useState(false);
+  const [modalData, setModalData] =
+    useState<Partial<SubmitPayload & { id: string }>>();
 
   const timeSlots = useMemo(() => {
     if (!complex) return [];
     const slots = [];
     const open = complex.openHour ?? 9;
     const close = complex.closeHour ?? 23;
+    const interval = complex.timeSlotInterval || 30;
     for (let h = open; h < close; h++) {
-      slots.push(`${String(h).padStart(2, "0")}:00`);
-      slots.push(`${String(h).padStart(2, "0")}:30`);
-    }
-    return slots;
-  }, [complex]);
+            for (let m = 0; m < 60; m += interval) {
+                slots.push(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
+            }
+        }
+        return slots;
+    }, [complex]);
 
-  const isSelectedDateToday = useMemo(
-    () =>
-      format(currentDate, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd"),
+  const isPast = useCallback(
+    (time: string) => {
+      const today = startOfDay(new Date());
+      if (isBefore(currentDate, today)) {
+        return true;
+      }
+      if (!isToday(currentDate)) {
+        return false;
+      }
+      const [slotHour, slotMinute] = time.split(":").map(Number);
+      const now = new Date();
+      const currentHour = now.getHours();
+      const currentMinute = now.getMinutes();
+      if (slotHour < currentHour) return true;
+      if (slotHour === currentHour && slotMinute < currentMinute) return true;
+      return false;
+    },
     [currentDate]
   );
-  const currentHour = new Date().getHours();
-  const currentMinute = new Date().getMinutes();
-
-  const isPast = (time: string) => {
-    if (!isSelectedDateToday) return false;
-    const [slotHour, slotMinute] = time.split(":").map(Number);
-    if (slotHour < currentHour) return true;
-    if (slotHour === currentHour && slotMinute < currentMinute) return true;
-    return false;
-  };
 
   const fetchBookingsForDate = useCallback(
     async (date: Date) => {
@@ -154,23 +155,17 @@ export default function BookingCalendarPage() {
   const handleDateChange = (days: number) => {
     setCurrentDate((prev) => add(prev, { days }));
   };
-
   const handleGoToToday = () => {
     setCurrentDate(startOfDay(new Date()));
   };
 
   const handleBookingSubmit = async (bookingData: SubmitPayload) => {
-    const isEditing = !!editingBooking;
     const endpoint = `/api/complex/${complexId}/bookings`;
     const method = isEditing ? "PATCH" : "POST";
     const successMessage = isEditing ? "Reserva actualizada" : "Reserva creada";
-
     const body = isEditing
       ? bookingData
-      : {
-          ...bookingData,
-          date: format(currentDate, "yyyy-MM-dd"),
-        };
+      : { ...bookingData, date: format(currentDate, "yyyy-MM-dd") };
 
     try {
       const response = await fetch(endpoint, {
@@ -178,50 +173,48 @@ export default function BookingCalendarPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || "Ocurrió un error.");
       }
-
-      const savedBooking = await response.json();
-
-      if (isEditing) {
-        setBookings((prev) =>
-          prev.map((b) => (b.id === savedBooking.id ? savedBooking : b))
-        );
-      } else {
-        setBookings((prev) =>
-          [...prev, savedBooking].sort(
-            (a, b) =>
-              a.startTime - b.startTime ||
-              (a.startMinute || 0) - (b.startMinute || 0)
-          )
-        );
-      }
-
       toast.success(successMessage);
       setIsModalOpen(false);
-      setEditingBooking(null);
+      await fetchBookingsForDate(currentDate); // Refrescar siempre
     } catch (error) {
       toast.error(
         error instanceof Error
           ? error.message
           : "No se pudo guardar la reserva."
       );
+      await fetchBookingsForDate(currentDate); // Refrescar también al fallar
     }
   };
 
   const openModalForSlot = (courtId: string, time: string) => {
-    setEditingBooking(null);
-    setModalInitialValues({ courtId, time });
+    setIsEditing(false); // Modo creación
+    setModalData({ courtId, time }); // Establece los datos para el modal
     setIsModalOpen(true);
   };
 
   const openModalForEdit = (booking: BookingWithDetails) => {
-    setEditingBooking(booking);
-    setModalInitialValues(undefined);
+    setIsEditing(true);
+    setModalData({
+      ...booking,
+      guestName: booking.guestName ?? "",
+      time: `${String(booking.startTime).padStart(2, "0")}:${String(
+        booking.startMinute || 0
+      ).padStart(2, "0")}`,
+      date: format(booking.date, "yyyy-MM-dd"),
+    });
     setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setTimeout(() => {
+      setModalData(undefined); 
+      setIsEditing(false);
+    }, 300);
   };
 
   const { filteredCourts, sportFilters } = useMemo(() => {
@@ -236,6 +229,17 @@ export default function BookingCalendarPage() {
         : complex.courts.filter((c) => c.sport.name === sportFilter);
     return { filteredCourts: courts, sportFilters: sports };
   }, [complex, sportFilter]);
+
+  const bookingsByCourt = useMemo(() => {
+    const map = new Map<string, BookingWithDetails[]>();
+    bookings.forEach((booking) => {
+      if (!map.has(booking.courtId)) {
+        map.set(booking.courtId, []);
+      }
+      map.get(booking.courtId)!.push(booking);
+    });
+    return map;
+  }, [bookings]);
 
   const statusColors: Record<BookingStatus, string> = {
     CONFIRMADO: "bg-green-100 text-green-800 border-l-4 border-green-500",
@@ -321,18 +325,19 @@ export default function BookingCalendarPage() {
             ))}
             {timeSlots.map((time) => (
               <React.Fragment key={time}>
-                <div className="sticky left-0 text-right text-xs font-mono text-gray-500 pr-2 border-r flex items-center justify-end bg-white">
+                <div className="sticky left-0 text-right text-xs font-mono text-gray-500 pr-2 border-r flex items-center justify-end bg-white z-10">
                   {time}
                 </div>
                 {filteredCourts.map((court) => {
+                  const courtBookings = bookingsByCourt.get(court.id) || [];
                   const slotStartMinutes =
                     parseInt(time.split(":")[0]) * 60 +
                     parseInt(time.split(":")[1]);
-                  const bookingStartingNow = bookings.find(
+
+                  const bookingStartingNow = courtBookings.find(
                     (b) =>
-                      b.courtId === court.id &&
                       b.startTime * 60 + (b.startMinute || 0) ===
-                        slotStartMinutes
+                      slotStartMinutes
                   );
 
                   if (bookingStartingNow) {
@@ -347,19 +352,21 @@ export default function BookingCalendarPage() {
                         <button
                           onClick={() => openModalForEdit(bookingStartingNow)}
                           className={cn(
-                            "rounded-md w-full h-full p-2 text-left text-xs font-semibold cursor-pointer flex flex-col justify-start",
+                            "rounded-md w-full h-full p-2 text-left text-xs font-semibold cursor-pointer flex flex-col justify-between",
                             statusColors[bookingStartingNow.status]
                           )}
                         >
-                          <span className="font-bold">
-                            {bookingStartingNow.user?.name ||
-                              bookingStartingNow.guestName ||
-                              "Cliente"}
-                          </span>
-                          <span className="capitalize text-xs">
-                            {bookingStartingNow.status.toLowerCase()}
-                          </span>
-                          <span className="mt-auto font-bold text-sm">
+                          <div>
+                            <span className="font-bold block">
+                              {bookingStartingNow.user?.name ||
+                                bookingStartingNow.guestName ||
+                                "Cliente"}
+                            </span>
+                            <span className="capitalize text-xs">
+                              {bookingStartingNow.status.toLowerCase()}
+                            </span>
+                          </div>
+                          <span className="font-bold text-sm self-end">
                             {bookingStartingNow.depositPaid.toLocaleString(
                               "es-AR",
                               { style: "currency", currency: "ARS" }
@@ -370,17 +377,19 @@ export default function BookingCalendarPage() {
                     );
                   }
 
-                  const isSlotCovered = bookings.some(
+                  const isSlotCovered = courtBookings.some(
                     (b) =>
-                      b.courtId === court.id &&
-                      slotStartMinutes >=
+                      slotStartMinutes >
                         b.startTime * 60 + (b.startMinute || 0) &&
                       slotStartMinutes <
                         b.startTime * 60 +
                           (b.startMinute || 0) +
                           b.court.slotDurationMinutes
                   );
-                  if (isSlotCovered) return null;
+
+                  if (isSlotCovered) {
+                    return null;
+                  }
 
                   const past = isPast(time);
                   return (
@@ -408,32 +417,16 @@ export default function BookingCalendarPage() {
           </div>
         </div>
       </div>
-      {/* --- LLAMADA AL MODAL DE ADMIN CORRECTO --- */}
       {complex && (
         <BookingFormModal
           isOpen={isModalOpen}
-          onClose={() => {
-            setIsModalOpen(false);
-            setEditingBooking(null);
-          }}
+          onClose={closeModal}
           onSubmit={handleBookingSubmit}
           courts={complex.courts}
           timeSlots={timeSlots}
-          initialValues={
-            editingBooking
-              ? {
-                  ...editingBooking,
-                  time: `${String(editingBooking.startTime).padStart(
-                    2,
-                    "0"
-                  )}:${String(editingBooking.startMinute || 0).padStart(
-                    2,
-                    "0"
-                  )}`,
-                }
-              : modalInitialValues
-          }
-          isEditing={!!editingBooking}
+          initialValues={modalData}
+          isEditing={isEditing}
+          existingBookings={bookings}
         />
       )}
     </>

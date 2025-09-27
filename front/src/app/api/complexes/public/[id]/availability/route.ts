@@ -57,13 +57,12 @@ if (complex.schedule) {
   openHour = typeof rawOpenHour === "string" ? Number(rawOpenHour) : rawOpenHour;
   closeHour = typeof rawCloseHour === "string" ? Number(rawCloseHour) : rawCloseHour;
 } else {
-  // Si no hay cronograma específico, usamos los horarios generales del club como respaldo.
   openHour = complex.openHour;
   closeHour = complex.closeHour;
 }
 
 if (typeof openHour !== "number" || typeof closeHour !== "number") {
-  return NextResponse.json([]); // Devuelve un array vacío para indicar que no hay turnos.
+  return NextResponse.json([]);
 }
 
     // --- LÓGICA DE DISPONIBILIDAD MEJORADA ---

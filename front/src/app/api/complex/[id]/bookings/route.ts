@@ -43,7 +43,7 @@ export async function GET(
     }
 
     // Log de procesamiento de fecha
-    const requestedDate = new Date(dateString);
+    const requestedDate = new Date(`${dateString}T00:00:00`);
     const startOfRequestedDay = startOfDay(requestedDate);
     const endOfRequestedDay = endOfDay(requestedDate);
 

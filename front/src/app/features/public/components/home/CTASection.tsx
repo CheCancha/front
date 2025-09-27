@@ -33,7 +33,7 @@ export const CTASection = () => {
           cancha te espera.
         </p>
         <Link
-          href="/buscar"
+          href="#inicio"
           className="inline-block bg-brand-orange text-white font-bold py-3 px-10 rounded-full text-lg hover:opacity-90 transition-transform transform"
         >
           Ir a Reservar
