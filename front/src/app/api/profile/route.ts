@@ -1,88 +1,65 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "../auth/[...nextauth]/authOptions";
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/app/api/auth/[...nextauth]/authOptions";
 import { db } from "@/shared/lib/db";
-import { BookingStatus } from "@prisma/client";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
 
-export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-  }
-
+export async function GET() {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return new NextResponse("No autorizado", { status: 401 });
+    }
+
     const user = await db.user.findUnique({
       where: { id: session.user.id },
       select: {
-        id: true,
-        name: true,
-        email: true,
         phone: true,
         image: true,
-      },
-    });
-
-    const bookings = await db.booking.findMany({
-      where: { userId: session.user.id },
-      select: {
-        id: true,
-        date: true,
-        startTime: true,
-        startMinute: true,
-        status: true,
-        court: {
-          select: {
-            name: true,
-            complex: {
+        bookings: {
+          orderBy: {
+            date: "desc",
+          },
+          take: 10,
+          include: {
+            court: {
               select: {
                 name: true,
+                complex: {
+                  select: {
+                    name: true,
+                  },
+                },
               },
             },
           },
         },
       },
-      orderBy: [{ date: "desc" }, { startTime: "desc" }],
-      take: 10,
     });
 
-    const now = new Date();
+    if (!user) {
+      return new NextResponse("Usuario no encontrado", { status: 404 });
+    }
 
-    const formattedBookings = bookings.map((b) => {
-      // ---> [CAMBIO] Lógica para determinar el estado correcto
-      const bookingDateTime = new Date(b.date);
-      bookingDateTime.setHours(b.startTime, b.startMinute || 0, 0, 0);
+    const formattedBookings = user.bookings.map((booking) => ({
+      id: booking.id,
+      complex: booking.court.complex.name,
+      court: booking.court.name,
+      date: format(booking.date, "eeee dd 'de' MMMM, yyyy", { locale: es }),
+      startTime: `${String(booking.startTime).padStart(2, "0")}:${String(
+        booking.startMinute || 0
+      ).padStart(2, "0")}`,
+      status: booking.status,
+    }));
 
-      let displayStatus: BookingStatus | "VENCIDO" = b.status;
-      if (b.status === "PENDIENTE" && bookingDateTime < now) {
-        displayStatus = "VENCIDO";
-      }
-
-      return {
-        id: b.id,
-        court: b.court.name,
-        complex: b.court.complex.name,
-        date: b.date.toLocaleDateString("es-AR", {
-          day: "numeric",
-          month: "long",
-          year: "numeric",
-        }),
-        // ---> [CAMBIO] Formato de hora corregido
-        startTime: `${b.startTime.toString().padStart(2, "0")}:${(
-          b.startMinute || 0
-        )
-          .toString()
-          .padStart(2, "0")}`,
-        status: displayStatus,
-      };
+    return NextResponse.json({
+      phone: user.phone,
+      image: user.image,
+      bookings: formattedBookings,
     });
-
-    return NextResponse.json({ ...user, bookings: formattedBookings });
-  } catch (err) {
-    console.error(err);
-    return NextResponse.json(
-      { error: "Error al obtener perfil" },
-      { status: 500 }
-    );
+  } catch (error) {
+    console.error("[PROFILE_GET_ERROR]", error);
+    return new NextResponse("Error interno del servidor", { status: 500 });
   }
 }

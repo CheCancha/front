@@ -14,7 +14,7 @@ const statusConfig = {
     message:
       "Tu pago fue procesado exitosamente y tu turno ha sido agendado. ¡Gracias por tu reserva!",
     links: [
-      { href: "/profile/bookings", text: "Ver mis reservas" },
+      { href: "/profile", text: "Ver mis reservas" },
       { href: "/courts", text: "Buscar otra cancha" },
     ],
   },

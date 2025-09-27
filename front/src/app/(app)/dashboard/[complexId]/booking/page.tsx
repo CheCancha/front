@@ -28,8 +28,10 @@ type CourtWithSport = Court & {
   }[];
 };
 type ComplexWithCourts = Complex & { courts: CourtWithSport[] };
-type BookingWithCourtDuration = PrismaBooking & {
+
+type BookingWithDetails = PrismaBooking & {
   court: { id: string; name: string; slotDurationMinutes: number };
+  user?: { name: string | null } | null;
 };
 
 type SubmitPayload = {
@@ -64,10 +66,11 @@ export default function BookingCalendarPage() {
   const complexId = params.complexId as string;
 
   const [complex, setComplex] = useState<ComplexWithCourts | null>(null);
-  const [bookings, setBookings] = useState<BookingWithCourtDuration[]>([]);
+  // --- Usamos el nuevo tipo para el estado de las reservas ---
+  const [bookings, setBookings] = useState<BookingWithDetails[]>([]);
   const [currentDate, setCurrentDate] = useState(startOfDay(new Date()));
   const [editingBooking, setEditingBooking] =
-    useState<BookingWithCourtDuration | null>(null);
+    useState<BookingWithDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalInitialValues, setModalInitialValues] = useState<
@@ -215,7 +218,7 @@ export default function BookingCalendarPage() {
     setIsModalOpen(true);
   };
 
-  const openModalForEdit = (booking: BookingWithCourtDuration) => {
+  const openModalForEdit = (booking: BookingWithDetails) => {
     setEditingBooking(booking);
     setModalInitialValues(undefined);
     setIsModalOpen(true);
@@ -349,8 +352,9 @@ export default function BookingCalendarPage() {
                           )}
                         >
                           <span className="font-bold">
-                            {bookingStartingNow.guestName ||
-                              "Usuario Registrado"}
+                            {bookingStartingNow.user?.name ||
+                              bookingStartingNow.guestName ||
+                              "Cliente"}
                           </span>
                           <span className="capitalize text-xs">
                             {bookingStartingNow.status.toLowerCase()}

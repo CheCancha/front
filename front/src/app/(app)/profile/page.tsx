@@ -7,8 +7,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import {
   Calendar,
-  User,
-  Mail,
   Phone,
   Loader2,
   Edit3,
@@ -17,7 +15,6 @@ import {
   X,
 } from "lucide-react";
 import { toast, Toaster } from "react-hot-toast";
-import Image from "next/image";
 import { PasswordInput } from "@/shared/components/ui/Input";
 
 // --- TIPOS ---
