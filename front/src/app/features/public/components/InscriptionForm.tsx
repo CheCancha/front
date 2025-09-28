@@ -95,7 +95,7 @@ export const InscriptionsForm = () => {
         message="Gracias por tu interés. Nos pondremos en contacto a la brevedad para configurar tu cuenta."
       />
 
-      <div className="w-full max-w-3xl mx-auto bg-white border border-gray-200 p-8 rounded-xl shadow-lg">
+      <div className="w-full max-w-3xl mx-auto bg-white">
         <div className="text-center mb-10">
           <h2 className="font-lora text-3xl font-bold text-gray-900">
             Solicitá tu Demo de 30 días
@@ -174,7 +174,7 @@ export const InscriptionsForm = () => {
           
           {formError && (<p className="text-sm text-red-600 text-center">{formError}</p>)}
 
-          <ButtonPrimary type="submit" className="w-full text-base py-3" disabled={isSubmitting}>
+          <ButtonPrimary type="submit" className="text-base py-3" disabled={isSubmitting}>
             {isSubmitting ? "Enviando..." : "Enviar Solicitud"}
           </ButtonPrimary>
         </form>

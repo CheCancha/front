@@ -94,7 +94,7 @@ export default async function DashboardPage({
         </div>
         <div className="lg:col-span-4">
           {/* Pasamos los datos como prop */}
-          <Reservations bookings={complexData.upcomingBookings} />
+          <Reservations complexId={complexId} />
         </div>
       </div>
     </div>

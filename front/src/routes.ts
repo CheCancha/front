@@ -11,13 +11,11 @@ export const routes = {
     resetPassword: "/reset",
   },
 
-  // --- Rutas de Autenticación (auth) ---
   auth: {
     ingreso: "/login",
     registro: "/register",
   },
 
-  // --- Rutas de la App (app - para managers) ---
   app: {
     dashboardBase: "/dashboard",
     admin: "/admin",

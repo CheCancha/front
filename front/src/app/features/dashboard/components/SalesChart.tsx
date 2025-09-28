@@ -18,7 +18,6 @@ import {
   startOfYear,
   endOfYear,
   getWeekOfMonth,
-  getWeeksInMonth,
 } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn } from "@/shared/lib/utils";
@@ -79,8 +78,8 @@ const WeekSelector = ({
 
 // --- COMPONENTE PRINCIPAL ---
 export function SalesChart({ complexId }: { complexId: string }) {
-  const [monthlyData, setMonthlyData] = useState<ChartData[]>([]); // Almacena datos del mes completo
-  const [displayedData, setDisplayedData] = useState<ChartData[]>([]); // Datos que se muestran en el gráfico
+  const [monthlyData, setMonthlyData] = useState<ChartData[]>([]); 
+  const [displayedData, setDisplayedData] = useState<ChartData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState("Este Mes");
@@ -135,13 +134,11 @@ export function SalesChart({ complexId }: { complexId: string }) {
         // --- MODIFICADO --- Lógica para guardar datos
         if (dateRange === "Este Mes") {
           setMonthlyData(data);
-          // Establecer la semana actual como la seleccionada por defecto
-          // getWeekOfMonth devuelve 1-5, nosotros usamos índice 0-4
           const currentWeekIndex = getWeekOfMonth(new Date()) - 1;
           setSelectedWeek(currentWeekIndex);
         } else {
           setDisplayedData(data);
-          setMonthlyData([]); // Limpiar datos mensuales si no es la vista de mes
+          setMonthlyData([]);
         }
       } catch (err) {
         setError(
@@ -157,17 +154,14 @@ export function SalesChart({ complexId }: { complexId: string }) {
 
   useEffect(() => {
     if (dateRange === "Este Mes" && monthlyData.length > 0) {
-      // Dividimos los datos del mes en bloques de 7 días (semanas)
       const weeks = [];
       for (let i = 0; i < monthlyData.length; i += 7) {
         weeks.push(monthlyData.slice(i, i + 7));
       }
-      // Mostramos los datos de la semana seleccionada
       setDisplayedData(weeks[selectedWeek] || []);
     }
   }, [selectedWeek, monthlyData, dateRange]);
 
-  // --- NUEVO --- Calculamos dinámicamente el número de semanas
   const numberOfWeeks = useMemo(() => {
     if (dateRange !== "Este Mes" || monthlyData.length === 0) return 0;
     return Math.ceil(monthlyData.length / 7);
@@ -235,7 +229,6 @@ export function SalesChart({ complexId }: { complexId: string }) {
                 border: "1px solid #e2e8f0",
                 borderRadius: "0.75rem",
               }}
-              // --- LÍNEA AÑADIDA ---
               formatter={(value: number) =>
                 new Intl.NumberFormat("es-AR", {
                   style: "currency",

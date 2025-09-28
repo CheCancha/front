@@ -2,98 +2,81 @@ import { NextResponse, type NextRequest } from "next/server";
 import { db } from "@/shared/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/authOptions";
-import { startOfDay, endOfDay } from "date-fns";
+import { startOfDay, endOfDay, startOfToday } from "date-fns";
 import { BookingStatus } from "@prisma/client";
 
 // --- GET ---
 export async function GET(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> }
 ) {
-  console.log("🚀 GET /api/complex/[id]/bookings - Iniciando");
-
   try {
-    const { id } = await params;
-    console.log("📍 Complex ID:", id);
-
-    // Log de sesión
-    console.log("🔍 Verificando sesión...");
     const session = await getServerSession(authOptions);
-    console.log("👤 Sesión obtenida:", {
-      userId: session?.user?.id || "No ID",
-      role: session?.user?.role || "No role",
-      hasSession: !!session,
-    });
-
     if (!session?.user?.id || session.user.role !== "MANAGER") {
-      console.log("❌ Autorización fallida");
       return new NextResponse("No autorizado", { status: 401 });
     }
 
-    // Log de parámetros de búsqueda
     const { searchParams } = new URL(req.url);
-    const dateString = searchParams.get("date");
-    console.log("📅 Parámetro de fecha:", dateString);
 
+    if (searchParams.get("upcoming") === "true") {
+      const today = startOfToday();
+      const upcomingBookings = await db.booking.findMany({
+        where: {
+          court: { complexId: (await context.params).id },
+          date: { gte: today },
+          status: BookingStatus.CONFIRMADO,
+        },
+        orderBy: [
+          { date: "asc" },
+          { startTime: "asc" },
+          { startMinute: "asc" },
+        ],
+        take: 10,
+        include: { court: { select: { name: true } } },
+      });
+
+      const formattedBookings = upcomingBookings.map((b) => ({
+        id: b.id,
+        guestName: b.guestName,
+        courtName: b.court.name,
+        date: b.date,
+        startTime: `${String(b.startTime).padStart(2, "0")}:${String(
+          b.startMinute ?? 0
+        ).padStart(2, "0")}`,
+        isPaid: b.depositAmount > 0,
+      }));
+
+      return NextResponse.json(formattedBookings);
+    }
+
+    const dateString = searchParams.get("date");
     if (!dateString) {
-      console.log("❌ Falta parámetro date");
       return new NextResponse("El parámetro 'date' es obligatorio", {
         status: 400,
       });
     }
 
-    // Log de procesamiento de fecha
     const requestedDate = new Date(`${dateString}T00:00:00`);
     const startOfRequestedDay = startOfDay(requestedDate);
     const endOfRequestedDay = endOfDay(requestedDate);
 
-    console.log("📅 Fechas procesadas:", {
-      original: dateString,
-      parsed: requestedDate.toISOString(),
-      startOfDay: startOfRequestedDay.toISOString(),
-      endOfDay: endOfRequestedDay.toISOString(),
-    });
-
-    // Log de consulta a BD
-    console.log("💾 Consultando reservas en BD...");
     const bookings = await db.booking.findMany({
       where: {
-        court: { complexId: id },
+        court: { complexId: (await context.params).id },
         date: {
           gte: startOfRequestedDay,
           lte: endOfRequestedDay,
         },
       },
       include: {
-        court: {
-          select: { id: true, name: true, slotDurationMinutes: true },
-        },
-        user: {
-          select: { name: true },
-        },
+        court: { select: { id: true, name: true, slotDurationMinutes: true } },
+        user: { select: { name: true } },
       },
     });
-
-    console.log("✅ Reservas encontradas:", bookings.length);
-    console.log(
-      "📝 Primera reserva (si existe):",
-      bookings[0]
-        ? {
-            id: bookings[0].id,
-            courtName: bookings[0].court.name,
-            guestName: bookings[0].guestName,
-            date: bookings[0].date.toISOString(),
-          }
-        : "No hay reservas"
-    );
 
     return NextResponse.json(bookings);
   } catch (error) {
     console.error("💥 ERROR en GET:", error);
-    console.error(
-      "📋 Stack trace:",
-      error instanceof Error ? error.stack : "No stack"
-    );
     return new NextResponse("Error interno del servidor", { status: 500 });
   }
 }

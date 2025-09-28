@@ -31,7 +31,6 @@ const features = [
   },
 ];
 
-// Variantes de animación
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
@@ -64,15 +63,14 @@ export const ManagmentClub = () => {
           transition={{ duration: 0.7, delay: 0.2 }}
         >
           <Image
-            src="/charts.jpg"
+            src="/dashboard2.png"
             alt="Vista previa del dashboard de CheCancha"
             width={900}
             height={600}
             className="rounded-xl shadow-xl"
           />
         </motion.div>
-        
-        {/* Columna de Texto */}
+
         <motion.div variants={containerVariants}>
           <motion.h2
             className="font-lora text-4xl md:text-5xl font-semibold text-foreground mb-6"
@@ -105,10 +103,7 @@ export const ManagmentClub = () => {
           </motion.ul>
 
           <motion.div variants={itemVariants}>
-            <ButtonSecondary
-              href="#pricing"
-              icon={<ArrowRight size={20} />}
-            >
+            <ButtonSecondary href="#pricing" icon={<ArrowRight size={20} />}>
               Ver Planes y Precios
             </ButtonSecondary>
           </motion.div>
