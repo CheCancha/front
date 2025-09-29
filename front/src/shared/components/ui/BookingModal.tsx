@@ -37,26 +37,36 @@ interface BookingModalProps {
 }
 
 // --- Funciones Helper (sin cambios) ---
-const calculateEndTime = (startTime: string, durationMinutes: number): string => {
+const calculateEndTime = (
+  startTime: string,
+  durationMinutes: number
+): string => {
   if (!startTime || !durationMinutes) return "";
   const [hours, minutes] = startTime.split(":").map(Number);
   const totalStartMinutes = hours * 60 + minutes;
   const totalEndMinutes = totalStartMinutes + durationMinutes;
   const endHours = Math.floor(totalEndMinutes / 60);
   const endMinutes = totalEndMinutes % 60;
-  return `${String(endHours).padStart(2, "0")}:${String(endMinutes).padStart(2, "0")}`;
+  return `${String(endHours).padStart(2, "0")}:${String(endMinutes).padStart(
+    2,
+    "0"
+  )}`;
 };
 
 const getPriceForTime = (court: Court, time: string) => {
   if (!court || !court.priceRules || court.priceRules.length === 0) {
-    console.error("BookingModal Error: Datos de la cancha incompletos o sin reglas de precio.", { court, time });
+    console.error(
+      "BookingModal Error: Datos de la cancha incompletos o sin reglas de precio.",
+      { court, time }
+    );
     return { price: 0, depositAmount: 0 };
   }
   const [hours] = time.split(":").map(Number);
-  const rule = court.priceRules.find((r) => hours >= r.startTime && hours < r.endTime);
+  const rule = court.priceRules.find(
+    (r) => hours >= r.startTime && hours < r.endTime
+  );
   return rule || court.priceRules[0] || { price: 0, depositAmount: 0 };
 };
-
 
 // --- Componente Principal del Modal ---
 const BookingModal: React.FC<BookingModalProps> = ({
@@ -82,7 +92,6 @@ const BookingModal: React.FC<BookingModalProps> = ({
     }
   }, [preferenceData]);
 
-
   const priceRule = getPriceForTime(court, time);
   const totalPrice = priceRule.price;
   const depositAmount = priceRule.depositAmount;
@@ -96,7 +105,7 @@ const BookingModal: React.FC<BookingModalProps> = ({
       toast.error("No se puede generar un link de pago para una seña de $0.");
       return;
     }
-    
+
     setIsProcessing(true);
     toast.loading("Generando link de pago...");
 
@@ -118,17 +127,20 @@ const BookingModal: React.FC<BookingModalProps> = ({
       const responseData = await response.json();
 
       if (!response.ok) {
-        throw new Error(responseData.message || "No se pudo generar el link de pago.");
+        throw new Error(
+          responseData.message || "No se pudo generar el link de pago."
+        );
       }
-      
-      setPreferenceData({
-          id: responseData.preferenceId,
-          publicKey: responseData.publicKey
-      });
 
+      setPreferenceData({
+        id: responseData.preferenceId,
+        publicKey: responseData.publicKey,
+      });
     } catch (error) {
       toast.dismiss();
-      toast.error(error instanceof Error ? error.message : "Error desconocido.");
+      toast.error(
+        error instanceof Error ? error.message : "Error desconocido."
+      );
     } finally {
       setIsProcessing(false);
     }
@@ -157,17 +169,26 @@ const BookingModal: React.FC<BookingModalProps> = ({
             exit={{ scale: 0.9, opacity: 0 }}
             className="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-8 m-4"
           >
-            <button onClick={handleClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+            <button
+              onClick={handleClose}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+            >
               <X size={24} />
             </button>
 
             {!preferenceData ? (
               <div>
-                <h2 className="text-2xl font-bold text-foreground mb-6 text-center">Confirmá tu Reserva</h2>
+                <h2 className="text-2xl font-bold text-foreground mb-6 text-center">
+                  Confirmá tu Reserva
+                </h2>
                 {status === "unauthenticated" && (
                   <div className="mb-4">
-                    <label htmlFor="guestName" className="block text-sm font-semibold text-gray-700 mb-1">
-                      <User className="inline-block w-4 h-4 mr-1" /> Nombre y Apellido
+                    <label
+                      htmlFor="guestName"
+                      className="block text-sm font-semibold text-gray-700 mb-1"
+                    >
+                      <User className="inline-block w-4 h-4 mr-1" /> Nombre y
+                      Apellido
                     </label>
                     <input
                       type="text"
@@ -183,42 +204,83 @@ const BookingModal: React.FC<BookingModalProps> = ({
                   {/* ... Detalles de la reserva (cancha, fecha, hora, precio) ... */}
                   <div className="flex items-center gap-3">
                     <Shield className="w-5 h-5 text-brand-orange" />
-                    <p><span className="font-semibold">{club?.name}</span> - {court?.name}</p>
+                    <p>
+                      <span className="font-semibold">{club?.name}</span> -{" "}
+                      {court?.name}
+                    </p>
                   </div>
                   <div className="flex items-center gap-3">
                     <Calendar className="w-5 h-5 text-brand-orange" />
-                    <p>{date.toLocaleDateString("es-AR", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</p>
+                    <p>
+                      {date.toLocaleDateString("es-AR", {
+                        weekday: "long",
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })}
+                    </p>
                   </div>
                   <div className="flex items-center gap-3">
                     <Clock className="w-5 h-5 text-brand-orange" />
                     <p>
-                      <span className="font-semibold">{time} a {calculateEndTime(time, court?.slotDurationMinutes || 60)}hs</span>
-                      <span className="text-gray-500 text-sm ml-2">({court?.slotDurationMinutes || 60} min)</span>
+                      <span className="font-semibold">
+                        {time} a{" "}
+                        {calculateEndTime(
+                          time,
+                          court?.slotDurationMinutes || 60
+                        )}
+                        hs
+                      </span>
+                      <span className="text-gray-500 text-sm ml-2">
+                        ({court?.slotDurationMinutes || 60} min)
+                      </span>
                     </p>
                   </div>
-                   <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3">
                     <DollarSign className="w-5 h-5 text-brand-orange" />
                     <p>
-                        Total a pagar: <span className="font-bold">{totalPrice.toLocaleString("es-AR", { style: "currency", currency: "ARS" })}</span>
+                      Total a pagar:{" "}
+                      <span className="font-bold">
+                        {totalPrice.toLocaleString("es-AR", {
+                          style: "currency",
+                          currency: "ARS",
+                          minimumFractionDigits: 0,
+                        })}
+                      </span>
                     </p>
                   </div>
                 </div>
                 <div className="mt-6">
-                  <p className="text-sm text-center text-paragraph mb-4">Para confirmar tu turno, es necesario abonar una seña.</p>
+                  <p className="text-sm text-center text-paragraph mb-4">
+                    Para confirmar tu turno, es necesario abonar una seña.
+                  </p>
                   <ButtonPrimary
                     onClick={handleCreatePreference}
                     className="w-full"
                     disabled={isProcessing || depositAmount <= 0}
                   >
-                    {isProcessing ? "Procesando..." : `Ir a pagar seña de ${depositAmount.toLocaleString("es-AR", { style: "currency", currency: "ARS" })}`}
+                    {isProcessing
+                      ? "Procesando..."
+                      : `Ir a pagar seña de ${depositAmount.toLocaleString(
+                          "es-AR",
+                          {
+                            style: "currency",
+                            currency: "ARS",
+                            minimumFractionDigits: 0,
+                          }
+                        )}`}
                   </ButtonPrimary>
                 </div>
               </div>
             ) : (
               // --- VISTA DE PAGO ---
               <div className="text-center">
-                <h2 className="text-2xl font-bold text-foreground mb-4">Completá el pago</h2>
-                <p className="text-paragraph mb-6">Serás redirigido al finalizar la compra.</p>
+                <h2 className="text-2xl font-bold text-foreground mb-4">
+                  Completá el pago
+                </h2>
+                <p className="text-paragraph mb-6">
+                  Serás redirigido al finalizar la compra.
+                </p>
                 {/* 6. EL WALLET SE INICIALIZA CON EL ID CORRECTO */}
                 <Wallet initialization={{ preferenceId: preferenceData.id }} />
               </div>

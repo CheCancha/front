@@ -12,7 +12,7 @@ interface Props {
 }
 
 export const ScheduleForm = ({ data, onScheduleChange, onComplexChange }: Props) => (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+    <div className="overflow-hidden">
         <div className="p-6">
             <h3 className="text-lg font-semibold">Horarios y Reservas</h3>
             <p className="text-sm text-gray-500 mt-1">
@@ -29,7 +29,7 @@ export const ScheduleForm = ({ data, onScheduleChange, onComplexChange }: Props)
                     name="timeSlotInterval"
                     value={data.timeSlotInterval || 30}
                     onChange={(e) => onComplexChange('timeSlotInterval', Number(e.target.value))}
-                    className="mt-2 block w-full max-w-xs rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                    className="mt-2 p-1 block w-full max-w-xs rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                 >
                     <option value={30}>Cada 30 minutos</option>
                     <option value={60}>Cada 1 hora</option>

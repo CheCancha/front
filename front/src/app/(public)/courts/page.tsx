@@ -13,6 +13,7 @@ import { useSearchParams } from "next/navigation";
 import { toast } from "react-hot-toast";
 import { Spinner } from "@/shared/components/ui/Spinner";
 import BookingModal from "@/shared/components/ui/BookingModal";
+import { routes } from "@/routes";
 
 // --- TIPOS DE DATOS (CORREGIDOS Y EXPLÍCITOS) ---
 type PriceRule = {
@@ -37,6 +38,7 @@ type AvailableSlot = {
 
 type Club = {
   id: string;
+  slug: string;
   name: string;
   address: string;
   imageUrl: string;
@@ -97,7 +99,10 @@ const ClubCard = ({
 
   return (
     <div className="group bg-white rounded-xl shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 flex flex-col h-full">
-      <Link href={`/courts/${club.id}`} className="block relative h-48">
+      <Link
+        href={routes.public.complexProfile(club.slug)}
+        className="block relative h-48"
+      >
         <Image
           src={club.imageUrl}
           alt={`Imagen de ${club.name}`}
@@ -108,7 +113,7 @@ const ClubCard = ({
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
       </Link>
       <div className="p-4 flex flex-col flex-grow">
-        <Link href={`/courts/${club.id}`}>
+        <Link href={routes.public.complexProfile(club.slug)}>
           <h3 className="font-bold text-lg text-foreground hover:text-brand-orange transition-colors">
             {club.name}
           </h3>

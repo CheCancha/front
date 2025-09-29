@@ -83,6 +83,7 @@ model Review {
 model Complex {
   id                  String   @id @default(cuid())
   name                String
+  slug                String   @unique
   address             String
   city                String
   province            String
@@ -92,6 +93,7 @@ model Complex {
   closeHour           Int?
   courtCount          Int?
   timeSlotInterval    Int      @default(30)
+  amenities           Amenity[] 
   // Geolocalización para mapas
   latitude            Float?
   longitude           Float?
@@ -117,6 +119,15 @@ model Complex {
 
   
   @@index([managerId])
+}
+
+model Amenity {
+  id        String    @id @default(cuid())
+  name      String    
+  slug      String    @unique
+  icon      String?   
+
+  complexes Complex[]
 }
 
 model Image {

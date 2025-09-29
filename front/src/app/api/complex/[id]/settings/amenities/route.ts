@@ -3,48 +3,47 @@ import { db } from "@/shared/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/authOptions";
 
-export async function POST(
+export async function PUT(
   req: Request,
   context: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await context.params;
 
-    // 1. Autenticación y autorización
     const session = await getServerSession(authOptions);
     if (!session?.user?.id || session.user.role !== "MANAGER") {
       return new NextResponse("No autorizado", { status: 401 });
     }
 
-    // 2. Verificación de propiedad (seguridad)
-    const complexToUpdate = await db.complex.findFirst({
-      where: {
-        id: id,
-        managerId: session.user.id,
-      },
+    const complex = await db.complex.findFirst({
+      where: { id: id, managerId: session.user.id },
     });
 
-    if (!complexToUpdate) {
-      return new NextResponse(
-        "Complejo no encontrado o no tienes permiso para editarlo.",
-        { status: 403 }
-      );
+    if (!complex) {
+      return new NextResponse("Complejo no encontrado o sin permisos", {
+        status: 404,
+      });
     }
 
-    // 3. Marcar el onboarding como completado
+    const body = await req.json();
+    const { amenityIds } = body as { amenityIds: string[] };
+
+    if (!Array.isArray(amenityIds)) {
+      return new NextResponse("Formato de datos inválido", { status: 400 });
+    }
+
     await db.complex.update({
       where: { id: id },
       data: {
-        onboardingCompleted: true,
+        amenities: {
+          set: amenityIds.map((amenityId) => ({ id: amenityId })),
+        },
       },
     });
 
-    return NextResponse.json({
-      message: "Onboarding completado exitosamente",
-      redirectTo: `/dashboard/${id}`,
-    });
+    return NextResponse.json({ message: "Comodidades actualizadas con éxito" });
   } catch (error) {
-    console.error("[COMPLETE_ONBOARDING_POST]", error);
+    console.error("[SETTINGS_AMENITIES_PUT]", error);
     return new NextResponse("Error interno del servidor", { status: 500 });
   }
 }

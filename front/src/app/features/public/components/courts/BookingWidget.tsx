@@ -1,21 +1,17 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-// --- ¡AQUÍ ESTÁ LA CORRECCIÓN PRINCIPAL! ---
-// Importa los estilos oficiales directamente desde la librería.
 import "react-day-picker/dist/style.css";
 import { DayPicker } from "react-day-picker";
 import { es } from "date-fns/locale";
 import { format, isToday } from "date-fns";
 import { cn } from "@/shared/lib/utils";
-// Importa los tipos desde la página que los exporta
 import type {
   ComplexProfileData,
   CourtWithPriceRules,
   ValidStartTime,
-} from "@/app/(public)/courts/[id]/page";
+} from "@/app/(public)/courts/[slug]/page";
 
-// ... el resto de tu componente BookingWidgetProps ...
 interface BookingWidgetProps {
   club: ComplexProfileData;
   onSlotClick: (court: CourtWithPriceRules, time: string) => void;
@@ -29,7 +25,6 @@ export const BookingWidget: React.FC<BookingWidgetProps> = ({
   selectedDate,
   setSelectedDate,
 }) => {
-  // ... todo el código del componente se mantiene igual ...
   const [selectedCourt, setSelectedCourt] =
     useState<CourtWithPriceRules | null>(club.courts[0] || null);
   const [validStartTimes, setValidStartTimes] = useState<ValidStartTime[]>([]);
@@ -49,12 +44,12 @@ export const BookingWidget: React.FC<BookingWidgetProps> = ({
 
   useEffect(() => {
     const fetchAvailability = async () => {
-      if (!club.id || !selectedDate) return;
+      if (!club.slug || !selectedDate) return;
       setIsAvailabilityLoading(true);
       try {
         const dateString = format(selectedDate, "yyyy-MM-dd");
         const response = await fetch(
-          `/api/complexes/public/${club.id}/availability?date=${dateString}`
+          `/api/complexes/public/${club.slug}/availability?date=${dateString}`
         );
         if (!response.ok)
           throw new Error("No se pudo cargar la disponibilidad.");
@@ -68,7 +63,7 @@ export const BookingWidget: React.FC<BookingWidgetProps> = ({
       }
     };
     fetchAvailability();
-  }, [club.id, selectedDate]);
+  }, [club.slug, selectedDate]);
 
   if (!selectedCourt) {
     return (

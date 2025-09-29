@@ -195,6 +195,7 @@ export async function GET(req: NextRequest) {
         const availableSlots = findNextAvailableSlots(complex, searchDate, 3);
         return {
           id: complex.id,
+          slug: complex.slug,
           name: complex.name,
           address: `${complex.address}, ${complex.city}`,
           imageUrl: complex.images[0]?.url || "/placeholder.jpg",

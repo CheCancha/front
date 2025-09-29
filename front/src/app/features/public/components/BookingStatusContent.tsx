@@ -24,7 +24,6 @@ const statusConfig = {
     message:
       "No se pudo procesar tu pago. Por favor, intentá nuevamente con otro método de pago.",
     links: [
-      // Podríamos añadir un link para "reintentar" si tuviéramos el ID del complejo
       { href: "/courts", text: "Volver a buscar" },
     ],
   },
@@ -60,7 +59,6 @@ export default function BookingStatusContent() {
     } else if (statusParam === "pending") {
       setStatus("pending");
     } else {
-      // Si no hay un parámetro de estado claro, mostramos fallo por seguridad.
       setStatus("failure");
     }
   }, [searchParams]);

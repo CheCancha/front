@@ -6,10 +6,10 @@ const TIME_GRID_INTERVAL = 30;
 
 export async function GET(
   req: Request,
-  context: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ slug: string }> }
 ) {
   try {
-    const { id } = await context.params; 
+    const { slug } = await context.params;
     const { searchParams } = new URL(req.url);
     const dateString = searchParams.get("date");
 
@@ -22,7 +22,7 @@ export async function GET(
     const requestedDate = new Date(`${dateString}T00:00:00.000-03:00`);
 
     const complex = await db.complex.findUnique({
-      where: { id: id },
+      where: { slug: slug },
       include: {
         schedule: true,
         courts: { include: { bookings: { where: { date: requestedDate } } } },
@@ -37,33 +37,37 @@ export async function GET(
     }
 
     const dayOfWeek = getDay(requestedDate);
-const dayKeys = [
-  "sunday",
-  "monday",
-  "tuesday",
-  "wednesday",
-  "thursday",
-  "friday",
-  "saturday",
-];
-const key = dayKeys[dayOfWeek];
+    const dayKeys = [
+      "sunday",
+      "monday",
+      "tuesday",
+      "wednesday",
+      "thursday",
+      "friday",
+      "saturday",
+    ];
+    const key = dayKeys[dayOfWeek];
 
-let openHour: number | null | undefined;
-let closeHour: number | null | undefined;
+    let openHour: number | null | undefined;
+    let closeHour: number | null | undefined;
 
-if (complex.schedule) {
-  const rawOpenHour = complex.schedule[`${key}Open` as keyof typeof complex.schedule];
-  const rawCloseHour = complex.schedule[`${key}Close` as keyof typeof complex.schedule];
-  openHour = typeof rawOpenHour === "string" ? Number(rawOpenHour) : rawOpenHour;
-  closeHour = typeof rawCloseHour === "string" ? Number(rawCloseHour) : rawCloseHour;
-} else {
-  openHour = complex.openHour;
-  closeHour = complex.closeHour;
-}
+    if (complex.schedule) {
+      const rawOpenHour =
+        complex.schedule[`${key}Open` as keyof typeof complex.schedule];
+      const rawCloseHour =
+        complex.schedule[`${key}Close` as keyof typeof complex.schedule];
+      openHour =
+        typeof rawOpenHour === "string" ? Number(rawOpenHour) : rawOpenHour;
+      closeHour =
+        typeof rawCloseHour === "string" ? Number(rawCloseHour) : rawCloseHour;
+    } else {
+      openHour = complex.openHour;
+      closeHour = complex.closeHour;
+    }
 
-if (typeof openHour !== "number" || typeof closeHour !== "number") {
-  return NextResponse.json([]);
-}
+    if (typeof openHour !== "number" || typeof closeHour !== "number") {
+      return NextResponse.json([]);
+    }
 
     // --- LÓGICA DE DISPONIBILIDAD MEJORADA ---
 

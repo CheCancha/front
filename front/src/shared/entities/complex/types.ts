@@ -9,6 +9,7 @@ export type FullComplexData = Complex & {
   schedule: Schedule | null;
   courts: CourtWithRelations[]; 
   images: Image[];
+  amenities: Sport[];
 };
 
 export interface NewPriceRule {

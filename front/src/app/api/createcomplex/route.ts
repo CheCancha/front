@@ -13,6 +13,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const {
       name,
+      slug,
       address,
       city,
       province,
@@ -28,6 +29,7 @@ export async function POST(req: Request) {
     const complex = await db.complex.create({
       data: {
         name,
+        slug,
         address,
         city,
         province,

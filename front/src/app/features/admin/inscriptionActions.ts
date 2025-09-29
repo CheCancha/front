@@ -56,11 +56,12 @@ export async function approveInscription(requestId: string): Promise<{ success: 
       await prisma.complex.create({
         data: {
           name: inscription!.complexName,
+          slug: inscription!.complexSlug,
           address: inscription!.address,
           city: inscription!.city,
           province: inscription!.province,
           managerId: createdUser.id,
-          subscriptionPlan: plan, // Usamos el valor del enum ya convertido
+          subscriptionPlan: plan,
         },
       });
 

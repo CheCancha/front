@@ -8,7 +8,6 @@ type HeatmapProps = {
   hourLabels: string[];
 };
 
-// Función para obtener un color basado en la cantidad de reservas
 const getColorForValue = (value: number | undefined, max: number) => {
   if (!value || value === 0) return "bg-gray-100";
   const intensity = Math.min(value / max, 1); // Normalizar de 0 a 1

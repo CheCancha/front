@@ -3,14 +3,14 @@ import { db } from "@/shared/lib/db";
 
 export async function GET(
   req: Request,
-  context: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
-    const { id } = await context.params;
+    const { slug } = await params;
 
     const complex = await db.complex.findUnique({
       where: {
-        id: id,
+        slug: slug,
         onboardingCompleted: true,
       },
       include: {
@@ -25,6 +25,7 @@ export async function GET(
           },
         },
         schedule: true,
+        amenities: true,
       },
     });
 
@@ -34,7 +35,7 @@ export async function GET(
 
     return NextResponse.json(complex);
   } catch (error) {
-    console.error("[COMPLEX_PUBLIC_GET_BY_ID]", error);
+    console.error("[COMPLEX_PUBLIC_GET_BY_SLUG]", error);
     return new NextResponse("Error interno del servidor", { status: 500 });
   }
 }

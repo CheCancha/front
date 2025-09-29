@@ -13,13 +13,15 @@ import { ScheduleForm } from "./ScheduleForm";
 import { CourtsManager } from "./CourtsManager";
 import ImageSettings from "./ImageSettings";
 import { PaymentsSettings } from "./PaymentsSettings";
-import { Schedule, Sport, PriceRule } from "@prisma/client";
+import { Schedule, Sport, PriceRule, Amenity } from "@prisma/client";
 import { GeneralInfoForm } from "./GeneralInfoForm";
+import { AmenitiesForm } from "./AmenitiesForm";
 
 type ScheduleDayKey = Exclude<keyof Schedule, "id" | "complexId">;
 
 const TABS = [
   { id: "general", label: "Información General" },
+  { id: "amenities", label: "Servicios" },
   { id: "schedule", label: "Horarios" },
   { id: "courts", label: "Canchas" },
   { id: "images", label: "Imágenes" },
@@ -36,6 +38,7 @@ export const ComplexSettings = () => {
     null
   );
   const [allSports, setAllSports] = useState<Sport[]>([]);
+  const [allAmenities, setAllAmenities] = useState<Amenity[]>([]);
   const [newCourts, setNewCourts] = useState<NewCourt[]>([]);
   const [courtsToDelete, setCourtsToDelete] = useState<string[]>([]);
   const [imagesToDelete, setImagesToDelete] = useState<string[]>([]);
@@ -51,25 +54,29 @@ export const ComplexSettings = () => {
     }
     try {
       setIsLoading(true);
-      const [complexRes, sportsRes] = await Promise.all([
+      const [settingsRes, sportsRes] = await Promise.all([
         fetch(`/api/complex/${complexId}/settings`),
         fetch(`/api/sports`),
       ]);
-      if (!complexRes.ok)
-        throw new Error("No se pudo cargar la configuración del complejo.");
-      if (!sportsRes.ok)
-        throw new Error("No se pudo cargar la lista de deportes.");
-      const complexData = await complexRes.json();
+
+      if (!settingsRes.ok) throw new Error("No se pudo cargar la configuración del complejo.");
+      if (!sportsRes.ok) throw new Error("No se pudo cargar la lista de deportes.");
+      
+      const { complex, allAmenities } = await settingsRes.json();
       const sportsData = await sportsRes.json();
 
-      setData(complexData);
-      setOriginalData(JSON.parse(JSON.stringify(complexData)));
+      setData(complex);
+      setOriginalData(JSON.parse(JSON.stringify(complex)));
+      setAllAmenities(allAmenities);
       setAllSports(sportsData);
+
       setNewCourts([]);
       setCourtsToDelete([]);
       setImagesToDelete([]);
+
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Error desconocido");
+      setData(null);
     } finally {
       setIsLoading(false);
     }
@@ -84,6 +91,27 @@ export const ComplexSettings = () => {
     setData((prev) =>
       prev ? { ...prev, [e.target.name]: e.target.value } : null
     );
+  };
+
+  const handleAmenityChange = (amenityId: string, isSelected: boolean) => {
+    setData(prevData => {
+      if (!prevData) return null;
+
+      const currentAmenities = prevData.amenities || [];
+      let newAmenities: Amenity[];
+
+      if (isSelected) {
+        if (!currentAmenities.some(a => a.id === amenityId)) {
+          const amenityToAdd = allAmenities.find(a => a.id === amenityId);
+          newAmenities = amenityToAdd ? [...currentAmenities, amenityToAdd] : currentAmenities;
+        } else {
+          newAmenities = currentAmenities;
+        }
+      } else {
+        newAmenities = currentAmenities.filter(amenity => amenity.id !== amenityId);
+      }
+      return { ...prevData, amenities: newAmenities };
+    });
   };
 
   const handleComplexChange = (key: "timeSlotInterval", value: number) => {
@@ -379,6 +407,13 @@ export const ComplexSettings = () => {
             };
             break;
 
+          case "amenities":
+            endpoint = `/api/complex/${complexId}/settings/amenities`;
+            payload = { 
+              amenityIds: data.amenities.map(a => a.id) 
+            };
+            break;  
+
           case "schedule":
             endpoint = `/api/complex/${complexId}/settings/schedule`;
             payload = {
@@ -487,16 +522,8 @@ export const ComplexSettings = () => {
     }
   };
 
-  if (isLoading)
-    return (
-      <div className="p-8 flex justify-center items-center">
-        <Spinner />
-      </div>
-    );
-  if (!data)
-    return (
-      <div className="p-8">No se encontró la configuración del complejo.</div>
-    );
+  if (isLoading) return <div className="p-8 flex justify-center items-center"><Spinner /></div>;
+  if (!data) return <div className="p-8">No se encontró la configuración del complejo.</div>;
 
   return (
     <div className="space-y-8">
@@ -531,6 +558,13 @@ export const ComplexSettings = () => {
         <form onSubmit={handleSubmit} className="space-y-8">
           {activeTab === "general" && (
             <GeneralInfoForm data={data} onChange={handleBasicInfoChange} />
+          )}
+          {activeTab === "amenities" && (
+            <AmenitiesForm
+              allAmenities={allAmenities}
+              selectedAmenities={data.amenities.map(a => a.id)}
+              onAmenityChange={handleAmenityChange}
+            />
           )}
           {activeTab === "schedule" && (
             <ScheduleForm
