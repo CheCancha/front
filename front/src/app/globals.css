@@ -159,3 +159,14 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+@keyframes rippling {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+.animate-rippling {
+  animation: rippling 600ms ease-out;
+}

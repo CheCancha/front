@@ -10,9 +10,7 @@ const getPlanEnumFromString = (planString: string): SubscriptionPlan => {
   switch (planString) {
     case "Plan Básico":
       return SubscriptionPlan.BASE;
-    case "Plan Estándar":
-      return SubscriptionPlan.ESTANDAR;
-    case "Plan Full":
+    case "Plan Pro":
       return SubscriptionPlan.FULL;
     default:
       return SubscriptionPlan.FREE;

@@ -1,5 +1,5 @@
 import { db } from "@/shared/lib/db";
-import { eachDayOfInterval, getDay, getHours } from "date-fns";
+import { eachDayOfInterval, getDay } from "date-fns";
 import { BookingStatus } from "@prisma/client";
 
 interface AnalyticsParams {

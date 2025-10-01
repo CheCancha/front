@@ -4,7 +4,7 @@
 import React from "react";
 import Link from "next/link";
 import { cn } from "@/shared/lib/utils";
-import { RippleButton } from "@/shared/components/magicui/ripple-button";
+import { RippleButton } from "@/shared/components/ui/ripple-button";
 
 // --- Interfaz de Props Base ---
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -53,7 +53,7 @@ export const ButtonPrimary: React.FC<ButtonProps> = ({
   ...props
 }) => {
   const primaryClasses =
-    "bg-brand-orange text-white hover:bg-opacity-90 shadow-sm";
+    "bg-brand-orange text-white hover:bg-opacity-90";
   const baseClasses =
     "inline-flex items-center justify-center rounded-full font-bold text-base transition-colors duration-300 cursor-pointer py-3 px-8";
 
@@ -127,9 +127,12 @@ export const ButtonRipple: React.FC<ButtonProps> = ({
   );
 
   if (href) {
-    return <Link href={href} target={target} rel={rel}>{rippleButton}</Link>;
+    return (
+      <Link href={href} target={target} rel={rel}>
+        {rippleButton}
+      </Link>
+    );
   }
-
 
   return rippleButton;
 };

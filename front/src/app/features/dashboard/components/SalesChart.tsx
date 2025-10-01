@@ -19,7 +19,6 @@ import {
   endOfYear,
   getWeekOfMonth,
 } from "date-fns";
-import { es } from "date-fns/locale";
 import { cn } from "@/shared/lib/utils";
 
 // --- TIPOS ---

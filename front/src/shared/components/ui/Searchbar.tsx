@@ -117,7 +117,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 
   const inputClass =
     variant === "hero"
-      ? "w-full pl-10 pr-4 py-3 border border-neutral-400 rounded-md focus:ring-2 focus:ring-neutral-950 outline-none"
+      ? "w-full pl-10 pr-4 py-3 border border-neutral-400 rounded-md focus:ring-2 focus:ring-brand-orange outline-none"
       : "w-full pl-10 pr-4 py-3 border border-neutral-300 rounded-md focus:ring-2 focus:ring-brand-orange outline-none";
 
   const iconClass =

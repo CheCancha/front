@@ -1,8 +1,50 @@
 import { db } from "@/shared/lib/db";
 import InscriptionRequests from "./InscriptionRequests";
 import AdminDashboard from "./AdminDashboard";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/Tabs";
-import { FileText, Building, Users } from "lucide-react"; 
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/shared/components/ui/Tabs";
+import { FileText, Building, Users } from "lucide-react";
+
+type ComplexWithManager = {
+  id: string;
+  name: string;
+  manager: {
+    name: string | null;
+    phone: string | null;
+  };
+  subscriptionPlan: "Básico" | "Pro";
+};
+
+const activeComplexesRaw = await db.complex.findMany({
+  where: { onboardingCompleted: true },
+  include: {
+    manager: {
+      select: { name: true, phone: true },
+    },
+  },
+  orderBy: { name: "asc" },
+});
+
+const activeComplexes: ComplexWithManager[] = activeComplexesRaw.map(
+  (c): ComplexWithManager => ({
+    id: c.id,
+    name: c.name,
+    manager: {
+      name: c.manager?.name || null,
+      phone: c.manager?.phone || null,
+    },
+    subscriptionPlan:
+      c.subscriptionPlan === "BASE" || c.subscriptionPlan === "FREE"
+        ? "Básico"
+        : "Pro",
+  })
+);
+
+
 
 export default async function AdminPage() {
   // --- La lógica para obtener los datos no cambia ---
@@ -11,28 +53,31 @@ export default async function AdminPage() {
     orderBy: { createdAt: "asc" },
   });
 
-  const activeComplexes = await db.complex.findMany({
-    where: { onboardingCompleted: true },
-    include: {
-      manager: {
-        select: { name: true, phone: true },
-      },
+  const activeComplexes: ComplexWithManager[] = activeComplexesRaw.map((c) => ({
+    id: c.id,
+    name: c.name,
+    manager: {
+      name: c.manager?.name || null,
+      phone: c.manager?.phone || null,
     },
-    orderBy: { name: "asc" },
-  });
+    subscriptionPlan:
+      c.subscriptionPlan === "BASE" || c.subscriptionPlan === "FREE"
+        ? "Básico"
+        : "Pro",
+  }));
 
   return (
-    // ✨ 2. MEJORAMOS EL LAYOUT GENERAL
     <div className="min-h-screen bg-gray-50/50">
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* --- Header Mejorado --- */}
         <header className="mb-8">
-            <h1 className="text-3xl font-bold tracking-tight text-gray-900">
-                Panel de Administración
-            </h1>
-            <p className="mt-1 text-gray-600">
-                Gestiona las solicitudes de inscripción, complejos activos y usuarios de la plataforma.
-            </p>
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+            Panel de Administración
+          </h1>
+          <p className="mt-1 text-gray-600">
+            Gestiona las solicitudes de inscripción, complejos activos y
+            usuarios de la plataforma.
+          </p>
         </header>
 
         {/* --- Tabs con Diseño Mejorado --- */}
@@ -60,12 +105,17 @@ export default async function AdminPage() {
           <TabsContent value="complexes" className="mt-6">
             <AdminDashboard complexes={activeComplexes} />
           </TabsContent>
-          
+
           <TabsContent value="users" className="mt-6">
-             <div className="bg-white p-6 rounded-lg border shadow-sm">
-               <h2 className="text-lg font-semibold mb-4">Gestión de Usuarios</h2>
-               <p className="text-gray-500">Próximamente: Aquí podrás ver y gestionar todos los usuarios registrados en la plataforma.</p>
-             </div>
+            <div className="bg-white p-6 rounded-lg border shadow-sm">
+              <h2 className="text-lg font-semibold mb-4">
+                Gestión de Usuarios
+              </h2>
+              <p className="text-gray-500">
+                Próximamente: Aquí podrás ver y gestionar todos los usuarios
+                registrados en la plataforma.
+              </p>
+            </div>
           </TabsContent>
         </Tabs>
       </main>

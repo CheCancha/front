@@ -18,8 +18,7 @@ interface PlanOption {
 
 const planOptions: PlanOption[] = [
     { value: "Plan Básico", label: "Plan Básico" },
-    { value: "Plan Estándar", label: "Plan Estándar" },
-    { value: "Plan Full", label: "Plan Full" },
+    { value: "Plan Pro", label: "Plan Pro" },
 ];
 
 interface SportOption {
@@ -98,7 +97,7 @@ export const InscriptionsForm = () => {
       <div className="w-full max-w-3xl mx-auto bg-white">
         <div className="text-center mb-10">
           <h2 className="font-lora text-3xl font-bold text-gray-900">
-            Solicitá tu Demo de 30 días
+            Solicitá tu Demo de 90 días
           </h2>
           <p className="mt-2 text-gray-600">
             Completá el formulario y nuestro equipo se pondrá en contacto para configurar tu cuenta.
@@ -113,7 +112,7 @@ export const InscriptionsForm = () => {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <CustomInput label="Nombre y Apellido" type="text" register={register("ownerName")} error={errors.ownerName?.message}/>
-              <CustomInput label="Email de Contacto" type="email" register={register("ownerEmail")} error={errors.ownerEmail?.message}/>
+              <CustomInput label="Email" type="email" register={register("ownerEmail")} error={errors.ownerEmail?.message}/>
             </div>
             <CustomInput label="Teléfono de Contacto" type="tel" register={register("ownerPhone")} error={errors.ownerPhone?.message}/>
           </section>

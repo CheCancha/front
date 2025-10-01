@@ -5,7 +5,7 @@ type ComplexWithManager = {
     name: string | null;
     phone: string | null;
   };
-  subscriptionPlan: "BASE" | "ESTANDAR" | "FULL" | "FREE";
+  subscriptionPlan: "Básico" | "Pro";
 };
 
 export default function AdminDashboard({ complexes }: { complexes: ComplexWithManager[] }) {

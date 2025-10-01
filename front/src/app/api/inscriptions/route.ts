@@ -15,7 +15,6 @@ export async function POST(request: Request) {
       return new NextResponse("Datos inválidos", { status: 400 });
     }
 
-    // 1. Guardamos la solicitud en la base de datos usando Prisma
     await db.inscriptionRequest.create({
       data: {
         ownerName: body.ownerName,
@@ -31,9 +30,8 @@ export async function POST(request: Request) {
       },
     });
 
-    // 2. Si se guardó correctamente, enviamos el email de notificación
     await resend.emails.send({
-      from: "onboarding@resend.dev", 
+      from: "contacto@checancha.com",
       to: "ignacionweppler@gmail.com",
       subject: `Nueva solicitud de registro: ${body.complexName}`,
       html: `
@@ -45,6 +43,13 @@ export async function POST(request: Request) {
         <p><strong>Plan Seleccionado:</strong> ${body.selectedPlan}</p>
         <p><em>Revisá tu panel de superadmin para aprobar esta solicitud.</em></p>
       `,
+    });
+
+    await resend.emails.send({
+      from: "contacto@checancha.com",
+      to: body.ownerEmail,
+      subject: "¡Hemos recibido tu solicitud en CheCancha!",
+      html: `<p>Hola ${body.ownerName}, gracias por registrar tu complejo. Estamos revisando tu solicitud y te avisaremos pronto. ¡Saludos!</p>`,
     });
 
     return NextResponse.json(

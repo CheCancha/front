@@ -2,13 +2,13 @@ import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-const fromEmail = "CheCancha <onboarding@resend.dev>";
+const fromEmail = "CheCancha <contacto@checancha.com>";
 
 const loginUrl = process.env.NEXTAUTH_URL
   ? `${process.env.NEXTAUTH_URL}/login`
   : "http://localhost:3000/login";
 
-  const logoUrl = process.env.NEXTAUTH_URL
+const logoUrl = process.env.NEXTAUTH_URL
   ? `${process.env.NEXTAUTH_URL}/logochecancha.png`
   : "http://localhost:3000/logochecancha.png";
 
@@ -19,13 +19,15 @@ export const sendWelcomeEmail = async (
   temporaryPassword: string
 ) => {
   try {
-    const testRecipient = process.env.RESEND_TEST_RECIPIENT_EMAIL;
+    const testRecipient = process.env.RESEND_RECIPIENT_EMAIL;
 
-    const recipientEmail = testRecipient;
+    const recipientEmail =
+      process.env.NODE_ENV === "production" ? managerEmail : testRecipient;
+
 
     if (!recipientEmail) {
       console.error(
-        "Modo de prueba: RESEND_TEST_RECIPIENT_EMAIL no está configurado en .env. No se puede enviar el email."
+        "Modo de prueba: RESEND_RECIPIENT_EMAIL no está configurado en .env. No se puede enviar el email."
       );
       throw new Error("El email de prueba no está configurado en el servidor.");
     }
@@ -107,7 +109,7 @@ const resetPasswordUrl = (token: string) =>
 
 export const sendPasswordResetEmail = async (email: string, token: string) => {
   try {
-    const recipientEmail = process.env.RESEND_TEST_RECIPIENT_EMAIL || email;
+    const recipientEmail = process.env.RESEND_RECIPIENT_EMAIL || email;
     const resetUrl = resetPasswordUrl(token);
 
     const emailHtml = `

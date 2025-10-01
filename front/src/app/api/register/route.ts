@@ -1,4 +1,3 @@
-// front/src/app/api/register/route.ts
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { db } from "@/shared/lib/db";

@@ -2,7 +2,7 @@
 import React from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { ButtonSecondary } from "@/shared/components/ui/Buttons";
+import { ButtonPrimary } from "@/shared/components/ui/Buttons";
 import {
   ArrowRight,
   CalendarDays,
@@ -103,9 +103,9 @@ export const ManagmentClub = () => {
           </motion.ul>
 
           <motion.div variants={itemVariants}>
-            <ButtonSecondary href="#pricing" icon={<ArrowRight size={20} />}>
+            <ButtonPrimary href="#pricing" icon={<ArrowRight size={20} />}>
               Ver Planes y Precios
-            </ButtonSecondary>
+            </ButtonPrimary>
           </motion.div>
         </motion.div>
       </div>

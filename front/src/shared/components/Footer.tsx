@@ -2,6 +2,7 @@ import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { FaFacebook, FaInstagram, FaTwitter, FaGithub } from "react-icons/fa";
+import { routes } from "@/routes";
 
 const Footer = () => {
   return (
@@ -29,13 +30,13 @@ const Footer = () => {
               </h2>
               <ul className="text-paragraph font-medium">
                 <li className="mb-4">
-                  <Link href="/canchas" className="hover:underline">
+                  <Link href={routes.public.canchas} className="hover:underline">
                     Canchas
                   </Link>
                 </li>
                 <li>
-                  <Link href="/torneos" className="hover:underline">
-                    Torneos
+                  <Link href={routes.public.clubs} className="hover:underline">
+                    Software
                   </Link>
                 </li>
               </ul>
@@ -63,12 +64,12 @@ const Footer = () => {
               </h2>
               <ul className="text-paragraph font-medium">
                 <li className="mb-4">
-                  <Link href="/privacidad" className="hover:underline">
+                  <Link href="#" className="hover:underline">
                     Política de Privacidad
                   </Link>
                 </li>
                 <li>
-                  <Link href="/terminos" className="hover:underline">
+                  <Link href="#" className="hover:underline">
                     Términos &amp; Condiciones
                   </Link>
                 </li>
@@ -93,10 +94,6 @@ const Footer = () => {
             <a href="#" className="text-paragraph hover:text-white">
               <FaInstagram className="w-4 h-4" />
               <span className="sr-only">Página de Instagram</span>
-            </a>
-            <a href="#" className="text-paragraph hover:text-white">
-              <FaTwitter className="w-4 h-4" />
-              <span className="sr-only">Página de Twitter</span>
             </a>
             <a href="#" className="text-paragraph hover:text-white">
               <FaGithub className="w-4 h-4" />

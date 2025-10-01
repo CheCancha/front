@@ -7,24 +7,35 @@ const faqData = [
   {
     question: "¿Cómo funciona el pago?",
     answer:
-      "Podés pagar una seña online con Mercado Pago para asegurar tu reserva o elegir pagar el total en efectivo directamente en el club cuando llegues.",
+      "Podés pagar una seña online a través de Mercado Pago. Una vez realizado el pago: Tu turno queda reservado automáticamente, y recibiras una confirmación por email.",
   },
   {
     question: "¿Puedo cancelar una reserva?",
     answer:
-      "Sí, cada complejo tiene su propia política de cancelación que podés revisar antes de confirmar tu reserva. Generalmente, se permite cancelar con hasta 24 horas de antelación.",
+      "No se puede cancelar desde la web. Cada complejo tiene su política, pero normalmente: Cancelación hasta 24 horas antes del turno. Consultá con el club si necesitás reprogramar.",
   },
   {
     question: "¿Qué pasa si llueve?",
     answer:
-      "Para canchas al aire libre, la mayoría de los complejos te permitirán reprogramar tu partido sin costo adicional. Te recomendamos contactar directamente al club a través de la plataforma.",
+      "Para canchas al aire libre: La mayoría permite reprogramar tu partido sin costo. Contactá al club a través de la plataforma para coordinar un nuevo horario.",
   },
   {
     question: "¿Cómo se confirma mi reserva?",
     answer:
-      "Una vez que completás la reserva, recibirás una confirmación instantánea en la app y un correo electrónico con todos los detalles, que podés agendar en tu calendario con un solo clic.",
+      "Para confirmar tu reserva: 1. Elegí el complejo. 2. Seleccioná día y hora. 3. Pagá la seña online. 4. Recibí confirmación por email.",
+  },
+  {
+    question: "¿Puedo reservar más de una cancha a la vez?",
+    answer:
+      "Si! Depende del complejo y su plan activo: Algunos permiten múltiples canchas por turno. Otros limitan a una cancha por reserva.",
+  },
+  {
+    question: "¿Hay descuentos o promociones?",
+    answer:
+      "Algunos complejos ofrecen cupones o promociones especiales: Proximamente podras verlo en su muro. Aplicará según disponibilidad y reglas del club.",
   },
 ];
+
 
 const AccordionItem = ({
   question,
@@ -36,10 +47,7 @@ const AccordionItem = ({
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <motion.div
-      layout
-      className="border-b border-neutral-400"
-    >
+    <motion.div layout className="border-b border-neutral-400">
       <motion.button
         className="w-full flex justify-between items-center text-left py-4 px-5"
         onClick={() => setIsOpen(!isOpen)}
@@ -97,7 +105,7 @@ export const FaqSection = () => {
                 href="https://api.whatsapp.com/send?phone=TU_NUMERO_DE_WHATSAPP"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-block bg-brand-green text-white font-bold py-2 px-5 rounded-full hover:bg-opacity-90 transition-transform transform hover:scale-105"
+                className="inline-block bg-brand-green text-white font-bold py-2 px-5 rounded-full hover:bg-opacity-90 transition-transform transform"
               >
                 Contactanos
               </a>
