@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/shared/lib/db";
 import { getDay } from "date-fns";
-
-const TIME_GRID_INTERVAL = 30;
+import { BookingStatus } from "@prisma/client";
 
 export async function GET(
   req: Request,
@@ -19,13 +18,22 @@ export async function GET(
         { status: 400 }
       );
     }
-    const requestedDate = new Date(`${dateString}T00:00:00.000-03:00`);
+    const requestedDate = new Date(`${dateString}T00:00:00`);
 
     const complex = await db.complex.findUnique({
       where: { slug: slug },
       include: {
         schedule: true,
-        courts: { include: { bookings: { where: { date: requestedDate } } } },
+        courts: {
+          include: {
+            bookings: {
+              where: {
+                date: requestedDate,
+                status: { not: BookingStatus.CANCELADO },
+              },
+            },
+          },
+        },
       },
     });
 
@@ -36,54 +44,40 @@ export async function GET(
       );
     }
 
+    // --- CORRECCIÓN CLAVE ---
+    // La grilla de horarios ahora respeta la configuración del manager.
+    const timeGridInterval = complex.timeSlotInterval;
+
     const dayOfWeek = getDay(requestedDate);
-    const dayKeys = [
-      "sunday",
-      "monday",
-      "tuesday",
-      "wednesday",
-      "thursday",
-      "friday",
-      "saturday",
-    ];
+    const dayKeys = [ "sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday" ];
     const key = dayKeys[dayOfWeek];
 
     let openHour: number | null | undefined;
     let closeHour: number | null | undefined;
 
     if (complex.schedule) {
-      const rawOpenHour =
-        complex.schedule[`${key}Open` as keyof typeof complex.schedule];
-      const rawCloseHour =
-        complex.schedule[`${key}Close` as keyof typeof complex.schedule];
-      openHour =
-        typeof rawOpenHour === "string" ? Number(rawOpenHour) : rawOpenHour;
-      closeHour =
-        typeof rawCloseHour === "string" ? Number(rawCloseHour) : rawCloseHour;
-    } else {
-      openHour = complex.openHour;
-      closeHour = complex.closeHour;
+      const rawOpenHour = complex.schedule[`${key}Open` as keyof typeof complex.schedule];
+      const rawCloseHour = complex.schedule[`${key}Close` as keyof typeof complex.schedule];
+      openHour = typeof rawOpenHour === "number" ? rawOpenHour : undefined;
+      closeHour = typeof rawCloseHour === "number" ? rawCloseHour : undefined;
     }
+    
+    if (openHour === undefined) openHour = complex.openHour;
+    if (closeHour === undefined) closeHour = complex.closeHour;
 
     if (typeof openHour !== "number" || typeof closeHour !== "number") {
       return NextResponse.json([]);
     }
 
-    // --- LÓGICA DE DISPONIBILIDAD MEJORADA ---
-
-    // 1. Crear un mapa de disponibilidad para cada cancha (más eficiente)
+    // --- LÓGICA DE DISPONIBILIDAD ACTUALIZADA ---
     const availabilityMap = new Map<string, boolean[]>();
-    const totalSlots = (closeHour - openHour) * (60 / TIME_GRID_INTERVAL);
+    const totalSlots = (closeHour - openHour) * (60 / timeGridInterval);
 
     for (const court of complex.courts) {
       const courtSlots = new Array(totalSlots).fill(true);
       for (const booking of court.bookings) {
-        const startIdx =
-          (booking.startTime * 60 +
-            (booking.startMinute || 0) -
-            openHour * 60) /
-          TIME_GRID_INTERVAL;
-        const slotsToBook = court.slotDurationMinutes / TIME_GRID_INTERVAL;
+        const startIdx = (booking.startTime * 60 + (booking.startMinute || 0) - openHour * 60) / timeGridInterval;
+        const slotsToBook = court.slotDurationMinutes / timeGridInterval;
         for (let i = 0; i < slotsToBook; i++) {
           if (startIdx + i < totalSlots) {
             courtSlots[startIdx + i] = false;
@@ -93,7 +87,6 @@ export async function GET(
       availabilityMap.set(court.id, courtSlots);
     }
 
-    // 2. Determinar los horarios de inicio VÁLIDOS para cada cancha
     const validStartTimes: {
       time: string;
       courts: { courtId: string; available: boolean }[];
@@ -104,27 +97,28 @@ export async function GET(
     while (currentTime < closingTime) {
       const hour = Math.floor(currentTime / 60);
       const minute = currentTime % 60;
-      const timeString = `${String(hour).padStart(2, "0")}:${String(
-        minute
-      ).padStart(2, "0")}`;
+      const timeString = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
 
       const courtStatuses = complex.courts.map((court) => {
-        const slotsNeeded = court.slotDurationMinutes / TIME_GRID_INTERVAL;
-        const currentSlotIndex =
-          (currentTime - openHour * 60) / TIME_GRID_INTERVAL;
+        const slotsNeeded = court.slotDurationMinutes / timeGridInterval;
+        const currentSlotIndex = (currentTime - openHour * 60) / timeGridInterval;
 
         let canBook = true;
-        for (let i = 0; i < slotsNeeded; i++) {
-          if (!availabilityMap.get(court.id)?.[currentSlotIndex + i]) {
+        if (currentTime + court.slotDurationMinutes > closingTime) {
             canBook = false;
-            break;
-          }
+        } else {
+            for (let i = 0; i < slotsNeeded; i++) {
+              if (!availabilityMap.get(court.id)?.[currentSlotIndex + i]) {
+                canBook = false;
+                break;
+              }
+            }
         }
         return { courtId: court.id, available: canBook };
       });
 
       validStartTimes.push({ time: timeString, courts: courtStatuses });
-      currentTime += TIME_GRID_INTERVAL;
+      currentTime += timeGridInterval;
     }
 
     return NextResponse.json(validStartTimes);

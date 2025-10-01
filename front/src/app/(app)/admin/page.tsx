@@ -9,6 +9,7 @@ import {
 } from "@/shared/components/ui/Tabs";
 import { FileText, Building, Users } from "lucide-react";
 
+// El tipo puede quedar fuera, es una buena práctica.
 type ComplexWithManager = {
   id: string;
   name: string;
@@ -19,57 +20,44 @@ type ComplexWithManager = {
   subscriptionPlan: "Básico" | "Pro";
 };
 
-const activeComplexesRaw = await db.complex.findMany({
-  where: { onboardingCompleted: true },
-  include: {
-    manager: {
-      select: { name: true, phone: true },
-    },
-  },
-  orderBy: { name: "asc" },
-});
-
-const activeComplexes: ComplexWithManager[] = activeComplexesRaw.map(
-  (c): ComplexWithManager => ({
-    id: c.id,
-    name: c.name,
-    manager: {
-      name: c.manager?.name || null,
-      phone: c.manager?.phone || null,
-    },
-    subscriptionPlan:
-      c.subscriptionPlan === "BASE" || c.subscriptionPlan === "FREE"
-        ? "Básico"
-        : "Pro",
-  })
-);
-
-
-
 export default async function AdminPage() {
-  // --- La lógica para obtener los datos no cambia ---
+
+  // 1. Obtenemos las solicitudes pendientes.
   const pendingRequests = await db.inscriptionRequest.findMany({
     where: { status: "PENDIENTE" },
     orderBy: { createdAt: "asc" },
   });
 
-  const activeComplexes: ComplexWithManager[] = activeComplexesRaw.map((c) => ({
-    id: c.id,
-    name: c.name,
-    manager: {
-      name: c.manager?.name || null,
-      phone: c.manager?.phone || null,
+  // 2. Obtenemos los complejos activos.
+  const activeComplexesRaw = await db.complex.findMany({
+    where: { onboardingCompleted: true },
+    include: {
+      manager: {
+        select: { name: true, phone: true },
+      },
     },
-    subscriptionPlan:
-      c.subscriptionPlan === "BASE" || c.subscriptionPlan === "FREE"
-        ? "Básico"
-        : "Pro",
-  }));
+    orderBy: { name: "asc" },
+  });
+
+  // 3. Mapeamos los datos de los complejos al tipo que necesita el componente.
+  const activeComplexes: ComplexWithManager[] = activeComplexesRaw.map(
+    (c): ComplexWithManager => ({
+      id: c.id,
+      name: c.name,
+      manager: {
+        name: c.manager?.name || null,
+        phone: c.manager?.phone || null,
+      },
+      subscriptionPlan:
+        c.subscriptionPlan === "BASE" || c.subscriptionPlan === "FREE"
+          ? "Básico"
+          : "Pro",
+    })
+  );
 
   return (
     <div className="min-h-screen bg-gray-50/50">
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* --- Header Mejorado --- */}
         <header className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight text-gray-900">
             Panel de Administración
@@ -80,7 +68,6 @@ export default async function AdminPage() {
           </p>
         </header>
 
-        {/* --- Tabs con Diseño Mejorado --- */}
         <Tabs defaultValue="requests" className="w-full">
           <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3 sm:w-max">
             <TabsTrigger value="requests">
@@ -97,7 +84,6 @@ export default async function AdminPage() {
             </TabsTrigger>
           </TabsList>
 
-          {/* --- Contenido de las Pestañas --- */}
           <TabsContent value="requests" className="mt-6">
             <InscriptionRequests initialRequests={pendingRequests} />
           </TabsContent>

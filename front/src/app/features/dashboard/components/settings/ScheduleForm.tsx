@@ -13,7 +13,6 @@ interface Props {
 
 export const ScheduleForm = ({ data, onScheduleChange, onComplexChange }: Props) => (
     <div className="overflow-hidden">
-        <div className="p-6">
             <h3 className="text-lg font-semibold">Horarios y Reservas</h3>
             <p className="text-sm text-gray-500 mt-1">
                 Define las horas de apertura y la visualización de los turnos en el calendario.
@@ -64,5 +63,4 @@ export const ScheduleForm = ({ data, onScheduleChange, onComplexChange }: Props)
                 })}
             </div>
         </div>
-    </div>
 );

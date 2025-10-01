@@ -3,45 +3,33 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/authOptions";
 import { db } from "@/shared/lib/db";
 
+interface Context {
+  params: Promise<{
+    requestId: string;
+  }>;
+}
+
 export async function PATCH(
   request: Request,
-  context: { params: Promise<{ id: string }> }
+  context: Context
 ) {
   try {
     const session = await getServerSession(authOptions);
-
     if (!session?.user?.id || session.user.role !== "ADMIN") {
       return new NextResponse("No autorizado", { status: 401 });
     }
 
-    const { id: requestId } = await context.params;
+    // Await the params
+    const { requestId } = await context.params;
+
+    if (!requestId) {
+      return new NextResponse("ID de solicitud no encontrado", { status: 400 });
+    }
 
     const body = await request.json();
-    const {
-      ownerName,
-      ownerEmail,
-      ownerPhone,
-      complexName,
-      address,
-      city,
-      province,
-      sports,
-      selectedPlan,
-    } = body;
-
     const updatedRequest = await db.inscriptionRequest.update({
       where: { id: requestId },
-      data: {
-        ownerName,
-        ownerEmail,
-        ownerPhone,
-        complexName,
-        address,
-        city,
-        province,
-        sports,
-        selectedPlan,
-      },
+      data: body,
     });
 
     return NextResponse.json(updatedRequest);

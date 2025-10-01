@@ -13,7 +13,6 @@ export async function GET() {
       return new NextResponse("No autorizado", { status: 401 });
     }
 
-    // Hacemos una única consulta para traer todos los datos necesarios
     const userWithBookings = await db.user.findUnique({
       where: { id: session.user.id },
       select: {

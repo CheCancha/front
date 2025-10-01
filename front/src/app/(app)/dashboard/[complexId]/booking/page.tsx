@@ -12,6 +12,7 @@ import type {
   Booking as PrismaBooking,
   Sport,
   BookingStatus,
+  PriceRule,
 } from "@prisma/client";
 import { toast } from "react-hot-toast";
 import BookingFormModal from "@/shared/components/ui/BookingFormModal";
@@ -19,19 +20,15 @@ import BookingFormModal from "@/shared/components/ui/BookingFormModal";
 // --- TIPOS ---
 type CourtWithSportAndPriceRules = Court & {
   sport: Sport;
-  priceRules: {
-    id: string;
-    startTime: number;
-    endTime: number;
-    price: number;
-    depositAmount: number;
-  }[];
+  priceRules: PriceRule[];
 };
+
 type ComplexWithCourts = Complex & { courts: CourtWithSportAndPriceRules[] };
 type BookingWithDetails = PrismaBooking & {
   court: { id: string; name: string; slotDurationMinutes: number };
   user?: { name: string | null } | null;
 };
+
 type SubmitPayload = {
   guestName: string;
   courtId: string;
@@ -70,75 +67,87 @@ export default function BookingCalendarPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [sportFilter, setSportFilter] = useState<string>("Todos");
   const [isEditing, setIsEditing] = useState(false);
-  const [modalData, setModalData] =
-    useState<Partial<SubmitPayload & { id: string }>>();
+  const [modalData, setModalData] = useState<Partial<SubmitPayload & { id: string }>>();
+
+  console.log("LOG: Renderizando componente BookingCalendarPage. Estado actual de 'complex':", complex);
 
   const timeSlots = useMemo(() => {
     if (!complex) return [];
+    console.log("LOG (useMemo timeSlots): Calculando time slots porque 'complex' existe.");
     const slots = [];
     const open = complex.openHour ?? 9;
     const close = complex.closeHour ?? 23;
     const interval = complex.timeSlotInterval || 30;
     for (let h = open; h < close; h++) {
-            for (let m = 0; m < 60; m += interval) {
-                slots.push(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
-            }
-        }
-        return slots;
-    }, [complex]);
+      for (let m = 0; m < 60; m += interval) {
+        slots.push(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
+      }
+    }
+    return slots;
+  }, [complex]);
 
-  const isPast = useCallback(
-    (time: string) => {
-      const today = startOfDay(new Date());
-      if (isBefore(currentDate, today)) {
-        return true;
-      }
-      if (!isToday(currentDate)) {
-        return false;
-      }
-      const [slotHour, slotMinute] = time.split(":").map(Number);
-      const now = new Date();
-      const currentHour = now.getHours();
-      const currentMinute = now.getMinutes();
-      if (slotHour < currentHour) return true;
-      if (slotHour === currentHour && slotMinute < currentMinute) return true;
-      return false;
-    },
-    [currentDate]
-  );
+  const isPast = useCallback((time: string) => {
+    const today = startOfDay(new Date());
+    if (isBefore(currentDate, today)) return true;
+    if (!isToday(currentDate)) return false;
+    
+    const [slotHour, slotMinute] = time.split(":").map(Number);
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+    if (slotHour < currentHour) return true;
+    if (slotHour === currentHour && slotMinute < currentMinute) return true;
+    return false;
+  }, [currentDate]);
 
-  const fetchBookingsForDate = useCallback(
-    async (date: Date) => {
-      if (!complexId) return;
-      const dateString = format(date, "yyyy-MM-dd");
-      try {
-        const res = await fetch(
-          `/api/complex/${complexId}/bookings?date=${dateString}`
-        );
-        if (!res.ok) throw new Error("Error al cargar las reservas.");
-        const data = await res.json();
-        setBookings(data);
-      } catch (error) {
-        toast.error(
-          error instanceof Error ? error.message : "Error inesperado"
-        );
-      }
-    },
-    [complexId]
-  );
+  const fetchBookingsForDate = useCallback(async (date: Date) => {
+    if (!complexId) return;
+    const dateString = format(date, "yyyy-MM-dd");
+    console.log(`LOG (fetchBookingsForDate): Iniciando fetch de reservas para fecha: ${dateString}`);
+    try {
+      const res = await fetch(`/api/complex/${complexId}/bookings?date=${dateString}`);
+      if (!res.ok) throw new Error("Error al cargar las reservas.");
+      const data = await res.json();
+      console.log("LOG (fetchBookingsForDate): Reservas recibidas:", data);
+      setBookings(data);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Error inesperado");
+      console.error("LOG (fetchBookingsForDate): Error en el fetch:", error);
+    }
+  }, [complexId]);
 
   useEffect(() => {
     if (!complexId) return;
     const fetchComplexData = async () => {
+      console.log("LOG (useEffect fetchComplexData): Iniciando fetch de datos del complejo.");
       setIsLoading(true);
       try {
         const res = await fetch(`/api/complex/${complexId}/settings`);
         if (!res.ok) throw new Error("Error al cargar datos del complejo.");
-        setComplex(await res.json());
+        
+        const responseData = await res.json();
+        console.log("LOG (useEffect fetchComplexData): Respuesta COMPLETA de la API recibida:", responseData);
+        
+        // --- ¡AQUÍ ESTÁ LA CORRECCIÓN! ---
+        // La API devuelve { complex: {...} }, extraemos el objeto de adentro.
+        const complexData = responseData.complex;
+
+        if (!complexData) {
+            console.error("LOG: El objeto 'complex' no se encontró dentro de la respuesta de la API.", responseData);
+            throw new Error("El formato de la respuesta de la API es incorrecto.");
+        }
+
+        if (!Array.isArray(complexData.courts)) {
+            console.error("LOG: Los datos recibidos del complejo no tienen un array de 'courts'.", complexData);
+            throw new Error("Formato de datos del complejo incorrecto.");
+        }
+        
+        console.log("LOG (useEffect fetchComplexData): Datos del complejo extraídos y validados. Guardando en el estado:", complexData);
+        setComplex(complexData);
+
       } catch (error) {
-        toast.error(
-          error instanceof Error ? error.message : "Error inesperado"
-        );
+        toast.error(error instanceof Error ? error.message : "Error inesperado");
+        console.error("LOG (useEffect fetchComplexData): Error en el fetch:", error);
       } finally {
         setIsLoading(false);
       }
@@ -146,15 +155,21 @@ export default function BookingCalendarPage() {
     fetchComplexData();
   }, [complexId]);
 
+
+
   useEffect(() => {
     if (complex) {
+      console.log("LOG (useEffect fetchBookings): 'complex' existe, llamando a fetchBookingsForDate.");
       fetchBookingsForDate(currentDate);
+    } else {
+      console.log("LOG (useEffect fetchBookings): 'complex' todavía es null, esperando...");
     }
   }, [complex, currentDate, fetchBookingsForDate]);
 
   const handleDateChange = (days: number) => {
     setCurrentDate((prev) => add(prev, { days }));
   };
+  
   const handleGoToToday = () => {
     setCurrentDate(startOfDay(new Date()));
   };
@@ -179,20 +194,20 @@ export default function BookingCalendarPage() {
       }
       toast.success(successMessage);
       setIsModalOpen(false);
-      await fetchBookingsForDate(currentDate); // Refrescar siempre
+      await fetchBookingsForDate(currentDate);
     } catch (error) {
       toast.error(
         error instanceof Error
           ? error.message
           : "No se pudo guardar la reserva."
       );
-      await fetchBookingsForDate(currentDate); // Refrescar también al fallar
+      await fetchBookingsForDate(currentDate);
     }
   };
 
   const openModalForSlot = (courtId: string, time: string) => {
-    setIsEditing(false); // Modo creación
-    setModalData({ courtId, time }); // Establece los datos para el modal
+    setIsEditing(false);
+    setModalData({ courtId, time });
     setIsModalOpen(true);
   };
 
@@ -212,21 +227,23 @@ export default function BookingCalendarPage() {
   const closeModal = () => {
     setIsModalOpen(false);
     setTimeout(() => {
-      setModalData(undefined); 
+      setModalData(undefined);
       setIsEditing(false);
     }, 300);
   };
 
   const { filteredCourts, sportFilters } = useMemo(() => {
-    if (!complex) return { filteredCourts: [], sportFilters: [] };
-    const sports = [
-      "Todos",
-      ...new Set(complex.courts.map((c) => c.sport.name)),
-    ];
-    const courts =
-      sportFilter === "Todos"
-        ? complex.courts
-        : complex.courts.filter((c) => c.sport.name === sportFilter);
+    console.log("LOG (useMemo filteredCourts): Recalculando canchas filtradas. 'complex' es:", complex);
+    if (!complex || !complex.courts) {
+      console.warn("LOG (useMemo filteredCourts): 'complex' o 'complex.courts' es nulo/indefinido. Devolviendo arrays vacíos.");
+      return { filteredCourts: [], sportFilters: ["Todos"] };
+    }
+    
+    console.log("LOG (useMemo filteredCourts): 'complex.courts' es un array, procediendo a mapear deportes.");
+    const sports = ["Todos", ...new Set(complex.courts.map((c) => c.sport.name))];
+    const courts = sportFilter === "Todos"
+      ? complex.courts
+      : complex.courts.filter((c) => c.sport.name === sportFilter);
     return { filteredCourts: courts, sportFilters: sports };
   }, [complex, sportFilter]);
 
@@ -252,7 +269,7 @@ export default function BookingCalendarPage() {
 
   return (
     <>
-      <div className="flex-1 bg-gray-50 p-4 sm:p-6">
+      <div className="flex-1 bg-gray-50 p-1">
         <header className="mb-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-4 self-start sm:self-center">
             <div className="flex items-center p-1 bg-white border rounded-lg shadow-sm">
@@ -300,7 +317,7 @@ export default function BookingCalendarPage() {
           <div
             className="grid"
             style={{
-              gridTemplateColumns: `minmax(80px, auto) repeat(${filteredCourts.length}, minmax(150px, 1fr))`,
+              gridTemplateColumns: `minmax(70px, auto) repeat(${filteredCourts.length}, minmax(150px, 1fr))`,
               gridAutoRows: "2.5rem",
             }}
           >

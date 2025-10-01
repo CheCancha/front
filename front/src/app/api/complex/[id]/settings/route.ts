@@ -29,7 +29,7 @@ export async function GET(
           },
         },
         images: { orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }] },
-        amenities: true, // <-- Incluimos las amenities que YA tiene el complejo
+        amenities: true,
       },
     });
 

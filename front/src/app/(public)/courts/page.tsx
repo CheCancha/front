@@ -15,7 +15,7 @@ import { Spinner } from "@/shared/components/ui/Spinner";
 import BookingModal from "@/shared/components/ui/BookingModal";
 import { routes } from "@/routes";
 
-// --- TIPOS DE DATOS (CORREGIDOS Y EXPLÍCITOS) ---
+// --- TIPOS DE DATOS ---
 type PriceRule = {
   id: string;
   startTime: number;
@@ -36,6 +36,7 @@ type AvailableSlot = {
   court: CourtInfo;
 };
 
+// --- CORRECCIÓN ---
 type Club = {
   id: string;
   slug: string;
@@ -43,54 +44,29 @@ type Club = {
   address: string;
   imageUrl: string;
   availableSlots: AvailableSlot[];
+  cancellationPolicyHours: number;
 };
 
 type BookingSelection = {
-  club: { id: string; name: string }; // Usamos un tipo simple para el club
+  club: Club; 
   court: CourtInfo;
   time: string;
   date: Date;
 };
 
 // --- COMPONENTES DE LA INTERFAZ ---
-const FilterBar = ({
-  view,
-  setView,
-}: {
-  view: "list" | "map";
-  setView: (v: "list" | "map") => void;
-}) => (
+const FilterBar = ({ view, setView, }: { view: "list" | "map"; setView: (v: "list" | "map") => void; }) => (
   <div className="flex items-center gap-2 p-1 bg-gray-200 rounded-full w-fit">
-    <button
-      onClick={() => setView("list")}
-      className={cn(
-        "p-2 rounded-full transition-colors",
-        view === "list" ? "bg-white shadow" : "text-gray-500"
-      )}
-      aria-label="Vista de lista"
-    >
+    <button onClick={() => setView("list")} className={cn("p-2 rounded-full transition-colors", view === "list" ? "bg-white shadow" : "text-gray-500")} aria-label="Vista de lista">
       <List size={16} />
     </button>
-    <button
-      onClick={() => setView("map")}
-      className={cn(
-        "p-2 rounded-full transition-colors",
-        view === "map" ? "bg-white shadow" : "text-gray-500"
-      )}
-      aria-label="Vista de mapa"
-    >
+    <button onClick={() => setView("map")} className={cn("p-2 rounded-full transition-colors", view === "map" ? "bg-white shadow" : "text-gray-500")} aria-label="Vista de mapa">
       <Map size={16} />
     </button>
   </div>
 );
 
-const ClubCard = ({
-  club,
-  onBookSlot,
-}: {
-  club: Club;
-  onBookSlot: (slot: AvailableSlot) => void;
-}) => {
+const ClubCard = ({ club, onBookSlot, }: { club: Club; onBookSlot: (slot: AvailableSlot) => void; }) => {
   const handleSlotClick = (e: React.MouseEvent, slot: AvailableSlot) => {
     e.preventDefault();
     e.stopPropagation();
@@ -99,24 +75,13 @@ const ClubCard = ({
 
   return (
     <div className="group bg-white rounded-xl shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 flex flex-col h-full">
-      <Link
-        href={routes.public.complexProfile(club.slug)}
-        className="block relative h-48"
-      >
-        <Image
-          src={club.imageUrl}
-          alt={`Imagen de ${club.name}`}
-          fill
-          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-          className="object-cover transition-transform duration-500"
-        />
+      <Link href={routes.public.complexProfile(club.slug)} className="block relative h-48">
+        <Image src={club.imageUrl} alt={`Imagen de ${club.name}`} fill sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" className="object-cover transition-transform duration-500" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
       </Link>
       <div className="p-4 flex flex-col flex-grow">
         <Link href={routes.public.complexProfile(club.slug)}>
-          <h3 className="font-bold text-lg text-foreground hover:text-brand-orange transition-colors">
-            {club.name}
-          </h3>
+          <h3 className="font-bold text-lg text-foreground hover:text-brand-orange transition-colors">{club.name}</h3>
         </Link>
         <p className="text-sm text-paragraph flex items-center gap-1.5 mt-1">
           <MapPin size={14} /> {club.address}
@@ -124,16 +89,10 @@ const ClubCard = ({
         <div className="mt-4 pt-4 border-t border-gray-100 flex-grow flex flex-col justify-end">
           {club.availableSlots.length > 0 ? (
             <>
-              <p className="text-xs font-semibold text-gray-500 mb-2">
-                Próximos turnos disponibles:
-              </p>
+              <p className="text-xs font-semibold text-gray-500 mb-2">Próximos turnos disponibles:</p>
               <div className="flex flex-wrap gap-2">
                 {club.availableSlots.map((slot) => (
-                  <button
-                    key={`${slot.time}-${slot.court.id}`}
-                    onClick={(e) => handleSlotClick(e, slot)}
-                    className="px-3 py-1 bg-green-100 text-green-800 font-bold rounded-md text-sm transition-colors hover:bg-green-200 hover:text-green-900 cursor-pointer"
-                  >
+                  <button key={`${slot.time}-${slot.court.id}`} onClick={(e) => handleSlotClick(e, slot)} className="px-3 py-1 bg-green-100 text-green-800 font-bold rounded-md text-sm transition-colors hover:bg-green-200 hover:text-green-900 cursor-pointer">
                     {slot.time}
                   </button>
                 ))}
@@ -177,12 +136,10 @@ const SearchResultsComponent = () => {
   const [complexes, setComplexes] = useState<Club[]>([]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedBooking, setSelectedBooking] =
-    useState<BookingSelection | null>(null);
+  const [selectedBooking, setSelectedBooking] = useState<BookingSelection | null>(null);
 
   const city = searchParams.get("city");
-  const dateParam =
-    searchParams.get("date") || new Date().toISOString().split("T")[0];
+  const dateParam = searchParams.get("date") || new Date().toISOString().split("T")[0];
   const searchDate = new Date(`${dateParam}T00:00:00`);
 
   useEffect(() => {
@@ -192,18 +149,12 @@ const SearchResultsComponent = () => {
         const response = await fetch(`/api/search?${searchParams.toString()}`);
         if (!response.ok) {
           const errorData = await response.json();
-          throw new Error(
-            errorData.error || "No se pudieron cargar los complejos."
-          );
+          throw new Error(errorData.error || "No se pudieron cargar los complejos.");
         }
         const data = await response.json();
         setComplexes(data);
       } catch (error) {
-        toast.error(
-          error instanceof Error
-            ? error.message
-            : "Ocurrió un error inesperado."
-        );
+        toast.error(error instanceof Error ? error.message : "Ocurrió un error inesperado.");
         setComplexes([]);
       } finally {
         setIsLoading(false);
@@ -214,7 +165,7 @@ const SearchResultsComponent = () => {
 
   const handleBookSlot = (club: Club, slot: AvailableSlot) => {
     setSelectedBooking({
-      club: { id: club.id, name: club.name },
+      club: club, 
       court: slot.court,
       time: slot.time,
       date: searchDate,
@@ -235,46 +186,26 @@ const SearchResultsComponent = () => {
           </div>
 
           <h2 className="text-2xl font-semibold text-foreground mb-6">
-            {isLoading
-              ? "Buscando complejos..."
-              : `${complexes.length} clubes encontrados ${
-                  city ? `en ${city}` : ""
-                }`}
+            {isLoading ? "Buscando complejos..." : `${complexes.length} clubes encontrados ${city ? `en ${city}` : ""}`}
           </h2>
 
           <AnimatePresence mode="wait">
-            <motion.div
-              key={view}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-            >
+            <motion.div key={view} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
               {view === "list" ? (
                 isLoading ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {Array.from({ length: 8 }).map((_, i) => (
-                      <SkeletonCard key={i} />
-                    ))}
+                    {Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)}
                   </div>
                 ) : complexes.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {complexes.map((club) => (
-                      <ClubCard
-                        key={club.id}
-                        club={club}
-                        onBookSlot={(slot) => handleBookSlot(club, slot)}
-                      />
+                      <ClubCard key={club.id} club={club} onBookSlot={(slot) => handleBookSlot(club, slot)} />
                     ))}
                   </div>
                 ) : (
                   <div className="col-span-full text-center py-12 text-paragraph">
-                    <p className="font-semibold">
-                      No se encontraron resultados
-                    </p>
-                    <p className="text-sm">
-                      Intentá ajustar los filtros o buscá en otra ciudad.
-                    </p>
+                    <p className="font-semibold">No se encontraron resultados</p>
+                    <p className="text-sm">Intentá ajustar los filtros o buscá en otra ciudad.</p>
                   </div>
                 )
               ) : (
@@ -304,13 +235,7 @@ const SearchResultsComponent = () => {
 
 export default function SearchResultsPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="flex h-screen w-full items-center justify-center">
-          <Spinner />
-        </div>
-      }
-    >
+    <Suspense fallback={<div className="flex h-screen w-full items-center justify-center"><Spinner /></div>}>
       <SearchResultsComponent />
     </Suspense>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import type { InscriptionRequest } from "@prisma/client";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -13,14 +13,17 @@ interface InscriptionRequestsProps {
 }
 
 export default function InscriptionRequests({ initialRequests }: InscriptionRequestsProps) {
+  // El estado ahora se inicializa y confía en los datos del servidor.
   const [requests, setRequests] = useState(initialRequests);
-  const [isLoading, setIsLoading] = useState(true); 
+  // isLoading ya no es necesario para la carga inicial.
+  const [isRefreshing, setIsRefreshing] = useState(false); 
   const [error, setError] = useState<string | null>(null); 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<InscriptionRequest | null>(null);
 
+  // La función fetch ahora es para 'refrescar' la lista.
   const fetchRequests = useCallback(async () => {
-    setIsLoading(true);
+    setIsRefreshing(true); // Usamos un nuevo estado para el spinner de refresco.
     setError(null);
     try {
       const response = await fetch('/api/admin/requests');
@@ -32,13 +35,11 @@ export default function InscriptionRequests({ initialRequests }: InscriptionRequ
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ocurrió un error inesperado.');
     } finally {
-      setIsLoading(false);
+      setIsRefreshing(false);
     }
   }, []);
 
-  useEffect(() => {
-    fetchRequests();
-  }, [fetchRequests]);
+  // Ya no necesitamos el useEffect para la carga inicial.
 
   const handleReviewClick = (request: InscriptionRequest) => {
     setSelectedRequest(request);
@@ -51,18 +52,11 @@ export default function InscriptionRequests({ initialRequests }: InscriptionRequ
   };
 
   const handleActionComplete = () => {
-    fetchRequests(); 
+    fetchRequests(); // Llama a la función para refrescar la lista.
     handleCloseModal();
   };
   
-  if (isLoading) {
-    return (
-        <div className="flex items-center justify-center p-8">
-            <Spinner />
-        </div>
-    );
-  }
-  
+  // El error se puede mostrar directamente.
   if (error) {
     return <p className="text-red-600 p-4">{error}</p>;
   }
@@ -70,8 +64,12 @@ export default function InscriptionRequests({ initialRequests }: InscriptionRequ
   return (
     <>
       <div className="bg-white p-4 sm:p-6 rounded-lg border shadow-sm">
-        <h2 className="text-lg font-semibold mb-4">Solicitudes de Inscripción Pendientes</h2>
-        {requests.length === 0 ? (
+        <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold">Solicitudes de Inscripción Pendientes</h2>
+            {isRefreshing && <Spinner />}
+        </div>
+        
+        {requests.length === 0 && !isRefreshing ? (
           <p className="text-gray-500">No hay nuevas solicitudes pendientes.</p>
         ) : (
           <div>
@@ -94,8 +92,8 @@ export default function InscriptionRequests({ initialRequests }: InscriptionRequ
                       <td className="p-3 text-gray-600">{req.selectedPlan}</td>
                       <td className="p-3 text-gray-600">{format(new Date(req.createdAt), "dd MMM yyyy", { locale: es })}</td>
                       <td className="p-3 text-center">
-                          <button onClick={() => handleReviewClick(req)} className="px-3 py-1 bg-brand-orange text-white text-xs font-semibold rounded-md hover:bg-neutral-950 transition-colors">
-                            Revisar
+                          <button onClick={() => handleReviewClick(req)} className="px-3 py-1 bg-brand-orange text-white text-xs font-semibold rounded-md hover:bg-neutral-950 transition-colors cursor-pointer">
+                              Revisar
                           </button>
                       </td>
                     </tr>
@@ -112,7 +110,7 @@ export default function InscriptionRequests({ initialRequests }: InscriptionRequ
                       <p className="font-semibold text-gray-800">{req.complexName}</p>
                       <p className="text-sm text-gray-500 flex items-center gap-1.5 mt-1"><User size={12}/> {req.ownerName}</p>
                     </div>
-                    <button onClick={() => handleReviewClick(req)} className="px-3 py-1 bg-brand-orange text-white text-xs font-semibold rounded-md hover:bg-neutral-950 transition-colors">
+                    <button onClick={() => handleReviewClick(req)} className="px-3 py-1 bg-brand-orange text-white text-xs font-semibold rounded-md hover:bg-neutral-950 transition-colors cursor-pointer">
                       Revisar
                     </button>
                   </div>
@@ -123,7 +121,6 @@ export default function InscriptionRequests({ initialRequests }: InscriptionRequ
                 </div>
               ))}
             </div>
-
           </div>
         )}
       </div>

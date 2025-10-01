@@ -16,20 +16,20 @@ enum SubscriptionPlan {
 }
 
 model User {
-  id                 String              @id @default(cuid())
-  name               String
-  phone              String?             @unique
-  role               Role                @default(USER)
-  hashedPassword     String?
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
-  email              String              @unique
-  image              String?
-  accounts           Account[]
-  bookings           Booking[]
-  managedComplex     Complex?            @relation("ManagedBy")
+  id               String              @id @default(cuid())
+  name             String
+  phone            String?             @unique
+  role             Role                @default(USER)
+  hashedPassword   String?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  email            String              @unique
+  image            String?
+  accounts         Account[]
+  bookings         Booking[]
+  managedComplex   Complex?            @relation("ManagedBy")
   passwordResetToken PasswordResetToken?
-  reviews            Review[]
+  reviews          Review[]
 }
 
 model PasswordResetToken {
@@ -57,22 +57,21 @@ model Account {
   user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
-  
   @@index([userId])
 }
 
 
 model Review {
   id        String   @id @default(cuid())
-  rating    Int      
-  comment   String?  
+  rating    Int
+  comment   String?
   createdAt DateTime @default(now())
 
   complexId String
   complex   Complex  @relation(fields: [complexId], references: [id], onDelete: Cascade)
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   bookingId String   @unique
   booking   Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 
@@ -81,51 +80,53 @@ model Review {
 }
 
 model Complex {
-  id                  String   @id @default(cuid())
-  name                String
-  slug                String   @unique
-  address             String
-  city                String
-  province            String
-  managerId           String   @unique
-  onboardingCompleted Boolean  @default(false)
-  openHour            Int?
-  closeHour           Int?
-  courtCount          Int?
-  timeSlotInterval    Int      @default(30)
-  amenities           Amenity[] 
+  id                    String   @id @default(cuid())
+  name                  String
+  slug                  String   @unique
+  address               String
+  city                  String
+  province              String
+  managerId             String   @unique
+  onboardingCompleted   Boolean  @default(false)
+  openHour              Int?
+  closeHour             Int?
+  courtCount            Int?
+  timeSlotInterval      Int      @default(30)
+  amenities             Amenity[]
   // Geolocalización para mapas
-  latitude            Float?
-  longitude           Float?
+  latitude              Float?
+  longitude             Float?
   
+  // --- NUEVO --- Política de Cancelación en horas.
+  cancellationPolicyHours Int    @default(24)
+
   // Mercado Pago
-  mp_access_token     String?
-  mp_refresh_token    String?
-  mp_public_key       String?
-  mp_user_id          String?
-  mp_connected_at     DateTime?
+  mp_access_token       String?
+  mp_refresh_token      String?
+  mp_public_key         String?
+  mp_user_id            String?
+  mp_connected_at       DateTime?
 
   // Relaciones
-  manager             User     @relation("ManagedBy", fields: [managerId], references: [id])
-  courts              Court[]
-  images              Image[]
-  schedule            Schedule?
-  subscriptionPlan    SubscriptionPlan @default(FREE)
+  manager               User     @relation("ManagedBy", fields: [managerId], references: [id])
+  courts                Court[]
+  images                Image[]
+  schedule              Schedule?
+  subscriptionPlan      SubscriptionPlan @default(FREE)
 
-  reviews          Review[]
+  reviews               Review[]
 
-  averageRating    Float    @default(0)
-  reviewCount      Int      @default(0)
+  averageRating         Float    @default(0)
+  reviewCount           Int      @default(0)
 
-  
   @@index([managerId])
 }
 
 model Amenity {
   id        String    @id @default(cuid())
-  name      String    
+  name      String
   slug      String    @unique
-  icon      String?   
+  icon      String?
 
   complexes Complex[]
 }
@@ -140,7 +141,6 @@ model Image {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  
   @@index([complexId])
 }
 
@@ -189,23 +189,30 @@ model Schedule {
 }
 
 model Booking {
-  id               String        @id @default(cuid())
-  date             DateTime
-  startTime        Int
-  startMinute      Int           @default(0)
-  totalPrice       Int
-  depositAmount    Int
-  depositPaid      Int
-  remainingBalance Int
-  status           BookingStatus @default(PENDIENTE)
-  createdAt        DateTime      @default(now())
-  courtId          String
-  userId           String?
-  court            Court         @relation(fields: [courtId], references: [id], onDelete: Cascade)
-  user             User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
-  guestName        String?
-  paymentId        String?
-  review           Review?
+  id                 String        @id @default(cuid())
+  date               DateTime
+  startTime          Int
+  startMinute        Int           @default(0)
+  totalPrice         Int
+  depositAmount      Int
+  depositPaid        Int
+  remainingBalance   Int
+  status             BookingStatus @default(PENDIENTE)
+  createdAt          DateTime      @default(now())
+  courtId            String
+  userId             String?
+  court              Court         @relation(fields: [courtId], references: [id], onDelete: Cascade)
+  user               User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  guestName          String?
+  
+  // --- NUEVO --- Teléfono para reservas de invitados.
+  guestPhone         String?
+  
+  // --- NUEVO --- Flag para gestionar devoluciones pendientes.
+  refundPending      Boolean       @default(false)
+
+  paymentId          String?
+  review             Review?
 
   @@unique([courtId, date, startTime])
   @@index([courtId])
@@ -214,15 +221,14 @@ model Booking {
 }
 
 model PriceRule {
-  id                String @id @default(cuid())
-  startTime         Int
-  endTime           Int
-  price             Int
-  depositAmount     Float @default(0)
-  courtId           String
-  court             Court  @relation(fields: [courtId], references: [id], onDelete: Cascade)
+  id            String  @id @default(cuid())
+  startTime     Int
+  endTime       Int
+  price         Int
+  depositAmount Float   @default(0)
+  courtId       String
+  court         Court   @relation(fields: [courtId], references: [id], onDelete: Cascade)
 
-  
   @@index([courtId])
 }
 

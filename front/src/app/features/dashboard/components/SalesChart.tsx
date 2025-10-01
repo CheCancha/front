@@ -1,24 +1,9 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import {
-  Bar,
-  BarChart,
-  ResponsiveContainer,
-  XAxis,
-  YAxis,
-  Tooltip,
-} from "recharts";
+import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts";
 import { ChevronDown, Frown } from "lucide-react";
-import {
-  format,
-  startOfMonth,
-  endOfMonth,
-  subQuarters,
-  startOfYear,
-  endOfYear,
-  getWeekOfMonth,
-} from "date-fns";
+import { format, startOfMonth, endOfMonth, subQuarters, startOfYear, endOfYear, getWeekOfMonth } from "date-fns";
 import { cn } from "@/shared/lib/utils";
 
 // --- TIPOS ---
@@ -42,12 +27,11 @@ const NoDataMessage = () => (
   <div className="h-[350px] flex flex-col items-center justify-center text-center text-gray-500">
     <Frown className="h-12 w-12 mb-2" />
     <h4 className="font-semibold">No hay datos de ingresos</h4>
-    <p className="text-sm">
-      No se encontraron ventas para el período seleccionado.
-    </p>
+    <p className="text-sm">No se encontraron ventas para el período seleccionado.</p>
   </div>
 );
 
+// --- COMPONENTE CORREGIDO ---
 const WeekSelector = ({
   numberOfWeeks,
   selectedWeek,
@@ -57,33 +41,35 @@ const WeekSelector = ({
   selectedWeek: number;
   onWeekChange: (weekIndex: number) => void;
 }) => (
-  <div className="flex space-x-2 border-b border-gray-200 mb-4">
-    {Array.from({ length: numberOfWeeks }).map((_, index) => (
-      <button
-        key={index}
-        onClick={() => onWeekChange(index)}
-        className={cn(
-          "px-4 py-2 text-sm font-medium transition-colors",
-          selectedWeek === index
-            ? "border-b-2 border-indigo-500 text-indigo-600"
-            : "text-gray-500 hover:text-gray-700"
-        )}
-      >
-        Semana {index + 1}
-      </button>
-    ))}
+  // Se ha añadido overflow-x-auto para permitir el scroll horizontal en móviles
+  <div className="border-b border-gray-200 mb-4 overflow-x-auto whitespace-nowrap">
+    <div className="flex space-x-2">
+        {Array.from({ length: numberOfWeeks }).map((_, index) => (
+        <button
+            key={index}
+            onClick={() => onWeekChange(index)}
+            // Se ha añadido shrink-0 para evitar que los botones se achiquen
+            className={cn(
+            "px-3 py-2 text-sm font-medium transition-colors shrink-0",
+            selectedWeek === index
+                ? "border-b-2 border-indigo-500 text-indigo-600"
+                : "text-gray-500 hover:text-gray-700"
+            )}
+        >
+            Semana {index + 1}
+        </button>
+        ))}
+    </div>
   </div>
 );
 
 // --- COMPONENTE PRINCIPAL ---
 export function SalesChart({ complexId }: { complexId: string }) {
-  const [monthlyData, setMonthlyData] = useState<ChartData[]>([]); 
+  const [monthlyData, setMonthlyData] = useState<ChartData[]>([]);
   const [displayedData, setDisplayedData] = useState<ChartData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState("Este Mes");
-
-  // --- NUEVO --- Estado para la semana seleccionada
   const [selectedWeek, setSelectedWeek] = useState(0);
 
   useEffect(() => {
@@ -118,19 +104,13 @@ export function SalesChart({ complexId }: { complexId: string }) {
     const fetchSalesData = async () => {
       setIsLoading(true);
       setError(null);
-
       const { start, end } = getDatesFromRange();
-
       try {
-        const res = await fetch(
-          `/api/complex/${complexId}/financials?startDate=${start}&endDate=${end}`
-        );
+        const res = await fetch(`/api/complex/${complexId}/financials?startDate=${start}&endDate=${end}`);
         if (!res.ok) {
           throw new Error("No se pudo cargar el reporte de ingresos.");
         }
         const data: ChartData[] = await res.json();
-
-        // --- MODIFICADO --- Lógica para guardar datos
         if (dateRange === "Este Mes") {
           setMonthlyData(data);
           const currentWeekIndex = getWeekOfMonth(new Date()) - 1;
@@ -140,9 +120,7 @@ export function SalesChart({ complexId }: { complexId: string }) {
           setMonthlyData([]);
         }
       } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Ocurrió un error desconocido."
-        );
+        setError(err instanceof Error ? err.message : "Ocurrió un error desconocido.");
       } finally {
         setIsLoading(false);
       }
@@ -153,7 +131,7 @@ export function SalesChart({ complexId }: { complexId: string }) {
 
   useEffect(() => {
     if (dateRange === "Este Mes" && monthlyData.length > 0) {
-      const weeks = [];
+      const weeks: ChartData[][] = [];
       for (let i = 0; i < monthlyData.length; i += 7) {
         weeks.push(monthlyData.slice(i, i + 7));
       }
@@ -175,11 +153,8 @@ export function SalesChart({ complexId }: { complexId: string }) {
       <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
         <div>
           <h3 className="text-lg font-semibold">Reporte de Ingresos</h3>
-          <p className="text-sm text-gray-500">
-            Analiza los ingresos por períodos.
-          </p>
+          <p className="text-sm text-gray-500">Analiza los ingresos por períodos.</p>
         </div>
-
         <div className="relative">
           <select
             value={dateRange}
@@ -187,7 +162,7 @@ export function SalesChart({ complexId }: { complexId: string }) {
             className="appearance-none cursor-pointer bg-white border border-gray-300 rounded-lg py-2 pl-3 pr-8 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
             <option>Este Mes</option>
-            <option>ÚltimoTrimestre</option>
+            <option>Último Trimestre</option>
             <option>Este Año</option>
           </select>
           <ChevronDown className="h-4 w-4 absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />

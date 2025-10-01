@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/authOptions";
 import { db } from "@/shared/lib/db";
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
@@ -16,7 +18,7 @@ export async function GET() {
         status: "PENDIENTE",
       },
       orderBy: {
-        createdAt: "asc", 
+        createdAt: "asc",
       },
     });
 

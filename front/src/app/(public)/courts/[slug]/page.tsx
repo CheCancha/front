@@ -13,11 +13,16 @@ import type { Amenity, Complex, Court, Image as PrismaImage, Schedule } from "@p
 import { AmenityIcon } from "@/shared/components/ui/AmenityIcon";
 export type PriceRule = { id: string; startTime: number; endTime: number; price: number; depositAmount: number; };
 export type CourtWithPriceRules = Court & { priceRules: PriceRule[] };
+
+// --- CORRECCIÓN ---
+// Se añade explícitamente `cancellationPolicyHours` al tipo para que coincida 
+// con lo que espera el BookingModal y solucionar el error de TypeScript.
 export type ComplexProfileData = Complex & {
   images: PrismaImage[];
   courts: CourtWithPriceRules[];
   schedule: Schedule | null;
   amenities: Amenity[];
+  cancellationPolicyHours: number; // Campo añadido
 };
 export type ValidStartTime = { time: string; courts: { courtId: string; available: boolean }[] };
 

@@ -16,9 +16,12 @@ import { PaymentsSettings } from "./PaymentsSettings";
 import { Schedule, Sport, PriceRule, Amenity } from "@prisma/client";
 import { GeneralInfoForm } from "./GeneralInfoForm";
 import { AmenitiesForm } from "./AmenitiesForm";
+// --- NUEVO --- Importamos el nuevo componente del formulario de cancelaciones.
+import { CancellationForm } from "./CancellationForm";
 
 type ScheduleDayKey = Exclude<keyof Schedule, "id" | "complexId">;
 
+// --- ACTUALIZADO --- Añadimos la nueva pestaña de Cancelaciones.
 const TABS = [
   { id: "general", label: "Información General" },
   { id: "amenities", label: "Servicios" },
@@ -26,6 +29,7 @@ const TABS = [
   { id: "courts", label: "Canchas" },
   { id: "images", label: "Imágenes" },
   { id: "payments", label: "Pagos" },
+  { id: "cancellations", label: "Cancelaciones" },
 ];
 
 export const ComplexSettings = () => {
@@ -86,20 +90,29 @@ export const ComplexSettings = () => {
     fetchComplexData();
   }, [fetchComplexData]);
 
-  // --- MANEJADORES DE ESTADO GENERALES ---
+  // --- MANEJADORES DE ESTADO ---
   const handleBasicInfoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setData((prev) =>
       prev ? { ...prev, [e.target.name]: e.target.value } : null
     );
   };
+  
+  // --- NUEVO --- Manejador para la política de cancelación.
+  const handleCancellationPolicyChange = (value: number) => {
+      setData((prev) => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          cancellationPolicyHours: value,
+        };
+      });
+    };
 
   const handleAmenityChange = (amenityId: string, isSelected: boolean) => {
     setData(prevData => {
       if (!prevData) return null;
-
       const currentAmenities = prevData.amenities || [];
       let newAmenities: Amenity[];
-
       if (isSelected) {
         if (!currentAmenities.some(a => a.id === amenityId)) {
           const amenityToAdd = allAmenities.find(a => a.id === amenityId);
@@ -117,17 +130,11 @@ export const ComplexSettings = () => {
   const handleComplexChange = (key: "timeSlotInterval", value: number) => {
     setData((prev) => {
       if (!prev) return null;
-      return {
-        ...prev,
-        [key]: value,
-      };
+      return { ...prev, [key]: value, };
     });
   };
 
-  const handleScheduleDayChange = (
-    dayKey: ScheduleDayKey,
-    value: string | null
-  ) => {
+  const handleScheduleDayChange = (dayKey: ScheduleDayKey, value: string | null) => {
     setData((prev) => {
       if (!prev) return null;
       const newSchedule = {
@@ -142,93 +149,55 @@ export const ComplexSettings = () => {
   const deleteImage = (imageId: string) => {
     const imageToDelete = data?.images.find((img) => img.id === imageId);
     if (imageToDelete?.isPrimary) {
-      toast.error(
-        "No puedes eliminar la imagen de portada. Elige otra primero."
-      );
+      toast.error("No puedes eliminar la imagen de portada. Elige otra primero.");
       return;
     }
-
     setImagesToDelete((prev) => [...prev, imageId]);
-    setData((prev) =>
-      prev
-        ? { ...prev, images: prev.images.filter((img) => img.id !== imageId) }
-        : null
-    );
+    setData((prev) => prev ? { ...prev, images: prev.images.filter((img) => img.id !== imageId) } : null);
   };
 
   const restoreImage = (imageId: string) => {
-    const imageToRestore = originalData?.images.find(
-      (img) => img.id === imageId
-    );
+    const imageToRestore = originalData?.images.find((img) => img.id === imageId);
     if (imageToRestore && data) {
       setImagesToDelete((prev) => prev.filter((id) => id !== imageId));
       setData({
         ...data,
-        images: [...data.images, imageToRestore].sort((a, b) =>
-          a.id.localeCompare(b.id)
-        ),
+        images: [...data.images, imageToRestore].sort((a, b) => a.id.localeCompare(b.id)),
       });
     }
   };
 
-  // --- MANEJADORES PARA CANCHAS Y REGLAS DE PRECIOS ---
-  const handleCourtChange = (
-    courtId: string,
-    field: string,
-    value: string | number
-  ) => {
+  // --- MANEJADORES PARA CANCHAS Y PRECIOS ---
+  const handleCourtChange = (courtId: string, field: string, value: string | number) => {
     if (courtId.startsWith("new_")) {
-      setNewCourts((prev) =>
-        prev.map((c) =>
-          c.tempId === courtId ? { ...c, [field as keyof NewCourt]: value } : c
-        )
-      );
+      setNewCourts((prev) => prev.map((c) => c.tempId === courtId ? { ...c, [field as keyof NewCourt]: value } : c));
     } else {
       setData((prev) => {
         if (!prev) return null;
-        const updatedCourts = prev.courts.map((c) =>
-          c.id === courtId
-            ? { ...c, [field as keyof CourtWithRelations]: value }
-            : c
-        );
+        const updatedCourts = prev.courts.map((c) => c.id === courtId ? { ...c, [field as keyof CourtWithRelations]: value } : c);
         return { ...prev, courts: updatedCourts };
       });
     }
   };
 
-  const handlePriceRuleChange = (
-    courtId: string,
-    ruleId: string,
-    field: string,
-    value: number
-  ) => {
-    const updateRulesForCourt = <T extends NewCourt | CourtWithRelations>(
-      court: T
-    ): T => {
+  const handlePriceRuleChange = (courtId: string, ruleId: string, field: string, value: number) => {
+    const updateRulesForCourt = <T extends NewCourt | CourtWithRelations>(court: T): T => {
       const updatedRules = court.priceRules.map((rule) => {
         const currentRuleId = "tempId" in rule ? rule.tempId : rule.id;
-
         if (currentRuleId === ruleId) {
           return { ...rule, [field]: value };
         }
         return rule;
       });
-
       return { ...court, priceRules: updatedRules as T["priceRules"] };
     };
 
     if (courtId.startsWith("new_")) {
-      setNewCourts((prev) =>
-        prev.map((court) =>
-          court.tempId === courtId ? updateRulesForCourt(court) : court
-        )
-      );
+      setNewCourts((prev) => prev.map((court) => court.tempId === courtId ? updateRulesForCourt(court) : court));
     } else {
       setData((prev) => {
         if (!prev) return null;
-        const updatedCourts = prev.courts.map((court) =>
-          court.id === courtId ? updateRulesForCourt(court) : court
-        );
+        const updatedCourts = prev.courts.map((court) => court.id === courtId ? updateRulesForCourt(court) : court);
         return { ...prev, courts: updatedCourts };
       });
     }
@@ -242,25 +211,14 @@ export const ComplexSettings = () => {
       price: 0,
       depositAmount: 0,
     };
-
     if (courtId.startsWith("new_")) {
-      setNewCourts((prev) =>
-        prev.map((c) =>
-          c.tempId === courtId
-            ? { ...c, priceRules: [...c.priceRules, newRule] }
-            : c
-        )
-      );
+      setNewCourts((prev) => prev.map((c) => c.tempId === courtId ? { ...c, priceRules: [...c.priceRules, newRule] } : c));
     } else {
       setData((prev) => {
         if (!prev) return null;
         return {
           ...prev,
-          courts: prev.courts.map((c) =>
-            c.id === courtId
-              ? { ...c, priceRules: [...c.priceRules, newRule] }
-              : c
-          ),
+          courts: prev.courts.map((c) => c.id === courtId ? { ...c, priceRules: [...c.priceRules, newRule] } : c),
         };
       });
     }
@@ -278,21 +236,14 @@ export const ComplexSettings = () => {
       });
       return { ...court, priceRules: filteredRules };
     };
-
     if (courtId.startsWith("new_")) {
-      setNewCourts((prev) =>
-        prev.map((c) =>
-          c.tempId === courtId ? (filterRules(c) as NewCourt) : c
-        )
-      );
+      setNewCourts((prev) => prev.map((c) => c.tempId === courtId ? (filterRules(c) as NewCourt) : c));
     } else {
       setData((prev) => {
         if (!prev) return null;
         return {
           ...prev,
-          courts: prev.courts.map((c) =>
-            c.id === courtId ? (filterRules(c) as CourtWithRelations) : c
-          ),
+          courts: prev.courts.map((c) => c.id === courtId ? (filterRules(c) as CourtWithRelations) : c),
         };
       });
     }
@@ -300,21 +251,11 @@ export const ComplexSettings = () => {
 
   const addNewCourt = () => {
     if (allSports.length === 0) return toast.error("Cargando deportes...");
-
     const newCourt: NewCourt = {
-      tempId: `new_${Date.now()}`,
-      name: "",
-      sportId: allSports[0].id,
-      slotDurationMinutes: 60,
-      priceRules: [
-        {
-          tempId: `new_price_${Date.now()}`,
-          startTime: 9,
-          endTime: 23,
-          price: 0,
-          depositAmount: 0,
-        },
-      ],
+      tempId: `new_${Date.now()}`, name: "", sportId: allSports[0].id, slotDurationMinutes: 60,
+      priceRules: [{
+        tempId: `new_price_${Date.now()}`, startTime: 9, endTime: 23, price: 0, depositAmount: 0,
+      }],
       isNew: true,
     };
     setNewCourts((prev) => [...prev, newCourt]);
@@ -325,11 +266,7 @@ export const ComplexSettings = () => {
       setNewCourts((prev) => prev.filter((c) => c.tempId !== courtId));
     } else {
       setCourtsToDelete((prev) => [...prev, courtId]);
-      setData((prev) =>
-        prev
-          ? { ...prev, courts: prev.courts.filter((c) => c.id !== courtId) }
-          : null
-      );
+      setData((prev) => prev ? { ...prev, courts: prev.courts.filter((c) => c.id !== courtId) } : null);
     }
   };
 
@@ -339,9 +276,7 @@ export const ComplexSettings = () => {
       setCourtsToDelete((prev) => prev.filter((id) => id !== courtId));
       setData({
         ...data,
-        courts: [...data.courts, courtToRestore].sort((a, b) =>
-          a.name.localeCompare(b.name)
-        ),
+        courts: [...data.courts, courtToRestore].sort((a, b) => a.name.localeCompare(b.name)),
       });
     }
   };
@@ -362,33 +297,18 @@ export const ComplexSettings = () => {
 
           const failedDeletes = deleteResults.filter((res) => !res.ok);
           if (failedDeletes.length > 0) {
-            throw new Error(
-              `No se pudieron eliminar ${failedDeletes.length} imágenes.`
-            );
+            throw new Error(`No se pudieron eliminar ${failedDeletes.length} imágenes.`);
           }
         }
-
-        const updatePayload = {
-          images: data.images.map((img) => ({
-            id: img.id,
-            isPrimary: img.isPrimary,
-          })),
-        };
-
-        const updateResponse = await fetch(
-          `/api/complex/${complexId}/settings/images`,
-          {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(updatePayload),
-          }
-        );
-
+        const updatePayload = { images: data.images.map((img) => ({ id: img.id, isPrimary: img.isPrimary, })) };
+        const updateResponse = await fetch(`/api/complex/${complexId}/settings/images`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updatePayload),
+        });
         if (!updateResponse.ok) {
           const errorData = await updateResponse.json();
-          throw new Error(
-            errorData.error || `Error al actualizar la imagen principal.`
-          );
+          throw new Error(errorData.error || `Error al actualizar la imagen principal.`);
         }
       } else {
         let endpoint = "";
@@ -397,29 +317,21 @@ export const ComplexSettings = () => {
         switch (activeTab) {
           case "general":
             endpoint = `/api/complex/${complexId}/settings/general`;
-            payload = {
-              basicInfo: {
-                name: data.name,
-                address: data.address,
-                city: data.city,
-                province: data.province,
-              },
-            };
+            payload = { basicInfo: { name: data.name, address: data.address, city: data.city, province: data.province, } };
             break;
-
           case "amenities":
             endpoint = `/api/complex/${complexId}/settings/amenities`;
-            payload = { 
-              amenityIds: data.amenities.map(a => a.id) 
-            };
-            break;  
-
+            payload = { amenityIds: data.amenities.map(a => a.id) };
+            break;
           case "schedule":
             endpoint = `/api/complex/${complexId}/settings/schedule`;
-            payload = {
-              schedule: data.schedule,
-              timeSlotInterval: data.timeSlotInterval,
-            };
+            payload = { schedule: data.schedule, timeSlotInterval: data.timeSlotInterval, };
+            break;
+          
+          // --- NUEVO --- Caso para guardar la política de cancelación.
+          case "cancellations":
+            endpoint = `/api/complex/${complexId}/settings/cancellation`;
+            payload = { cancellationPolicyHours: data.cancellationPolicyHours };
             break;
 
           case "courts":
@@ -427,71 +339,30 @@ export const ComplexSettings = () => {
             payload = {
               courts: {
                 update: data.courts.map((c) => {
-                  const originalCourt = originalData.courts.find(
-                    (oc) => oc.id === c.id
-                  );
+                  const originalCourt = originalData.courts.find((oc) => oc.id === c.id);
                   return {
-                    id: c.id,
-                    name: c.name,
-                    sportId: c.sportId,
-                    slotDurationMinutes: c.slotDurationMinutes,
+                    id: c.id, name: c.name, sportId: c.sportId, slotDurationMinutes: c.slotDurationMinutes,
                     priceRules: {
-                      delete:
-                        originalCourt?.priceRules
-                          .filter((rule): rule is PriceRule => "id" in rule)
-                          .filter(
-                            (opr) =>
-                              !c.priceRules.some(
-                                (pr) => "id" in pr && pr.id === opr.id
-                              )
-                          )
-                          .map((pr) => ({ id: pr.id })) || [],
-                      update: c.priceRules
-                        .filter((pr): pr is PriceRule => "id" in pr)
-                        .map((pr) => ({
-                          where: { id: pr.id },
-                          data: {
-                            startTime: pr.startTime,
-                            endTime: pr.endTime,
-                            price: pr.price,
-                            depositAmount: pr.depositAmount,
-                          },
-                        })),
-                      create: c.priceRules
-                        .filter((pr): pr is NewPriceRule => "tempId" in pr)
-                        .map((pr) => ({
-                          startTime: pr.startTime,
-                          endTime: pr.endTime,
-                          price: pr.price,
-                          depositAmount: pr.depositAmount,
-                        })),
+                      delete: originalCourt?.priceRules.filter((rule): rule is PriceRule => "id" in rule).filter((opr) => !c.priceRules.some((pr) => "id" in pr && pr.id === opr.id)).map((pr) => ({ id: pr.id })) || [],
+                      update: c.priceRules.filter((pr): pr is PriceRule => "id" in pr).map((pr) => ({ where: { id: pr.id }, data: { startTime: pr.startTime, endTime: pr.endTime, price: pr.price, depositAmount: pr.depositAmount, } })),
+                      create: c.priceRules.filter((pr): pr is NewPriceRule => "tempId" in pr).map((pr) => ({ startTime: pr.startTime, endTime: pr.endTime, price: pr.price, depositAmount: pr.depositAmount, })),
                     },
                   };
                 }),
                 create: newCourts.map((c) => ({
-                  name: c.name,
-                  sportId: c.sportId,
-                  slotDurationMinutes: c.slotDurationMinutes,
+                  name: c.name, sportId: c.sportId, slotDurationMinutes: c.slotDurationMinutes,
                   priceRules: {
-                    create: c.priceRules.map((pr) => ({
-                      startTime: pr.startTime,
-                      endTime: pr.endTime,
-                      price: pr.price,
-                      depositAmount: pr.depositAmount,
-                    })),
+                    create: c.priceRules.map((pr) => ({ startTime: pr.startTime, endTime: pr.endTime, price: pr.price, depositAmount: pr.depositAmount, })),
                   },
                 })),
                 delete: courtsToDelete.map((id) => ({ id })),
               },
             };
             break;
-
           default:
             toast.dismiss();
             setIsSaving(false);
-            toast.error(
-              `La pestaña "${activeTab}" no tiene una acción de guardado.`
-            );
+            toast.error(`La pestaña "${activeTab}" no tiene una acción de guardado.`);
             return;
         }
 
@@ -503,9 +374,7 @@ export const ComplexSettings = () => {
 
         if (!response.ok) {
           const errorData = await response.json();
-          throw new Error(
-            errorData.error || `Error al guardar en la pestaña ${activeTab}`
-          );
+          throw new Error(errorData.error || `Error al guardar en la pestaña ${activeTab}`);
         }
       }
 
@@ -514,9 +383,7 @@ export const ComplexSettings = () => {
       fetchComplexData();
     } catch (error) {
       toast.dismiss();
-      toast.error(
-        error instanceof Error ? error.message : "Error desconocido al guardar"
-      );
+      toast.error(error instanceof Error ? error.message : "Error desconocido al guardar");
     } finally {
       setIsSaving(false);
     }
@@ -528,12 +395,8 @@ export const ComplexSettings = () => {
   return (
     <div className="space-y-8">
       <header>
-        <h1 className="text-2xl sm:text-3xl font-bold">
-          Configuración del Club
-        </h1>
-        <p className="text-gray-600 mt-1">
-          Gestiona la información de tu complejo.
-        </p>
+        <h1 className="text-2xl sm:text-3xl font-bold">Configuración del Club</h1>
+        <p className="text-gray-600 mt-1">Gestiona la información de tu complejo.</p>
       </header>
 
       <div className="border-b border-gray-200">
@@ -554,74 +417,24 @@ export const ComplexSettings = () => {
         </nav>
       </div>
 
-      <div className="bg-white p-6 sm:p-8 rounded-lg border shadow-sm">
+      <div className="bg-white p-4 sm:p-8 rounded-lg border shadow-sm">
         <form onSubmit={handleSubmit} className="space-y-8">
-          {activeTab === "general" && (
-            <GeneralInfoForm data={data} onChange={handleBasicInfoChange} />
-          )}
-          {activeTab === "amenities" && (
-            <AmenitiesForm
-              allAmenities={allAmenities}
-              selectedAmenities={data.amenities.map(a => a.id)}
-              onAmenityChange={handleAmenityChange}
-            />
-          )}
-          {activeTab === "schedule" && (
-            <ScheduleForm
-              data={data}
-              onComplexChange={handleComplexChange}
-              onScheduleChange={handleScheduleDayChange}
-            />
-          )}
-          {activeTab === "courts" && (
-            <CourtsManager
-              data={data}
-              originalData={originalData}
-              allSports={allSports}
-              newCourts={newCourts}
-              courtsToDelete={courtsToDelete}
-              onCourtChange={handleCourtChange}
-              onDeleteCourt={deleteCourt}
-              onAddNewCourt={addNewCourt}
-              onRestoreCourt={restoreCourt}
-              onPriceRuleChange={handlePriceRuleChange}
-              onAddPriceRule={addPriceRule}
-              onRemovePriceRule={removePriceRule}
-            />
-          )}
-          {activeTab === "images" && data && originalData && (
-            <ImageSettings
-              data={data}
-              setData={setData}
-              complexId={complexId}
-              originalData={originalData}
-              imagesToDelete={imagesToDelete}
-              onDeleteImage={deleteImage}
-              onRestoreImage={restoreImage}
-            />
-          )}
+          {activeTab === "general" && <GeneralInfoForm data={data} onChange={handleBasicInfoChange} />}
+          {activeTab === "amenities" && <AmenitiesForm allAmenities={allAmenities} selectedAmenities={data.amenities.map(a => a.id)} onAmenityChange={handleAmenityChange} />}
+          {activeTab === "schedule" && <ScheduleForm data={data} onComplexChange={handleComplexChange} onScheduleChange={handleScheduleDayChange} />}
+          {activeTab === "courts" && <CourtsManager data={data} originalData={originalData} allSports={allSports} newCourts={newCourts} courtsToDelete={courtsToDelete} onCourtChange={handleCourtChange} onDeleteCourt={deleteCourt} onAddNewCourt={addNewCourt} onRestoreCourt={restoreCourt} onPriceRuleChange={handlePriceRuleChange} onAddPriceRule={addPriceRule} onRemovePriceRule={removePriceRule} />}
+          {activeTab === "images" && data && originalData && <ImageSettings data={data} setData={setData} complexId={complexId} originalData={originalData} imagesToDelete={imagesToDelete} onDeleteImage={deleteImage} onRestoreImage={restoreImage} />}
           {activeTab === "payments" && <PaymentsSettings data={data} />}
 
+          {/* --- NUEVO --- Renderizamos el nuevo formulario en su pestaña. */}
+          {activeTab === "cancellations" && <CancellationForm value={data.cancellationPolicyHours} onChange={handleCancellationPolicyChange} />}
+          
           <div className="flex justify-between items-center pt-8 border-t">
-            <button
-              type="button"
-              onClick={() => fetchComplexData()}
-              className="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50"
-            >
-              Cancelar Cambios
+            <button type="button" onClick={() => fetchComplexData()} className="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50">
+              Cancelar
             </button>
-            <button
-              type="submit"
-              disabled={isSaving}
-              className="inline-flex justify-center items-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-black hover:bg-gray-800 disabled:bg-gray-400 cursor-pointer"
-            >
-              {isSaving ? (
-                <>
-                  <Spinner className="mr-2" /> Guardando...
-                </>
-              ) : (
-                "Guardar Cambios"
-              )}
+            <button type="submit" disabled={isSaving} className="inline-flex justify-center items-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-black hover:bg-gray-800 disabled:bg-gray-400 cursor-pointer">
+              {isSaving ? (<><Spinner className="mr-2" /> Guardando...</>) : ("Guardar ")}
             </button>
           </div>
         </form>
@@ -629,3 +442,4 @@ export const ComplexSettings = () => {
     </div>
   );
 };
+

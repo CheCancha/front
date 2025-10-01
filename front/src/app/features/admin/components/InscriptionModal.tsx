@@ -3,13 +3,13 @@
 import React, { useState, useEffect, useTransition } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Check, XCircle, Save } from "lucide-react";
-import { ButtonPrimary, ButtonGhost } from "@/shared/components/ui/Buttons";
 import { InscriptionRequest } from "@prisma/client";
 import {
   approveInscription,
   rejectInscription,
 } from "@/app/features/admin/services/admin.service";
 import { toast } from "react-hot-toast";
+import { Button } from "@/shared/components/ui/button";
 
 interface InscriptionReviewModalProps {
   isOpen: boolean;
@@ -220,31 +220,32 @@ export const InscriptionReviewModal: React.FC<InscriptionReviewModalProps> = ({
               </div>
 
               <div className="mt-8 flex flex-col-reverse sm:flex-row justify-end gap-3">
-                <ButtonGhost
+                <Button
+                variant='ghost'
                   onClick={handleReject}
                   disabled={isPending || isUpdating}
                   className="w-full sm:w-auto"
                 >
                   <XCircle size={16} className="mr-2" />
                   {isPending ? "Rechazando..." : "Rechazar"}
-                </ButtonGhost>
-                {/* Nuevo botón para guardar cambios */}
-                <ButtonGhost
+                </Button>
+                <Button
+                variant='ghost'
                   onClick={handleUpdate}
                   disabled={isPending || isUpdating}
                   className="w-full sm:w-auto border-gray-400"
                 >
                   <Save size={16} className="mr-2" />
                   {isUpdating ? "Guardando..." : "Guardar Cambios"}
-                </ButtonGhost>
-                <ButtonPrimary
+                </Button>
+                <Button
                   onClick={handleApprove}
                   disabled={isPending || isUpdating}
                   className="w-full sm:w-auto"
                 >
                   <Check size={16} className="mr-2" />
                   {isPending ? "Aprobando..." : "Aprobar Solicitud"}
-                </ButtonPrimary>
+                </Button>
               </div>
             </div>
           </motion.div>
