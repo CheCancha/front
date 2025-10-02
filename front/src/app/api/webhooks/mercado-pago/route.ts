@@ -32,13 +32,6 @@ function verifySignature(request: NextRequest, body: string, secret: string): bo
   }
 }
 
-// --- Handler para las visitas del "despertador" (Cron Job) ---
-// Este handler responde a los pings para mantener la función activa.
-export async function GET() {
-  console.log("Ping de Cron Job recibido para mantener la función 'warm'.");
-  return new NextResponse("Pong!", { status: 200 });
-}
-
 // --- Handler principal ultrarrápido para Mercado Pago ---
 export async function POST(req: NextRequest) {
   console.log("--- INICIANDO WEBHOOK RECEPTOR ---");
