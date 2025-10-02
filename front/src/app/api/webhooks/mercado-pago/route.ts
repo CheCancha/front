@@ -2,59 +2,110 @@ import { NextResponse, type NextRequest } from "next/server";
 import { MercadoPagoConfig, Payment } from "mercadopago";
 import { db } from "@/shared/lib/db";
 import SimpleCrypto from "simple-crypto-js";
+import crypto from "crypto";
+
+function verifySignature(
+  request: NextRequest,
+  body: string,
+  secret: string
+): boolean {
+  const signatureHeader = request.headers.get("x-signature");
+  if (!signatureHeader) {
+    console.warn("No se encontró la cabecera x-signature en el webhook.");
+    return false;
+  }
+
+  const parts = signatureHeader.split(",").reduce((acc, part) => {
+    const [key, value] = part.split("=");
+    acc[key.trim()] = value.trim();
+    return acc;
+  }, {} as Record<string, string>);
+
+  const ts = parts.ts;
+  const signature = parts.v1;
+
+  if (!ts || !signature) {
+    console.warn("Faltan 'ts' o 'v1' en la cabecera x-signature.");
+    return false;
+  }
+
+  // Recreamos el manifiesto que Mercado Pago firmó
+  const manifest = `id:${JSON.parse(body).data.id};ts:${ts};`;
+
+  // Calculamos nuestra propia firma HMAC
+  const hmac = crypto.createHmac("sha256", secret);
+  hmac.update(manifest);
+  const ourSignature = hmac.digest("hex");
+
+  // Comparamos nuestra firma con la que vino en la cabecera
+  return crypto.timingSafeEqual(
+    Buffer.from(ourSignature),
+    Buffer.from(signature)
+  );
+}
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    // Extraemos el user_id del vendedor, que es clave para la lógica multi-vendedor.
+    const rawBody = await req.text(); // Leemos el body como texto para la firma
+    const body = JSON.parse(rawBody);
+
+    // --- NUEVO --- Bloque de Verificación de Seguridad
+    const secret = process.env.MERCADOPAGO_WEBHOOK_SECRET;
+    if (secret) {
+      if (!verifySignature(req, rawBody, secret)) {
+        console.error(
+          "Fallo en la verificación de la firma del Webhook de Mercado Pago."
+        );
+        return new NextResponse("Firma inválida.", { status: 401 });
+      }
+      console.log("Firma del Webhook de Mercado Pago verificada exitosamente.");
+    } else {
+      console.warn(
+        "MERCADOPAGO_WEBHOOK_SECRET no está configurada. Se omite la verificación de firma (NO SEGURO PARA PRODUCCIÓN)."
+      );
+    }
+
     const { type, data, user_id } = body;
 
-    console.log("Webhook de Mercado Pago recibido:", { type, data, user_id });
+    console.log("Mercado Pago Webhook received:", { type, data, user_id });
 
-    // Solo procesamos notificaciones de pagos que incluyan el ID del vendedor.
+    // El resto de la lógica permanece igual...
     if (type === "payment" && data?.id && user_id) {
-      // 1. Buscamos el complejo asociado a la cuenta de Mercado Pago del vendedor.
       const complex = await db.complex.findFirst({
         where: { mp_user_id: user_id.toString() },
         select: { mp_access_token: true },
       });
 
-      // Si no encontramos el complejo o no tiene un token, no podemos verificar el pago.
-      // Respondemos 200 para que MP no reintente, pero registramos el problema.
       if (!complex?.mp_access_token) {
         console.warn(
-          `Webhook para usuario de MP ${user_id} recibido, pero no se encontró un complejo con token asociado.`
+          `Webhook for MP user ${user_id} received, but no complex with an associated token was found.`
         );
         return new NextResponse(
-          "Notificación recibida pero no se encontró complejo configurado.",
+          "Notification received but no configured complex was found.",
           { status: 200 }
         );
       }
 
-      // 2. Desencriptamos el Access Token específico de ESE complejo.
       const secretKey = process.env.ENCRYPTION_KEY;
       if (!secretKey) {
         console.error(
-          "Error crítico: ENCRYPTION_KEY no está definida en el servidor."
+          "Critical error: ENCRYPTION_KEY is not defined on the server."
         );
-        return new NextResponse("Error de configuración del servidor.", {
+        return new NextResponse("Server configuration error.", {
           status: 500,
         });
       }
       const crypto = new SimpleCrypto(secretKey);
       const accessToken = crypto.decrypt(complex.mp_access_token) as string;
 
-      // 3. Creamos un cliente de Mercado Pago DINÁMICO con el token del vendedor.
       const dynamicClient = new MercadoPagoConfig({ accessToken });
       const paymentClient = new Payment(dynamicClient);
 
-      // 4. Obtenemos los detalles del pago usando el cliente correcto.
       const payment = await paymentClient.get({ id: data.id });
       console.log(
-        `Detalles del pago ${data.id} obtenidos con el token del complejo.`
+        `Payment details ${data.id} obtained with the complex's token.`
       );
 
-      // 5. Si el pago está aprobado, actualizamos la reserva en nuestra base de datos.
       if (
         payment &&
         payment.external_reference &&
@@ -78,23 +129,23 @@ export async function POST(req: NextRequest) {
             },
           });
           console.log(
-            `Reserva ${bookingId} actualizada a CONFIRMADO con un pago de ${amountPaid}.`
+            `Booking ${bookingId} updated to CONFIRMED with a payment of ${amountPaid}.`
           );
         } else {
           console.log(
-            `Reserva ${bookingId} no encontrada o ya procesada. Estado actual: ${booking?.status}`
+            `Booking ${bookingId} not found or already processed. Current status: ${booking?.status}`
           );
         }
       } else {
         console.log(
-          `Pago ${data.id} no aprobado o sin referencia externa. Estado: ${payment?.status}`
+          `Payment ${data.id} not approved or without external reference. Status: ${payment?.status}`
         );
       }
     }
 
-    return new NextResponse("Webhook procesado", { status: 200 });
+    return new NextResponse("Webhook processed", { status: 200 });
   } catch (error) {
     console.error("[MERCADOPAGO_WEBHOOK_ERROR]", error);
-    return new NextResponse("Error interno del servidor", { status: 500 });
+    return new NextResponse("Internal server error", { status: 500 });
   }
 }
