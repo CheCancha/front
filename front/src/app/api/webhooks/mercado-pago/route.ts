@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import crypto from "crypto";
 
 type MercadoPagoWebhookBody = {
+  id?: number; // Añadimos el id de la notificación
   type: string;
   data?: { id: string };
   user_id?: number;
@@ -31,17 +32,18 @@ function verifySignature(request: NextRequest, body: string, secret: string): bo
       return false;
     }
 
-    const parsedBody = JSON.parse(body);
-    if (!parsedBody.data?.id) {
-        console.log("[VerifySignature] Notificación sin data.id, se omite la verificación.");
-        return true;
+    const parsedBody: MercadoPagoWebhookBody = JSON.parse(body);
+    
+    // --- ¡AQUÍ ESTÁ LA NUEVA LÓGICA DE CHATGPT! ---
+    // Si la notificación no trae un "id" en la raíz, no se puede verificar.
+    if (!parsedBody.id) {
+        console.log("[VerifySignature] Notificación sin 'id' en la raíz, se omite la verificación.");
+        return true; // Se deja pasar para analizar el payload en los logs.
     }
 
-    // --- ¡AQUÍ ESTÁ LA CORRECCIÓN! ---
-    // El formato del manifest debe ser "data.id:", no solo "id:".
-    // Este era el bug que causaba el fallo en la firma.
-    const manifest = `data.id:${parsedBody.data.id};ts:${ts};`;
-    console.log(`[VerifySignature] Manifiesto construido: "${manifest}"`);
+    // Se construye el manifest con el 'id' de la notificación, no con 'data.id'.
+    const manifest = `id:${parsedBody.id};ts:${ts}`;
+    console.log(`[VerifySignature] Manifiesto construido (nueva lógica): "${manifest}"`);
     
     const hmac = crypto.createHmac("sha256", secret);
     hmac.update(manifest);
