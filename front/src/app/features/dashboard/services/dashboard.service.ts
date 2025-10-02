@@ -83,7 +83,7 @@ export async function getComplexDataForManager(
   const totalHoursAvailableToday =
     complex.courts.length *
     ((complex.closeHour ?? 23) - (complex.openHour ?? 9));
-  const hoursBookedToday = todayBookings.length; // Suponiendo que cada reserva es de 1 hora
+  const hoursBookedToday = todayBookings.length;
   const occupancyRate =
     totalHoursAvailableToday > 0
       ? Math.round((hoursBookedToday / totalHoursAvailableToday) * 100)
@@ -94,7 +94,7 @@ export async function getComplexDataForManager(
     (sum, b) => sum + b.remainingBalance,
     0
   );
-  const occupancyNext7Days = 50; // Placeholder para la tasa de ocupación futura
+  const occupancyNext7Days = 50;
 
   return {
     id: complex.id,
