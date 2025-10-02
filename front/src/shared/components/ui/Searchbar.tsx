@@ -106,7 +106,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
     if (date) params.set("date", format(date, "yyyy-MM-dd"));
     if (time) params.set("time", time);
 
-    router.push(`/courts?${params.toString()}`);
+    router.push(`/canchas?${params.toString()}`);
   };
 
   // --- Clases de Tailwind ---

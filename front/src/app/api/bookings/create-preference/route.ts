@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/authOptions";
 import { db } from "@/shared/lib/db";
 import { getMercadoPagoPreferenceClient } from "@/shared/lib/mercadopago";
-import { format } from "date-fns";
+import { endOfDay, format, startOfDay } from "date-fns";
 import { Booking, BookingStatus, Court } from "@prisma/client";
 import SimpleCrypto from "simple-crypto-js";
 import { z } from "zod";
@@ -12,11 +12,14 @@ import { z } from "zod";
 const createBookingSchema = z.object({
   complexId: z.string().min(1),
   courtId: z.string().min(1),
-  date: z.string().datetime(),
-  time: z.string().regex(/^\d{2}:\d{2}$/), 
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, {
+    message: "El formato de fecha debe ser YYYY-MM-DD",
+  }),
+  time: z.string().regex(/^\d{2}:\d{2}$/),
   price: z.number().min(0),
   depositAmount: z.number().min(0),
   guestName: z.string().optional(),
+  guestPhone: z.string().optional(),
 });
 
 type BookingRequest = z.infer<typeof createBookingSchema>;
@@ -55,18 +58,26 @@ async function createPendingBookingInTransaction(
   userId: string | undefined,
   court: Court
 ): Promise<Booking> {
-  const bookingDate = new Date(data.date);
-  const [hour, minute] = data.time.split(":").map(Number);
+  const bookingDate = new Date(`${data.date}T${data.time}`); // Usamos la fecha y hora completas
+
+  // Calculamos el inicio y el fin del día para la consulta
+  const startOfBookingDay = startOfDay(bookingDate);
+  const endOfBookingDay = endOfDay(bookingDate);
 
   return db.$transaction(async (prisma) => {
     const conflictingBookings = await prisma.booking.findMany({
       where: {
         courtId: data.courtId,
-        date: bookingDate,
+        date: {
+          gte: startOfBookingDay,
+          lt: endOfBookingDay,
+        },
         status: { in: ["CONFIRMADO", "PENDIENTE"] },
       },
       include: { court: { select: { slotDurationMinutes: true } } },
     });
+
+    const [hour, minute] = data.time.split(":").map(Number);
 
     const requestedStartMinutes = hour * 60 + minute;
     const requestedEndMinutes =
@@ -157,16 +168,15 @@ export async function POST(req: Request) {
     const { accessToken, publicKey } = getMercadoPagoCredentials(complexData);
     const preferenceClient = getMercadoPagoPreferenceClient(accessToken);
 
+    const formattedDateForMP = format(new Date(`${bookingData.date}T00:00:00`), "dd/MM/yyyy");
+
     const preference = await preferenceClient.create({
       body: {
         items: [
           {
             id: bookingData.courtId,
             title: `Seña para ${court.sport.name} en ${complexData.name}`,
-            description: `Turno para ${court.name} el ${format(
-              new Date(bookingData.date),
-              "dd/MM/yyyy"
-            )} a las ${bookingData.time}hs`,
+            description: `Turno para ${court.name} el ${formattedDateForMP} a las ${bookingData.time}hs`,
             quantity: 1,
             currency_id: "ARS",
             unit_price: bookingData.depositAmount,
@@ -189,8 +199,9 @@ export async function POST(req: Request) {
     });
   } catch (error: unknown) {
     if (error instanceof z.ZodError) {
-      return new NextResponse(`Datos inválidos: ${error.message}`, {
+      return new NextResponse(JSON.stringify({ message: "Datos inválidos", issues: error.issues }), {
         status: 400,
+        headers: { 'Content-Type': 'application/json' },
       });
     }
     if (

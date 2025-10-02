@@ -10,7 +10,7 @@ import type {
   ComplexProfileData,
   CourtWithPriceRules,
   ValidStartTime,
-} from "@/app/(public)/courts/[slug]/page";
+} from "@/app/(public)/canchas/[slug]/page";
 
 interface BookingWidgetProps {
   club: ComplexProfileData;
