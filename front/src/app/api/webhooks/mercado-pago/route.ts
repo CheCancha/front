@@ -69,7 +69,6 @@ export async function POST(req: NextRequest) {
 
     console.log("Mercado Pago Webhook received:", { type, data, user_id });
 
-    // El resto de la lógica permanece igual...
     if (type === "payment" && data?.id && user_id) {
       const complex = await db.complex.findFirst({
         where: { mp_user_id: user_id.toString() },

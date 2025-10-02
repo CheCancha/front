@@ -184,7 +184,7 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, club, cour
                       <label htmlFor="guestPhone" className="block text-sm font-semibold text-gray-700 mb-1">
                         <Phone className="inline-block w-4 h-4 mr-1" /> Teléfono (WhatsApp)
                       </label>
-                      <input type="tel" id="guestPhone" value={guestPhone} onChange={(e) => setGuestPhone(e.target.value)} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" placeholder="3491..." />
+                      <input type="tel" id="guestPhone" value={guestPhone} onChange={(e) => setGuestPhone(e.target.value)} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" placeholder="3491123456" />
                        <p className="text-xs text-gray-500 mt-1">Lo usaremos para contactarte por tu reserva si es necesario.</p>
                     </div>
                   </div>
