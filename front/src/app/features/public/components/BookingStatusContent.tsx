@@ -15,7 +15,7 @@ const statusConfig = {
       "Tu pago fue procesado exitosamente y tu turno ha sido agendado. ¡Gracias por tu reserva!",
     links: [
       { href: "/profile", text: "Ver mis reservas" },
-      { href: "/courts", text: "Buscar otra cancha" },
+      { href: "/canchas", text: "Buscar otra cancha" },
     ],
   },
   failure: {
@@ -24,7 +24,7 @@ const statusConfig = {
     message:
       "No se pudo procesar tu pago. Por favor, intentá nuevamente con otro método de pago.",
     links: [
-      { href: "/courts", text: "Volver a buscar" },
+      { href: "/canchas", text: "Volver a buscar" },
     ],
   },
   pending: {

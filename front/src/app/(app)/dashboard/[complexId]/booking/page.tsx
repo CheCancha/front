@@ -68,8 +68,7 @@ export default function BookingCalendarPage() {
   const [sportFilter, setSportFilter] = useState<string>("Todos");
   const [isEditing, setIsEditing] = useState(false);
   const [modalData, setModalData] = useState<Partial<SubmitPayload & { id: string }>>();
-
-  console.log("LOG: Renderizando componente BookingCalendarPage. Estado actual de 'complex':", complex);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const timeSlots = useMemo(() => {
     if (!complex) return [];
@@ -155,8 +154,6 @@ export default function BookingCalendarPage() {
     fetchComplexData();
   }, [complexId]);
 
-
-
   useEffect(() => {
     if (complex) {
       console.log("LOG (useEffect fetchBookings): 'complex' existe, llamando a fetchBookingsForDate.");
@@ -175,6 +172,7 @@ export default function BookingCalendarPage() {
   };
 
   const handleBookingSubmit = async (bookingData: SubmitPayload) => {
+    setIsSubmitting(true);
     const endpoint = `/api/complex/${complexId}/bookings`;
     const method = isEditing ? "PATCH" : "POST";
     const successMessage = isEditing ? "Reserva actualizada" : "Reserva creada";
@@ -201,7 +199,8 @@ export default function BookingCalendarPage() {
           ? error.message
           : "No se pudo guardar la reserva."
       );
-      await fetchBookingsForDate(currentDate);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -313,7 +312,7 @@ export default function BookingCalendarPage() {
             ))}
           </div>
         </header>
-        <div className="bg-white border rounded-lg shadow-sm overflow-x-auto">
+         <div className="bg-white border rounded-lg shadow-sm overflow-x-auto">
           <div
             className="grid"
             style={{
@@ -321,12 +320,17 @@ export default function BookingCalendarPage() {
               gridAutoRows: "2.5rem",
             }}
           >
-            <div className="sticky top-0 left-0 bg-white z-10 flex items-center justify-center p-2 border-b border-r">
+            <div className="sticky top-0 left-0 bg-white z-20 flex items-center justify-center p-2 border-b border-r">
               <button
-                onClick={() =>
-                  openModalForSlot(filteredCourts[0]?.id, timeSlots[0])
-                }
-                className="flex items-center justify-center w-full h-full text-sm font-semibold text-white bg-black hover:bg-gray-800 rounded-md cursor-pointer"
+                onClick={() => {
+                  if (filteredCourts.length > 0 && timeSlots.length > 0) {
+                    openModalForSlot(filteredCourts[0].id, timeSlots[0]);
+                  } else {
+                    toast.error("No hay canchas o horarios disponibles para crear una reserva.");
+                  }
+                }}
+                disabled={filteredCourts.length === 0}
+                className="flex items-center justify-center w-full h-full text-sm font-semibold text-white bg-black hover:bg-gray-800 rounded-md cursor-pointer disabled:bg-gray-400 disabled:cursor-not-allowed"
                 title="Añadir nueva reserva"
               >
                 <PlusCircle size={16} />
@@ -358,8 +362,8 @@ export default function BookingCalendarPage() {
                   );
 
                   if (bookingStartingNow) {
-                    const rowSpan =
-                      bookingStartingNow.court.slotDurationMinutes / 30;
+                    const interval = complex.timeSlotInterval || 30;
+                    const rowSpan = bookingStartingNow.court.slotDurationMinutes / interval;
                     return (
                       <div
                         key={`${court.id}-${time}`}
@@ -444,6 +448,7 @@ export default function BookingCalendarPage() {
           initialValues={modalData}
           isEditing={isEditing}
           existingBookings={bookings}
+          isSubmitting={isSubmitting}
         />
       )}
     </>

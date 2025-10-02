@@ -34,6 +34,7 @@ import BookingModal from "@/shared/components/ui/BookingModal";
 import { ImageCarousel } from "@/app/features/public/components/courts/ImageCarousel";
 import { BookingWidget } from "@/app/features/public/components/courts/BookingWidget";
 import { PageSkeleton } from "@/app/features/public/components/courts/Skeleton";
+import { routes } from "@/routes";
 
 // --- Funciones Helper ---
 const generateWeeklySchedule = (complex: ComplexProfileData) => {
@@ -135,7 +136,7 @@ export default function ClubProfilePage() {
               El club que buscas no existe o no está disponible en este momento.
             </p>
             <Link
-              href="/courts"
+              href={routes.public.canchas}
               className="mt-6 inline-block bg-brand-orange text-white font-bold py-2 px-4 rounded-lg hover:opacity-90"
             >
               Volver al listado

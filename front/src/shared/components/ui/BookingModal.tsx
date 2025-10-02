@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Calendar, Clock, Shield, DollarSign, User, Phone } from "lucide-react";
 import { ButtonPrimary } from "@/shared/components/ui/Buttons";
@@ -37,6 +37,13 @@ interface BookingModalProps {
   date: Date;
 }
 
+const formatDateForAPI = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 // --- Funciones Helper ---
 const calculateEndTime = (startTime: string, durationMinutes: number): string => {
   if (!startTime || !durationMinutes) return "";
@@ -62,9 +69,7 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, club, cour
   const { status } = useSession();
   const [isProcessing, setIsProcessing] = useState(false);
   const [guestName, setGuestName] = useState("");
-  // --- NUEVO --- Estado para el teléfono del invitado
   const [guestPhone, setGuestPhone] = useState("");
-
   const [preferenceData, setPreferenceData] = useState<{ id: string; publicKey: string; } | null>(null);
 
   useEffect(() => {
@@ -73,15 +78,25 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, club, cour
     }
   }, [preferenceData]);
 
-  const priceRule = getPriceForTime(court, time);
+  const priceRule = useMemo(() => getPriceForTime(court, time), [court, time]);
+  const endTime = useMemo(() => calculateEndTime(time, court?.slotDurationMinutes || 60), [time, court]);
+  
   const totalPrice = priceRule.price;
   const depositAmount = priceRule.depositAmount;
 
   const handleCreatePreference = async () => {
-    if (status === "unauthenticated" && (!guestName.trim() || !guestPhone.trim())) {
-      toast.error("Por favor, completá tu nombre y teléfono.");
-      return;
+    const phoneRegex = /^[0-9]{8,}$/;
+    if (status === "unauthenticated") {
+      if (!guestName.trim()) {
+        toast.error("Por favor, completá tu nombre y apellido.");
+        return;
+      }
+      if (!guestPhone.trim() || !phoneRegex.test(guestPhone)) {
+        toast.error("Por favor, ingresá un número de teléfono válido.");
+        return;
+      }
     }
+    
     if (depositAmount <= 0) {
       toast.error("No se puede generar un link de pago para una seña de $0.");
       return;
@@ -91,18 +106,19 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, club, cour
     toast.loading("Generando link de pago...");
 
     try {
+      const formattedDate = formatDateForAPI(date);
+
       const response = await fetch("/api/bookings/create-preference", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           complexId: club.id,
           courtId: court.id,
-          date: date.toISOString(),
+          date: formattedDate,
           time: time,
           price: totalPrice,
           depositAmount: depositAmount,
           guestName: guestName,
-          // --- NUEVO --- Enviamos el teléfono a la API
           guestPhone: guestPhone,
         }),
       });
@@ -128,7 +144,7 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, club, cour
     setTimeout(() => {
       setPreferenceData(null);
       setGuestName("");
-      setGuestPhone(""); // Limpiamos el estado del teléfono al cerrar
+      setGuestPhone("");
     }, 300);
   };
 

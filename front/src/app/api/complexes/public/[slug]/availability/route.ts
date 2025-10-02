@@ -18,7 +18,11 @@ export async function GET(
         { status: 400 }
       );
     }
-    const requestedDate = new Date(`${dateString}T00:00:00`);
+
+
+    const startDate = new Date(`${dateString}T00:00:00.000Z`);
+    const endDate = new Date(startDate);
+    endDate.setDate(startDate.getDate() + 1);
 
     const complex = await db.complex.findUnique({
       where: { slug: slug },
@@ -28,7 +32,10 @@ export async function GET(
           include: {
             bookings: {
               where: {
-                date: requestedDate,
+                date: {
+                  gte: startDate,
+                  lt: endDate, 
+                },
                 status: { not: BookingStatus.CANCELADO },
               },
             },
@@ -48,7 +55,7 @@ export async function GET(
     // La grilla de horarios ahora respeta la configuración del manager.
     const timeGridInterval = complex.timeSlotInterval;
 
-    const dayOfWeek = getDay(requestedDate);
+    const dayOfWeek = getDay(startDate);
     const dayKeys = [ "sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday" ];
     const key = dayKeys[dayOfWeek];
 
@@ -76,7 +83,11 @@ export async function GET(
     for (const court of complex.courts) {
       const courtSlots = new Array(totalSlots).fill(true);
       for (const booking of court.bookings) {
-        const startIdx = (booking.startTime * 60 + (booking.startMinute || 0) - openHour * 60) / timeGridInterval;
+        const bookingDate = new Date(booking.date);
+        const bookingHour = bookingDate.getUTCHours(); 
+        const bookingMinute = bookingDate.getUTCMinutes();
+
+        const startIdx = (bookingHour * 60 + bookingMinute - openHour * 60) / timeGridInterval;
         const slotsToBook = court.slotDurationMinutes / timeGridInterval;
         for (let i = 0; i < slotsToBook; i++) {
           if (startIdx + i < totalSlots) {
@@ -108,10 +119,10 @@ export async function GET(
             canBook = false;
         } else {
             for (let i = 0; i < slotsNeeded; i++) {
-              if (!availabilityMap.get(court.id)?.[currentSlotIndex + i]) {
-                canBook = false;
-                break;
-              }
+                if (!availabilityMap.get(court.id)?.[currentSlotIndex + i]) {
+                    canBook = false;
+                    break;
+                }
             }
         }
         return { courtId: court.id, available: canBook };

@@ -59,19 +59,17 @@ export async function GET(
       });
     }
 
-    const requestedDate = new Date(`${dateString}T00:00:00`);
-    const startOfRequestedDay = startOfDay(requestedDate);
-    const endOfRequestedDay = endOfDay(requestedDate);
+    const requestedDate = new Date(`${dateString}T00:00:00.000Z`); 
+const startOfRequestedDay = startOfDay(requestedDate);
+const endOfRequestedDay = endOfDay(requestedDate);
 
-    const bookings = await db.booking.findMany({
-      where: {
-        court: { complexId: complexId },
-        date: {
-          gte: startOfRequestedDay,
-          lte: endOfRequestedDay,
+const bookings = await db.booking.findMany({
+  where: {
+    court: { complexId: complexId },
+    date: {
+      gte: startOfRequestedDay,
+      lt: endOfRequestedDay,
         },
-        // --- CORRECCIÓN --- Aseguramos que no se traigan reservas canceladas
-        // para que la lógica del frontend sea consistente.
         status: { not: BookingStatus.CANCELADO },
       },
       include: {
@@ -136,15 +134,27 @@ export async function POST(
       );
     }
 
-    const bookingDate = new Date(`${date}T00:00:00`);
-    const newBookingStartMinutes = hour * 60 + minute;
-    const newBookingEndMinutes =
-      newBookingStartMinutes + court.slotDurationMinutes;
+    const bookingDate = new Date(`${date}T${time}`);
 
-    const existingBookings = await db.booking.findMany({
-      where: { courtId, date: bookingDate, status: { not: "CANCELADO" } },
-      include: { court: { select: { slotDurationMinutes: true } } },
-    });
+const newBookingStartMinutes = hour * 60 + minute;
+const newBookingEndMinutes =
+  newBookingStartMinutes + court.slotDurationMinutes;
+
+// 2. Para buscar superposiciones, debemos buscar en TODO el día, no solo a medianoche.
+const startOfBookingDay = startOfDay(bookingDate);
+const endOfBookingDay = endOfDay(bookingDate);
+
+const existingBookings = await db.booking.findMany({
+  where: {
+    courtId,
+    date: {
+      gte: startOfBookingDay,
+      lt: endOfBookingDay,
+    },
+    status: { not: "CANCELADO" },
+  },
+  include: { court: { select: { slotDurationMinutes: true } } },
+});
 
     const isOverlapping = existingBookings.some((existingBooking) => {
       const existingStartMinutes =

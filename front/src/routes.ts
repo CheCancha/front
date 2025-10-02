@@ -2,8 +2,8 @@ export const routes = {
   public: {
     home: "/",
     clubs: "/clubs",
-    canchas: "/courts",
-    complexProfile: (slug: string) => `/courts/${slug}`,
+    canchas: "/canchas",
+    complexProfile: (slug: string) => `/canchas/${slug}`,
     inscripciones: "/inscriptions",
     forgotPassword: "/forgot",
     resetPassword: "/reset",

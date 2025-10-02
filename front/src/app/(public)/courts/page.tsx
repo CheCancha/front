@@ -54,6 +54,7 @@ type BookingSelection = {
   date: Date;
 };
 
+
 // --- COMPONENTES DE LA INTERFAZ ---
 const FilterBar = ({ view, setView, }: { view: "list" | "map"; setView: (v: "list" | "map") => void; }) => (
   <div className="flex items-center gap-2 p-1 bg-gray-200 rounded-full w-fit">

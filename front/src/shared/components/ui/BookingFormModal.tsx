@@ -37,13 +37,13 @@ export type SubmitPayload = {
 export interface BookingModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (bookingData: SubmitPayload) => Promise<void>;
+  onSubmit: (data: SubmitPayload) => void;
   courts: CourtWithSport[];
   timeSlots: string[];
   initialValues?: Partial<SubmitPayload & { id: string }>;
   isEditing: boolean;
-  // --- NUEVA PROP ---
   existingBookings: BookingWithDetails[];
+  isSubmitting?: boolean;
 }
 
 const BookingFormModal: React.FC<BookingModalProps> = ({
@@ -55,6 +55,7 @@ const BookingFormModal: React.FC<BookingModalProps> = ({
   initialValues,
   isEditing,
   existingBookings,
+  isSubmitting,
 }) => {
   const [formData, setFormData] = useState<SubmitPayload>({
     guestName: "",
@@ -307,7 +308,7 @@ const BookingFormModal: React.FC<BookingModalProps> = ({
                 <ButtonPrimary
                   type="submit"
                   className="w-full"
-                  disabled={isProcessing || (!!warning && !isEditing)}
+                  disabled={isSubmitting}
                 >
                   {isProcessing
                     ? "Guardando..."
