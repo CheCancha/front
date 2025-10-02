@@ -37,7 +37,10 @@ function verifySignature(request: NextRequest, body: string, secret: string): bo
         return true;
     }
 
-    const manifest = `id:${parsedBody.data.id};ts:${ts};`;
+    // --- ¡AQUÍ ESTÁ LA CORRECCIÓN! ---
+    // El formato del manifest debe ser "data.id:", no solo "id:".
+    // Este era el bug que causaba el fallo en la firma.
+    const manifest = `data.id:${parsedBody.data.id};ts:${ts};`;
     console.log(`[VerifySignature] Manifiesto construido: "${manifest}"`);
     
     const hmac = crypto.createHmac("sha256", secret);
