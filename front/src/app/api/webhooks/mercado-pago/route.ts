@@ -1,5 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import crypto from "crypto";
+import { MercadoPagoConfig, Payment } from "mercadopago";
+import { db } from "@/shared/lib/db";
+import SimpleCrypto from "simple-crypto-js";
 
 type MercadoPagoWebhookBody = {
   id?: number;
@@ -8,14 +11,12 @@ type MercadoPagoWebhookBody = {
   user_id?: number;
 };
 
-// --- FUNCIÓN DE VERIFICACIÓN DE FIRMA (VERSIÓN FINAL Y CORRECTA) ---
 function verifySignature(request: NextRequest, body: string, secret: string): boolean {
+    console.log(`[VerifySignature] AUDITORÍA DE CLAVE SECRETA: "${secret}"`);
   try {
     const signatureHeader = request.headers.get("x-signature");
-    const requestIdHeader = request.headers.get("x-request-id");
-    
-    if (!signatureHeader || !requestIdHeader) {
-      console.warn("[VerifySignature] Faltan cabeceras de seguridad.");
+    if (!signatureHeader) {
+      console.warn("[VerifySignature] Webhook sin firma recibido.");
       return false;
     }
 
@@ -33,27 +34,23 @@ function verifySignature(request: NextRequest, body: string, secret: string): bo
     }
 
     const parsedBody: MercadoPagoWebhookBody = JSON.parse(body);
-    const resourceId = parsedBody.data?.id;
-    const userId = parsedBody.user_id;
 
-    if (!resourceId || !userId) {
-      console.log("[VerifySignature] Notificación sin 'data.id' o 'user_id', se omite la verificación.");
+    if (!parsedBody.id) {
+      console.log("[VerifySignature] Notificación sin 'id' en la raíz. Se omite verificación para este evento.");
       return true;
     }
 
-    // --- ¡LA LÓGICA FINAL BASADA EN LA DOCUMENTACIÓN OFICIAL! ---
-    // El manifiesto incluye 'id' (del recurso), 'request-id', 'ts', y 'user-id'.
-    const manifest = `id:${resourceId};request-id:${requestIdHeader};ts:${ts};user-id:${userId};`;
-    console.log(`[VerifySignature] Manifiesto construido (LÓGICA OFICIAL): "${manifest}"`);
+    const manifest = `id:${parsedBody.id};ts:${ts};`;
     
     const hmac = crypto.createHmac("sha256", secret);
     hmac.update(manifest);
     const ourSignature = hmac.digest("hex");
-    console.log(`[VerifySignature] Nuestra firma calculada: ${ourSignature}`);
-    console.log(`[VerifySignature] Firma de MP recibida: ${signatureFromMP}`);
 
     const signaturesMatch = crypto.timingSafeEqual(Buffer.from(ourSignature), Buffer.from(signatureFromMP));
-    console.log(`[VerifySignature] ¿Las firmas coinciden?: ${signaturesMatch}`);
+    
+    if (!signaturesMatch) {
+        console.error(`[VerifySignature] ¡FALLO DE FIRMA! Manifiesto: "${manifest}", Nuestra Firma: ${ourSignature}, Firma MP: ${signatureFromMP}`);
+    }
 
     return signaturesMatch;
   } catch (error) {
@@ -62,7 +59,54 @@ function verifySignature(request: NextRequest, body: string, secret: string): bo
   }
 }
 
-// El resto de la función POST no necesita cambios
+// --- PROCESADOR DE PAGOS (TRABAJO PESADO) ---
+async function processPayment(paymentId: string, userId: number) {
+    console.log(`[ProcessPayment] Iniciando procesamiento para pago ${paymentId}`);
+    try {
+        const complex = await db.complex.findFirst({
+            where: { mp_user_id: userId.toString() },
+            select: { mp_access_token: true },
+        });
+
+        if (!complex?.mp_access_token) {
+            console.warn(`[ProcessPayment] No se encontró complejo para MP User ID: ${userId}`);
+            return;
+        }
+
+        const secretKey = process.env.ENCRYPTION_KEY;
+        if (!secretKey) throw new Error("ENCRYPTION_KEY no está definida.");
+        
+        const cryptoInstance = new SimpleCrypto(secretKey);
+        const accessToken = cryptoInstance.decrypt(complex.mp_access_token) as string;
+        
+        const dynamicClient = new MercadoPagoConfig({ accessToken });
+        const paymentClient = new Payment(dynamicClient);
+        const payment = await paymentClient.get({ id: paymentId });
+
+        if (payment?.external_reference && payment.status === "approved") {
+            const bookingId = payment.external_reference;
+            const amountPaid = payment.transaction_amount || 0;
+            
+            const booking = await db.booking.findUnique({ where: { id: bookingId } });
+
+            if (booking && booking.status === "PENDIENTE") {
+                await db.booking.update({
+                    where: { id: bookingId },
+                    data: {
+                        status: "CONFIRMADO",
+                        depositPaid: amountPaid,
+                        remainingBalance: booking.totalPrice - amountPaid,
+                        paymentId: String(payment.id),
+                    },
+                });
+                console.log(`[ProcessPayment] ¡ÉXITO! Reserva ${bookingId} actualizada a CONFIRMADO.`);
+            }
+        }
+    } catch (error) {
+        console.error("[ProcessPayment] 💥 ERROR FATAL durante el procesamiento del pago:", error);
+    }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const rawBody = await req.text();
@@ -73,26 +117,13 @@ export async function POST(req: NextRequest) {
       console.error("Fallo en la verificación de la firma. Petición ignorada.");
       return new NextResponse("Firma inválida.", { status: 200 });
     }
+    console.log("Firma del Webhook verificada exitosamente.");
 
-    if (body.type === "payment" && body.data?.id) {
-      const internalApiUrl = new URL("/api/webhooks/process-payment", req.nextUrl.origin);
-
-      fetch(internalApiUrl.toString(), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Internal-Secret": process.env.INTERNAL_API_SECRET || "",
-        },
-        body: JSON.stringify({
-          paymentId: body.data.id,
-          userId: body.user_id,
-        }),
-      }).catch(error => {
-        console.error("Error al disparar la llamada interna:", error);
-      });
+    if (body.type === "payment" && body.data?.id && body.user_id) {
+      processPayment(body.data.id, body.user_id);
     }
 
-    return new NextResponse("Notificación encolada.", { status: 200 });
+    return new NextResponse("Notificación recibida.", { status: 200 });
   } catch (error) {
     console.error("Error fatal en el webhook receptor:", error);
     return new NextResponse("Error procesando la petición.", { status: 200 });
