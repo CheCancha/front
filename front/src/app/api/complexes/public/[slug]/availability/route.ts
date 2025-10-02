@@ -51,8 +51,6 @@ export async function GET(
       );
     }
 
-    // --- CORRECCIÓN CLAVE ---
-    // La grilla de horarios ahora respeta la configuración del manager.
     const timeGridInterval = complex.timeSlotInterval;
 
     const dayOfWeek = getDay(startDate);

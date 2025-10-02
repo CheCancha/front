@@ -93,7 +93,7 @@ export function Reservations({ complexId }: { complexId: string }) {
           throw new Error("No se pudo conectar con el servidor.");
         }
 
-        // --- CORREGIDO --- Usamos nuestro nuevo tipo en lugar de 'any[]'
+        // --- CORREGIDO --- '
         const rawBookings: RawApiResponse[] = await res.json();
 
         const formattedBookings = rawBookings.map((b) => ({

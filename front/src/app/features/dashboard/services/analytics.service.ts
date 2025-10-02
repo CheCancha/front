@@ -40,7 +40,6 @@ export async function getAnalyticsData({
           date: { gte: prevStartDate, lte: prevEndDate },
           status: { in: [BookingStatus.CONFIRMADO, BookingStatus.COMPLETADO] },
         },
-        // 2. CORRECCIÓN DE TIPO: Añadimos el include que faltaba
         include: { court: true, user: true },
       }),
       db.complex.findUnique({

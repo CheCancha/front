@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "app/api/webhooks/mercado-pago/route.js": {
+      "maxDuration": 60
+    }
+  }
+}

@@ -79,7 +79,6 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, club, cour
   }, [preferenceData]);
 
   const priceRule = useMemo(() => getPriceForTime(court, time), [court, time]);
-  const endTime = useMemo(() => calculateEndTime(time, court?.slotDurationMinutes || 60), [time, court]);
   
   const totalPrice = priceRule.price;
   const depositAmount = priceRule.depositAmount;

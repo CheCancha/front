@@ -4,6 +4,16 @@ import { db } from "@/shared/lib/db";
 import SimpleCrypto from "simple-crypto-js";
 import crypto from "crypto";
 
+// --- NUEVO --- Tipo para el cuerpo de la notificación del Webhook
+type MercadoPagoWebhookBody = {
+  type: string;
+  data?: {
+    id: string;
+  };
+  user_id?: number;
+};
+
+// La función de verificación de firma no cambia
 function verifySignature(
   request: NextRequest,
   body: string,
@@ -29,45 +39,39 @@ function verifySignature(
     return false;
   }
 
-  // Recreamos el manifiesto que Mercado Pago firmó
   const manifest = `id:${JSON.parse(body).data.id};ts:${ts};`;
-
-  // Calculamos nuestra propia firma HMAC
   const hmac = crypto.createHmac("sha256", secret);
   hmac.update(manifest);
   const ourSignature = hmac.digest("hex");
 
-  // Comparamos nuestra firma con la que vino en la cabecera
   return crypto.timingSafeEqual(
     Buffer.from(ourSignature),
     Buffer.from(signature)
   );
 }
 
-export async function POST(req: NextRequest) {
+// --- Lógica principal separada con el tipo correcto ---
+async function processWebhookLogic(
+  body: MercadoPagoWebhookBody, // <-- Se usa el nuevo tipo
+  rawBody: string,
+  req: NextRequest
+) {
   try {
-    const rawBody = await req.text(); // Leemos el body como texto para la firma
-    const body = JSON.parse(rawBody);
-
-    // --- NUEVO --- Bloque de Verificación de Seguridad
     const secret = process.env.MERCADOPAGO_WEBHOOK_SECRET;
     if (secret) {
       if (!verifySignature(req, rawBody, secret)) {
-        console.error(
-          "Fallo en la verificación de la firma del Webhook de Mercado Pago."
-        );
-        return new NextResponse("Firma inválida.", { status: 401 });
+        console.error("Fallo en la verificación de la firma del Webhook.");
+        return; // Salimos si la firma es inválida
       }
-      console.log("Firma del Webhook de Mercado Pago verificada exitosamente.");
+      console.log("Firma del Webhook verificada exitosamente.");
     } else {
       console.warn(
-        "MERCADOPAGO_WEBHOOK_SECRET no está configurada. Se omite la verificación de firma (NO SEGURO PARA PRODUCCIÓN)."
+        "MERCADOPAGO_WEBHOOK_SECRET no configurada. (NO SEGURO PARA PRODUCCIÓN)."
       );
     }
 
     const { type, data, user_id } = body;
-
-    console.log("Mercado Pago Webhook received:", { type, data, user_id });
+    console.log("Procesando webhook en segundo plano:", { type, data, user_id });
 
     if (type === "payment" && data?.id && user_id) {
       const complex = await db.complex.findFirst({
@@ -77,33 +81,25 @@ export async function POST(req: NextRequest) {
 
       if (!complex?.mp_access_token) {
         console.warn(
-          `Webhook for MP user ${user_id} received, but no complex with an associated token was found.`
+          `Webhook para usuario de MP ${user_id} recibido, pero no se encontró un complejo con token asociado.`
         );
-        return new NextResponse(
-          "Notification received but no configured complex was found.",
-          { status: 200 }
-        );
+        return;
       }
 
       const secretKey = process.env.ENCRYPTION_KEY;
       if (!secretKey) {
-        console.error(
-          "Critical error: ENCRYPTION_KEY is not defined on the server."
-        );
-        return new NextResponse("Server configuration error.", {
-          status: 500,
-        });
+        console.error("Error crítico: ENCRYPTION_KEY no está definida.");
+        return;
       }
-      const crypto = new SimpleCrypto(secretKey);
-      const accessToken = crypto.decrypt(complex.mp_access_token) as string;
+      const cryptoInstance = new SimpleCrypto(secretKey);
+      const accessToken = cryptoInstance.decrypt(
+        complex.mp_access_token
+      ) as string;
 
       const dynamicClient = new MercadoPagoConfig({ accessToken });
       const paymentClient = new Payment(dynamicClient);
-
       const payment = await paymentClient.get({ id: data.id });
-      console.log(
-        `Payment details ${data.id} obtained with the complex's token.`
-      );
+      console.log(`Detalles del pago ${data.id} obtenidos.`);
 
       if (
         payment &&
@@ -112,7 +108,6 @@ export async function POST(req: NextRequest) {
       ) {
         const bookingId = payment.external_reference;
         const amountPaid = payment.transaction_amount || 0;
-
         const booking = await db.booking.findUnique({
           where: { id: bookingId },
         });
@@ -128,23 +123,30 @@ export async function POST(req: NextRequest) {
             },
           });
           console.log(
-            `Booking ${bookingId} updated to CONFIRMED with a payment of ${amountPaid}.`
-          );
-        } else {
-          console.log(
-            `Booking ${bookingId} not found or already processed. Current status: ${booking?.status}`
+            `ÉXITO: Reserva ${bookingId} actualizada a CONFIRMADO.`
           );
         }
-      } else {
-        console.log(
-          `Payment ${data.id} not approved or without external reference. Status: ${payment?.status}`
-        );
       }
     }
-
-    return new NextResponse("Webhook processed", { status: 200 });
   } catch (error) {
-    console.error("[MERCADOPAGO_WEBHOOK_ERROR]", error);
-    return new NextResponse("Internal server error", { status: 500 });
+    console.error("💥 ERROR procesando el webhook en segundo plano:", error);
+  }
+}
+
+// --- Handler principal que responde inmediatamente ---
+export async function POST(req: NextRequest) {
+  try {
+    const rawBody = await req.text();
+    const body = JSON.parse(rawBody);
+
+    processWebhookLogic(body, rawBody, req);
+
+    console.log("Webhook recibido. Respondiendo 200 OK inmediatamente.");
+    return new NextResponse("Webhook encolado para procesamiento.", {
+      status: 200,
+    });
+  } catch (error) {
+    console.error("[MERCADOPAGO_WEBHOOK_ERROR INICIAL]", error);
+    return new NextResponse("Error al recibir el webhook.", { status: 500 });
   }
 }

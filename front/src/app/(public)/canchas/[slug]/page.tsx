@@ -14,9 +14,7 @@ import { AmenityIcon } from "@/shared/components/ui/AmenityIcon";
 export type PriceRule = { id: string; startTime: number; endTime: number; price: number; depositAmount: number; };
 export type CourtWithPriceRules = Court & { priceRules: PriceRule[] };
 
-// --- CORRECCIÓN ---
-// Se añade explícitamente `cancellationPolicyHours` al tipo para que coincida 
-// con lo que espera el BookingModal y solucionar el error de TypeScript.
+
 export type ComplexProfileData = Complex & {
   images: PrismaImage[];
   courts: CourtWithPriceRules[];

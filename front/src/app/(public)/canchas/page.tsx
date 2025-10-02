@@ -36,7 +36,6 @@ type AvailableSlot = {
   court: CourtInfo;
 };
 
-// --- CORRECCIÓN ---
 type Club = {
   id: string;
   slug: string;

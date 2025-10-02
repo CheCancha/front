@@ -127,8 +127,6 @@ export default function BookingCalendarPage() {
         const responseData = await res.json();
         console.log("LOG (useEffect fetchComplexData): Respuesta COMPLETA de la API recibida:", responseData);
         
-        // --- ¡AQUÍ ESTÁ LA CORRECCIÓN! ---
-        // La API devuelve { complex: {...} }, extraemos el objeto de adentro.
         const complexData = responseData.complex;
 
         if (!complexData) {

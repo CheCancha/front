@@ -66,7 +66,7 @@ export function CompleteOnboardingForm({ complex }: CompleteOnboardingFormProps)
             }]
           }]);
         }
-      } catch (error) {
+      } catch (err) {
         toast.error("No se pudieron cargar los deportes.");
       }
     }
