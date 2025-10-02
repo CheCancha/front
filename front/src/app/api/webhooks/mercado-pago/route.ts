@@ -6,22 +6,23 @@ type MercadoPagoWebhookBody = {
   type: string;
   data?: { id: string };
   user_id?: number;
-  live_mode?: boolean;
-  date_created?: string;
-  application_id?: number;
-  version?: number;
-  attempts?: number;
 };
 
+// --- FUNCIÓN DE VERIFICACIÓN DE FIRMA (VERSIÓN FINAL Y CORRECTA) ---
 function verifySignature(request: NextRequest, body: string, secret: string): boolean {
   try {
+    // 1. Extraemos TODAS las cabeceras necesarias
     const signatureHeader = request.headers.get("x-signature");
+    const requestIdHeader = request.headers.get("x-request-id");
     console.log(`[VerifySignature] Cabecera x-signature: ${signatureHeader}`);
-    if (!signatureHeader) {
-      console.warn("[VerifySignature] Webhook sin firma recibido.");
+    console.log(`[VerifySignature] Cabecera x-request-id: ${requestIdHeader}`);
+
+    if (!signatureHeader || !requestIdHeader) {
+      console.warn("[VerifySignature] Faltan cabeceras de seguridad (x-signature o x-request-id).");
       return false;
     }
 
+    // 2. Extraemos el timestamp y la firma de la cabecera x-signature
     const parts = signatureHeader.split(",").reduce((acc, part) => {
       const [key, value] = part.split("=");
       acc[key.trim()] = value.trim();
@@ -36,24 +37,25 @@ function verifySignature(request: NextRequest, body: string, secret: string): bo
     }
 
     const parsedBody: MercadoPagoWebhookBody = JSON.parse(body);
-    
-    // Si es una notificación que no contiene el ID del pago, no podemos verificarla.
-    if (!parsedBody.data?.id) {
-        console.log("[VerifySignature] Notificación sin 'data.id', se omite la verificación para este evento.");
-        return true;
+    const resourceId = parsedBody.data?.id;
+
+    if (!resourceId) {
+      console.log("[VerifySignature] Notificación sin 'data.id', se omite la verificación para este evento.");
+      return true;
     }
 
-    // --- ¡LA CORRECCIÓN FINAL Y DEFINITIVA! ---
-    // El manifiesto oficial de Mercado Pago para pagos usa "id:" como prefijo,
-    // el valor de "data.id", y "ts:", sin punto y coma al final.
-    const manifest = `id:${parsedBody.data.id};ts:${ts}`;
-    console.log(`[VerifySignature] Manifiesto construido (LÓGICA FINAL Y CORRECTA): "${manifest}"`);
+    // --- ¡AQUÍ ESTÁ LA LÓGICA FINAL Y CORRECTA! ---
+    // El manifiesto oficial incluye 'data.id', el 'x-request-id' y el 'ts'.
+    const manifest = `data.id:${resourceId};request-id:${requestIdHeader};ts:${ts};`;
+    console.log(`[VerifySignature] Manifiesto construido (LÓGICA OFICIAL): "${manifest}"`);
     
+    // 4. Calculamos nuestra firma con el manifiesto correcto
     const hmac = crypto.createHmac("sha256", secret);
     hmac.update(manifest);
     const ourSignature = hmac.digest("hex");
     console.log(`[VerifySignature] Nuestra firma calculada: ${ourSignature}`);
 
+    // 5. Comparamos de forma segura
     const signaturesMatch = crypto.timingSafeEqual(Buffer.from(ourSignature), Buffer.from(signatureFromMP));
     console.log(`[VerifySignature] ¿Las firmas coinciden?: ${signaturesMatch}`);
 
@@ -64,6 +66,8 @@ function verifySignature(request: NextRequest, body: string, secret: string): bo
   }
 }
 
+// El resto del archivo (la función POST) no necesita cambios.
+// Sigue usando la arquitectura de dos pasos que ya teníamos.
 export async function POST(req: NextRequest) {
   try {
     const rawBody = await req.text();
@@ -75,7 +79,6 @@ export async function POST(req: NextRequest) {
       return new NextResponse("Firma inválida.", { status: 200 });
     }
 
-    // Si la firma es válida, continuamos con la lógica de dos pasos
     if (body.type === "payment" && body.data?.id) {
       const internalApiUrl = new URL("/api/webhooks/process-payment", req.nextUrl.origin);
 
