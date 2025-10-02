@@ -11,8 +11,8 @@ type MercadoPagoWebhookBody = {
   user_id?: number;
 };
 
+// --- FUNCIÓN DE VERIFICACIÓN DE FIRMA (VERSIÓN CORREGIDA FINAL) ---
 function verifySignature(request: NextRequest, body: string, secret: string): boolean {
-    console.log(`[VerifySignature] AUDITORÍA DE CLAVE SECRETA: "${secret}"`);
   try {
     const signatureHeader = request.headers.get("x-signature");
     if (!signatureHeader) {
@@ -40,7 +40,7 @@ function verifySignature(request: NextRequest, body: string, secret: string): bo
       return true;
     }
 
-    const manifest = `id:${parsedBody.id};ts:${ts};`;
+    const manifest = `id:${parsedBody.id};ts:${ts}`
     
     const hmac = crypto.createHmac("sha256", secret);
     hmac.update(manifest);
@@ -49,7 +49,7 @@ function verifySignature(request: NextRequest, body: string, secret: string): bo
     const signaturesMatch = crypto.timingSafeEqual(Buffer.from(ourSignature), Buffer.from(signatureFromMP));
     
     if (!signaturesMatch) {
-        console.error(`[VerifySignature] ¡FALLO DE FIRMA! Manifiesto: "${manifest}", Nuestra Firma: ${ourSignature}, Firma MP: ${signatureFromMP}`);
+      console.error(`[VerifySignature] ¡FALLO DE FIRMA! Manifiesto: "${manifest}", Nuestra Firma: ${ourSignature}, Firma MP: ${signatureFromMP}`);
     }
 
     return signaturesMatch;
@@ -107,6 +107,7 @@ async function processPayment(paymentId: string, userId: number) {
     }
 }
 
+// --- HANDLER PRINCIPAL ---
 export async function POST(req: NextRequest) {
   try {
     const rawBody = await req.text();

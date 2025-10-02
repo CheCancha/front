@@ -159,32 +159,37 @@ export async function POST(req: Request) {
     }
     const court = complexData.courts[0];
 
-    const pendingBooking = await createPendingBookingInTransaction(
-      bookingData,
-      userId,
-      court
-    );
+  const pendingBooking = await createPendingBookingInTransaction(
+    bookingData,
+    userId,
+    court
+  );
 
-    const { accessToken, publicKey } = getMercadoPagoCredentials(complexData);
-    const preferenceClient = getMercadoPagoPreferenceClient(accessToken);
+  const { accessToken, publicKey } = getMercadoPagoCredentials(complexData);
+  const preferenceClient = getMercadoPagoPreferenceClient(accessToken);
+  
+  // Construimos la URL del webhook y la mostramos en los logs.
+  const notificationUrl = `${baseURL}/api/webhooks/mercado-pago`;
+  console.log(`[create-preference] URL de Notificación que se enviará a Mercado Pago: "${notificationUrl}"`);
+  // --- FIN DE LA PRUEBA ---
 
-    const formattedDateForMP = format(new Date(`${bookingData.date}T00:00:00`), "dd/MM/yyyy");
+  const formattedDateForMP = format(new Date(`${bookingData.date}T00:00:00`), "dd/MM/yyyy");
 
-    const preference = await preferenceClient.create({
-      body: {
-        items: [
-          {
-            id: bookingData.courtId,
-            title: `Seña para ${court.sport.name} en ${complexData.name}`,
-            description: `Turno para ${court.name} el ${formattedDateForMP} a las ${bookingData.time}hs`,
-            quantity: 1,
-            currency_id: "ARS",
-            unit_price: bookingData.depositAmount,
-          },
-        ],
-        external_reference: pendingBooking.id,
-        notification_url: `${baseURL}/api/webhooks/mercado-pago`,
-        back_urls: {
+  const preference = await preferenceClient.create({
+    body: {
+      items: [
+        {
+          id: bookingData.courtId,
+          title: `Seña para ${court.sport.name} en ${complexData.name}`,
+          description: `Turno para ${court.name} el ${formattedDateForMP} a las ${bookingData.time}hs`,
+          quantity: 1,
+          currency_id: "ARS",
+          unit_price: bookingData.depositAmount,
+        },
+      ],
+      external_reference: pendingBooking.id,
+      notification_url: notificationUrl,
+      back_urls: {
           success: `${baseURL}/booking-status?status=success&booking_id=${pendingBooking.id}`,
           failure: `${baseURL}/booking-status?status=failure&booking_id=${pendingBooking.id}`,
           pending: `${baseURL}/booking-status?status=pending&booking_id=${pendingBooking.id}`,
