@@ -6,7 +6,6 @@ type MercadoPagoWebhookBody = {
   type: string;
   data?: { id: string };
   user_id?: number;
-  // Añadimos los campos que ChatGPT sugiere que podrían estar en el manifest
   live_mode?: boolean;
   date_created?: string;
   application_id?: number;
@@ -38,28 +37,17 @@ function verifySignature(request: NextRequest, body: string, secret: string): bo
 
     const parsedBody: MercadoPagoWebhookBody = JSON.parse(body);
     
-    // --- ¡AQUÍ ESTÁ LA NUEVA LÓGICA FLEXIBLE DE CHATGPT! ---
-    let notificationId: string | number | undefined = undefined;
-
-    // Priorizamos el 'id' de la raíz, que es el id de la notificación
-    if (parsedBody.id) {
-      notificationId = parsedBody.id;
-      console.log("[VerifySignature] Usando 'id' de la raíz:", notificationId);
-    } 
-    // Si no existe, usamos 'data.id', que es el id del recurso (pago)
-    else if (parsedBody.data?.id) {
-      notificationId = parsedBody.data.id;
-      console.log("[VerifySignature] Usando 'data.id':", notificationId);
+    // Si es una notificación que no contiene el ID del pago, no podemos verificarla.
+    if (!parsedBody.data?.id) {
+        console.log("[VerifySignature] Notificación sin 'data.id', se omite la verificación para este evento.");
+        return true;
     }
 
-    if (!notificationId) {
-      console.log("[VerifySignature] Notificación sin 'id' ni 'data.id'. Se omite verificación.");
-      return true;
-    }
-
-    // Se construye el manifest con 'id:' y el ID encontrado, sin punto y coma final.
-    const manifest = `id:${notificationId};ts:${ts}`;
-    console.log(`[VerifySignature] Manifiesto construido (lógica flexible): "${manifest}"`);
+    // --- ¡LA CORRECCIÓN FINAL Y DEFINITIVA! ---
+    // El manifiesto oficial de Mercado Pago para pagos usa "id:" como prefijo,
+    // el valor de "data.id", y "ts:", sin punto y coma al final.
+    const manifest = `id:${parsedBody.data.id};ts:${ts}`;
+    console.log(`[VerifySignature] Manifiesto construido (LÓGICA FINAL Y CORRECTA): "${manifest}"`);
     
     const hmac = crypto.createHmac("sha256", secret);
     hmac.update(manifest);
@@ -112,4 +100,3 @@ export async function POST(req: NextRequest) {
     return new NextResponse("Error procesando la petición.", { status: 200 });
   }
 }
-
