@@ -32,49 +32,86 @@ function verifySignature(request: NextRequest, body: string, secret: string): bo
   }
 }
 
-// --- Handler principal ultrarrápido ---
+
 export async function POST(req: NextRequest) {
+  console.log("--- WEBHOOK HIT ---", req.headers.get("content-type"));
+
+  let rawBody: string;
   try {
-    const rawBody = await req.text();
-    const body: MercadoPagoWebhookBody = JSON.parse(rawBody);
-
-    // 1. Verificación de seguridad inmediata
-    const secret = process.env.MERCADOPAGO_WEBHOOK_SECRET;
-    if (secret && !verifySignature(req, rawBody, secret)) {
-      console.error("Fallo en la verificación de la firma. Petición ignorada.");
-      // Respondemos OK para que MP no reintente con una firma inválida.
-      return new NextResponse("Firma inválida.", { status: 200 });
-    }
-
-    // 2. Si es una notificación de pago, disparamos la tarea de fondo
-    if (body.type === "payment" && body.data?.id) {
-      const internalApiUrl = new URL(
-        "/api/webhooks/process-payment",
-        req.nextUrl.origin
-      );
-
-      // Usamos fetch para llamar a nuestra propia API interna.
-      // NO usamos 'await' para que esta función responda de inmediato.
-      fetch(internalApiUrl.toString(), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          // Añadimos una cabecera de seguridad para que solo nuestra app pueda llamar a la API interna
-          "X-Internal-Secret": process.env.INTERNAL_API_SECRET || "",
-        },
-        body: JSON.stringify({
-          paymentId: body.data.id,
-          userId: body.user_id,
-        }),
-      });
-    }
-
-    // 3. Respondemos 200 OK a Mercado Pago INMEDIATAMENTE
-    return new NextResponse("Notificación recibida y encolada.", { status: 200 });
-  } catch (error) {
-    console.error("Error inicial en el webhook receptor:", error);
-    // En caso de error de parseo, también respondemos 200 para evitar reintentos infinitos.
-    return new NextResponse("Cuerpo de la petición inválido.", { status: 200 });
+    rawBody = await req.text();
+    console.log("Raw body:", rawBody);
+  } catch (err) {
+    console.error("No se pudo leer el body:", err);
+    return new NextResponse("Bad Request", { status: 200 });
   }
+
+  let body: any = {};
+  try {
+    // Si viene como JSON
+    if (req.headers.get("content-type")?.includes("application/json")) {
+      body = JSON.parse(rawBody);
+    } else {
+      // Si viene como x-www-form-urlencoded → lo parseamos manual
+      body = Object.fromEntries(new URLSearchParams(rawBody));
+    }
+  } catch (err) {
+    console.error("Error parseando body:", err);
+  }
+
+  console.log("Webhook body final:", body);
+
+  return new NextResponse("OK", { status: 200 });
 }
 
+
+// --- Handler principal ultrarrápido ---
+// export async function POST(req: NextRequest) {
+//   console.log("--- INICIANDO WEBHOOK RECEPTOR ---");
+//   try {
+//     const rawBody = await req.text();
+//     console.log("Paso 1: Body recibido como texto.");
+//     const body: MercadoPagoWebhookBody = JSON.parse(rawBody);
+//     console.log("Paso 2: Body parseado a JSON.");
+
+//     const secret = process.env.MERCADOPAGO_WEBHOOK_SECRET;
+//     if (secret && !verifySignature(req, rawBody, secret)) {
+//       console.error("Fallo en la verificación de la firma. Petición ignorada.");
+//       return new NextResponse("Firma inválida.", { status: 200 });
+//     }
+//     console.log("Paso 3: Verificación de firma completada.");
+
+//     if (body.type === "payment" && body.data?.id) {
+//       console.log("Paso 4: Es una notificación de pago. Preparando llamada interna...");
+//       const internalApiUrl = new URL("/api/webhooks/process-payment", req.nextUrl.origin);
+
+//       // --- BLOQUE DE DIAGNÓSTICO #2 ---
+//       // Envolvemos el fetch en un try/catch para ver si está fallando.
+//       try {
+//         fetch(internalApiUrl.toString(), {
+//           method: "POST",
+//           headers: {
+//             "Content-Type": "application/json",
+//             "X-Internal-Secret": process.env.INTERNAL_API_SECRET || "",
+//           },
+//           body: JSON.stringify({
+//             paymentId: body.data.id,
+//             userId: body.user_id,
+//           }),
+//         });
+//         console.log("Paso 5: Llamada a la API interna DISPARADA (sin await).");
+//       } catch (fetchError) {
+//         console.error("💥 ERROR CRÍTICO AL INTENTAR LLAMAR A LA API INTERNA:", fetchError);
+//       }
+//     }
+
+//     console.log("Paso 6: Respondiendo 200 OK a Mercado Pago.");
+//     return new NextResponse("Notificación recibida y encolada.", { status: 200 });
+
+//   } catch (error) {
+//     console.error("💥 ERROR FATAL EN EL WEBHOOK RECEPTOR:", {
+//       message: (error as Error).message,
+//       stack: (error as Error).stack,
+//     });
+//     return new NextResponse("Cuerpo de la petición inválido o error fatal.", { status: 200 });
+//   }
+// }

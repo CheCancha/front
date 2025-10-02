@@ -5,16 +5,17 @@ import SimpleCrypto from "simple-crypto-js";
 
 // --- Lógica de procesamiento de pagos (trabajo pesado) ---
 export async function POST(req: NextRequest) {
+  console.log("--- INICIANDO API DE PROCESAMIENTO DE PAGO ---");
+
   try {
-    // 1. Verificación de seguridad: solo nuestra app puede llamar a este endpoint.
     const internalSecret = req.headers.get("X-Internal-Secret");
     if (internalSecret !== process.env.INTERNAL_API_SECRET) {
       console.warn("Intento de acceso no autorizado a la API de procesamiento.");
       return new NextResponse("No autorizado.", { status: 401 });
     }
+    console.log("Clave interna verificada.");
 
     const { paymentId, userId } = await req.json();
-
     if (!paymentId || !userId) {
       return new NextResponse("Faltan datos (paymentId, userId).", { status: 400 });
     }
