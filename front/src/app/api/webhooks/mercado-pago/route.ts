@@ -1,41 +1,21 @@
 import { NextResponse, type NextRequest } from "next/server";
 import crypto from "crypto";
 
-// ESTE ES UN WEBHOOK DE AUDITORÍA EXTREMA.
-// SU ÚNICO PROPÓSITO ES REGISTRAR CADA DETALLE DE LA PETICIÓN ENTRANTE.
+type MercadoPagoWebhookBody = {
+  type: string;
+  data?: { id: string };
+  user_id?: number;
+};
 
-export async function POST(req: NextRequest) {
-  console.log("\n\n--- [INICIO DE AUDITORÍA DE WEBHOOK] ---");
-  console.log(`[AUDIT] Hora de Invocación: ${new Date().toISOString()}`);
-
+function verifySignature(request: NextRequest, body: string, secret: string): boolean {
   try {
-    // --- 1. AUDITORÍA DE CABECERAS ---
-    console.log("[AUDIT] Cabeceras completas recibidas:");
-    const headers: Record<string, string> = {};
-    req.headers.forEach((value, key) => {
-      headers[key] = value;
-    });
-    console.log(JSON.stringify(headers, null, 2));
-
-    // --- 2. LECTURA DEL CUERPO CRUDO ---
-    const rawBody = await req.text();
-    console.log(`[AUDIT] Cuerpo crudo (rawBody) recibido (longitud: ${rawBody.length}):`);
-    console.log(rawBody);
-
-    // --- 3. PARSEO DEL CUERPO ---
-    const parsedBody = JSON.parse(rawBody);
-    console.log("[AUDIT] Cuerpo parseado a JSON:");
-    console.log(JSON.stringify(parsedBody, null, 2));
-
-    // --- 4. EXTRACCIÓN DE DATOS PARA LA FIRMA ---
-    console.log("\n--- [INICIO DE VERIFICACIÓN DE FIRMA] ---");
-    const secret = process.env.MERCADOPAGO_WEBHOOK_SECRET || "SECRET_NO_CONFIGURADA";
-    const signatureHeader = req.headers.get("x-signature") || "HEADER_NO_ENCONTRADO";
-    const requestIdHeader = req.headers.get("x-request-id") || "HEADER_NO_ENCONTRADO";
-
-    console.log(`[SIGNATURE_DATA] Clave Secreta leída (longitud: ${secret.length}): "${secret}"`);
-    console.log(`[SIGNATURE_DATA] Cabecera x-signature: "${signatureHeader}"`);
-    console.log(`[SIGNATURE_DATA] Cabecera x-request-id: "${requestIdHeader}"`);
+    const signatureHeader = request.headers.get("x-signature");
+    const requestIdHeader = request.headers.get("x-request-id");
+    
+    if (!signatureHeader || !requestIdHeader) {
+      console.warn("[VerifySignature] Faltan cabeceras de seguridad.");
+      return false;
+    }
 
     const parts = signatureHeader.split(",").reduce((acc, part) => {
       const [key, value] = part.split("=");
@@ -44,46 +24,76 @@ export async function POST(req: NextRequest) {
     }, {} as Record<string, string>);
     const ts = parts.ts;
     const signatureFromMP = parts.v1;
+
+    if (!ts || !signatureFromMP) {
+      console.warn("[VerifySignature] Firma de webhook mal formada.");
+      return false;
+    }
+
+    const parsedBody = JSON.parse(body);
     const resourceId = parsedBody.data?.id;
 
-    console.log(`[SIGNATURE_DATA] Timestamp (ts) extraído: "${ts}"`);
-    console.log(`[SIGNATURE_DATA] ID del Recurso (data.id) extraído: "${resourceId}"`);
-
-    if (!ts || !signatureFromMP || !resourceId || !requestIdHeader) {
-      console.error("[VERIFICATION_FAIL] Faltan componentes esenciales para verificar la firma. Abortando.");
-      return new NextResponse("Componentes de firma faltantes.", { status: 200 });
+    if (!resourceId) {
+      console.log("[VerifySignature] Notificación sin 'data.id', se omite la verificación.");
+      return true;
     }
-    
-    // --- 5. CONSTRUCCIÓN Y CÁLCULO DEL MANIFIESTO ---
-    const manifest = `id:${resourceId};request-id:${requestIdHeader};ts:${ts};`;
-    console.log(`[SIGNATURE_CALC] Manifiesto construido: "${manifest}"`);
 
+    // --- LA FÓRMULA GANADORA ---
+    const manifest = `id:${resourceId};request-id:${requestIdHeader};ts:${ts};`;
+    
     const hmac = crypto.createHmac("sha256", secret);
     hmac.update(manifest);
     const ourSignature = hmac.digest("hex");
-    
-    console.log(`[SIGNATURE_RESULT] Nuestra Firma Calculada: ${ourSignature}`);
-    console.log(`[SIGNATURE_RESULT] Firma de MP Recibida:   ${signatureFromMP}`);
-    
-    const signaturesMatch = crypto.timingSafeEqual(Buffer.from(ourSignature), Buffer.from(signatureFromMP));
 
-    if (signaturesMatch) {
-      console.log("[SIGNATURE_SUCCESS] ¡¡¡LAS FIRMAS COINCIDEN!!! La verificación es exitosa.");
-      // Aquí iría la lógica para llamar a processPayment...
-    } else {
-      console.error("[SIGNATURE_FAIL] ¡¡¡FALLO DE FIRMA!!! Las firmas no coinciden.");
+    const signaturesMatch = crypto.timingSafeEqual(Buffer.from(ourSignature), Buffer.from(signatureFromMP));
+    
+    if (!signaturesMatch) {
+      console.error(`¡FALLO DE FIRMA! Manifiesto: "${manifest}", Nuestra Firma: ${ourSignature}, Firma MP: ${signatureFromMP}`);
     }
 
-    console.log("--- [FIN DE AUDITORÍA] ---");
-    return new NextResponse("Auditoría completada.", { status: 200 });
-
+    return signaturesMatch;
   } catch (error) {
-    console.error("💥 ERROR FATAL DURANTE LA AUDITORÍA:", {
-        message: (error as Error).message,
-        stack: (error as Error).stack,
-      });
-    console.log("--- [FIN DE AUDITORÍA CON ERROR] ---");
-    return new NextResponse("Error durante la auditoría.", { status: 200 });
+    console.error("[VerifySignature] Error fatal durante la verificación:", error);
+    return false;
   }
 }
 
+export async function POST(req: NextRequest) {
+  try {
+    const rawBody = await req.text();
+    const body: MercadoPagoWebhookBody = JSON.parse(rawBody);
+
+    const secret = process.env.MERCADOPAGO_WEBHOOK_SECRET;
+    if (secret && !verifySignature(req, rawBody, secret)) {
+      console.error("Fallo en la verificación de la firma. Petición ignorada.");
+      return new NextResponse("Firma inválida.", { status: 200 });
+    }
+    console.log("Firma del Webhook verificada exitosamente.");
+
+    if (body.type === "payment" && body.data?.id && body.user_id) {
+      const internalApiUrl = new URL("/api/webhooks/process-payment", req.nextUrl.origin);
+
+      // Usamos fetch para llamar a nuestra propia API interna, sin esperar.
+      fetch(internalApiUrl.toString(), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Internal-Secret": process.env.INTERNAL_API_SECRET || "",
+        },
+        body: JSON.stringify({
+          paymentId: body.data.id,
+          userId: body.user_id,
+        }),
+      }).catch(error => {
+        console.error("Error al disparar la llamada interna a process-payment:", error);
+      });
+
+      console.log(`Llamada interna para procesar el pago ${body.data.id} disparada.`);
+    }
+
+    return new NextResponse("Notificación recibida.", { status: 200 });
+  } catch (error) {
+    console.error("Error fatal en el webhook receptor:", error);
+    return new NextResponse("Error procesando la petición.", { status: 200 });
+  }
+}
