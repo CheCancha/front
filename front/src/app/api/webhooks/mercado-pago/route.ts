@@ -2,10 +2,16 @@ import { NextResponse, type NextRequest } from "next/server";
 import crypto from "crypto";
 
 type MercadoPagoWebhookBody = {
-  id?: number; // Añadimos el id de la notificación
+  id?: number;
   type: string;
   data?: { id: string };
   user_id?: number;
+  // Añadimos los campos que ChatGPT sugiere que podrían estar en el manifest
+  live_mode?: boolean;
+  date_created?: string;
+  application_id?: number;
+  version?: number;
+  attempts?: number;
 };
 
 function verifySignature(request: NextRequest, body: string, secret: string): boolean {
@@ -24,8 +30,6 @@ function verifySignature(request: NextRequest, body: string, secret: string): bo
     }, {} as Record<string, string>);
     const ts = parts.ts;
     const signatureFromMP = parts.v1;
-    console.log(`[VerifySignature] Timestamp (ts) extraído: ${ts}`);
-    console.log(`[VerifySignature] Firma de MP (v1) extraída: ${signatureFromMP}`);
 
     if (!ts || !signatureFromMP) {
       console.warn("[VerifySignature] Firma de webhook mal formada.");
@@ -34,16 +38,28 @@ function verifySignature(request: NextRequest, body: string, secret: string): bo
 
     const parsedBody: MercadoPagoWebhookBody = JSON.parse(body);
     
-    // --- ¡AQUÍ ESTÁ LA NUEVA LÓGICA DE CHATGPT! ---
-    // Si la notificación no trae un "id" en la raíz, no se puede verificar.
-    if (!parsedBody.id) {
-        console.log("[VerifySignature] Notificación sin 'id' en la raíz, se omite la verificación.");
-        return true; // Se deja pasar para analizar el payload en los logs.
+    // --- ¡AQUÍ ESTÁ LA NUEVA LÓGICA FLEXIBLE DE CHATGPT! ---
+    let notificationId: string | number | undefined = undefined;
+
+    // Priorizamos el 'id' de la raíz, que es el id de la notificación
+    if (parsedBody.id) {
+      notificationId = parsedBody.id;
+      console.log("[VerifySignature] Usando 'id' de la raíz:", notificationId);
+    } 
+    // Si no existe, usamos 'data.id', que es el id del recurso (pago)
+    else if (parsedBody.data?.id) {
+      notificationId = parsedBody.data.id;
+      console.log("[VerifySignature] Usando 'data.id':", notificationId);
     }
 
-    // Se construye el manifest con el 'id' de la notificación, no con 'data.id'.
-    const manifest = `id:${parsedBody.id};ts:${ts}`;
-    console.log(`[VerifySignature] Manifiesto construido (nueva lógica): "${manifest}"`);
+    if (!notificationId) {
+      console.log("[VerifySignature] Notificación sin 'id' ni 'data.id'. Se omite verificación.");
+      return true;
+    }
+
+    // Se construye el manifest con 'id:' y el ID encontrado, sin punto y coma final.
+    const manifest = `id:${notificationId};ts:${ts}`;
+    console.log(`[VerifySignature] Manifiesto construido (lógica flexible): "${manifest}"`);
     
     const hmac = crypto.createHmac("sha256", secret);
     hmac.update(manifest);
@@ -96,3 +112,4 @@ export async function POST(req: NextRequest) {
     return new NextResponse("Error procesando la petición.", { status: 200 });
   }
 }
+
