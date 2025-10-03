@@ -76,7 +76,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [isUpdatingInfo, setIsUpdatingInfo] = useState(false);
   
-  // --- NUEVOS ESTADOS PARA CANCELACIÓN ---
+  // --- ESTADOS PARA CANCELACIÓN ---
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [bookingToCancel, setBookingToCancel] = useState<Booking | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
@@ -88,7 +88,6 @@ export default function ProfilePage() {
   });
 
   const fetchProfile = async () => {
-    // No mostramos el spinner principal al refrescar, solo al cargar por primera vez.
     if (!loading) setLoading(true); 
     try {
       const res = await fetch("/api/profile");
@@ -188,7 +187,7 @@ export default function ProfilePage() {
       toast.success("Reserva cancelada correctamente.", { id: toastId });
       setIsCancelModalOpen(false);
       setBookingToCancel(null);
-      await fetchProfile(); // Volvemos a cargar todo para que se actualice la lista
+      await fetchProfile();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Error desconocido", { id: toastId, });
     } finally {
@@ -196,7 +195,6 @@ export default function ProfilePage() {
     }
   };
 
-  // Verificamos si la cancelación es a tiempo para mostrar el mensaje correcto
   const isCancellationTimely = useMemo(() => {
     if (!bookingToCancel) return false;
     const now = new Date();

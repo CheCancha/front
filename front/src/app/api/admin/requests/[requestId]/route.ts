@@ -19,7 +19,6 @@ export async function PATCH(
       return new NextResponse("No autorizado", { status: 401 });
     }
 
-    // Await the params
     const { requestId } = await context.params;
 
     if (!requestId) {

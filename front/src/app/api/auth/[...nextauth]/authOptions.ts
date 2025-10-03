@@ -47,19 +47,15 @@ export const authOptions: NextAuthOptions = {
 
         const { login, password } = credentials;
 
-        // --- LÓGICA DE BÚSQUEDA INTELIGENTE ---
-        // Verificamos si el 'login' parece un email
         const isEmail = login.includes("@");
 
         let user;
         if (isEmail) {
-          // Si es un email, buscamos por email
           user = await db.user.findUnique({
             where: { email: login.toLowerCase() },
             include: { managedComplex: { select: { id: true } } },
           });
         } else {
-          // Si no, asumimos que es un teléfono y lo normalizamos
           const normalizedPhone = normalizePhoneNumber(login);
           user = await db.user.findUnique({
             where: { phone: normalizedPhone },

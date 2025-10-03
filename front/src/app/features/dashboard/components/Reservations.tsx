@@ -6,7 +6,6 @@ import { es } from "date-fns/locale";
 import { Clock, Frown } from "lucide-react";
 
 // --- TIPOS ---
-// Este es el tipo que usa nuestro componente internamente (con la fecha ya convertida)
 type UpcomingBooking = {
   id: string;
   guestName: string;
@@ -16,13 +15,12 @@ type UpcomingBooking = {
   isPaid: boolean;
 };
 
-// --- NUEVO --- Este es el tipo de dato que viene DIRECTO de la API (con la fecha como string)
+//  Este es el tipo de dato que viene DIRECTO de la API (con la fecha como string)
 type RawApiResponse = Omit<UpcomingBooking, "date"> & {
   date: string;
 };
 
 // --- COMPONENTES AUXILIARES DE ESTADO ---
-
 const ReservationsSkeleton = () => (
   <div className="space-y-2 py-2 animate-pulse">
     {[...Array(5)].map((_, i) => (
@@ -93,12 +91,11 @@ export function Reservations({ complexId }: { complexId: string }) {
           throw new Error("No se pudo conectar con el servidor.");
         }
 
-        // --- CORREGIDO --- '
         const rawBookings: RawApiResponse[] = await res.json();
 
         const formattedBookings = rawBookings.map((b) => ({
           ...b,
-          date: new Date(b.date), // Convertimos el string a Date
+          date: new Date(b.date),
         }));
 
         setBookings(formattedBookings);

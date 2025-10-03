@@ -122,14 +122,25 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, club, cour
         }),
       });
 
-      const responseData = await response.json();
       if (!response.ok) {
-        throw new Error(responseData.message || "No se pudo generar el link de pago.");
+        toast.dismiss();
+        
+        if (response.status === 409) {
+          toast.error("¡Ups! Alguien acaba de reservar este horario. Por favor, elige otro.", { duration: 5000 });
+          handleClose();
+        } else {
+          const errorData = await response.json().catch(() => ({ message: "No se pudo generar el link de pago." }));
+          throw new Error(errorData.message);
+        }
+        return;
       }
+      
+      const responseData = await response.json();
       setPreferenceData({
         id: responseData.preferenceId,
         publicKey: responseData.publicKey,
       });
+      toast.dismiss();
     } catch (error) {
       toast.dismiss();
       toast.error(error instanceof Error ? error.message : "Error desconocido.");
@@ -178,13 +189,12 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, club, cour
                       </label>
                       <input type="text" id="guestName" value={guestName} onChange={(e) => setGuestName(e.target.value)} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" placeholder="Juan Pérez" />
                     </div>
-                    {/* --- NUEVO --- Campo de Teléfono para Invitado */}
                     <div>
                       <label htmlFor="guestPhone" className="block text-sm font-semibold text-gray-700 mb-1">
                         <Phone className="inline-block w-4 h-4 mr-1" /> Teléfono (WhatsApp)
                       </label>
                       <input type="tel" id="guestPhone" value={guestPhone} onChange={(e) => setGuestPhone(e.target.value)} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" placeholder="3491123456" />
-                       <p className="text-xs text-gray-500 mt-1">Lo usaremos para contactarte por tu reserva si es necesario.</p>
+                      <p className="text-xs text-gray-500 mt-1">Lo usaremos para contactarte por tu reserva si es necesario.</p>
                     </div>
                   </div>
                 )}
@@ -208,7 +218,6 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, club, cour
                   </div>
                 </div>
                 
-                 {/* --- NUEVO --- Mensaje sobre política de cancelación */}
                 <p className="text-sm text-center text-gray-500 mt-4">
                   ⚠️ Podrás cancelar sin costo hasta <strong>{club.cancellationPolicyHours} horas</strong> antes del turno.
                 </p>

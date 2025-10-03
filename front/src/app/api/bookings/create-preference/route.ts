@@ -58,9 +58,8 @@ async function createPendingBookingInTransaction(
   userId: string | undefined,
   court: Court
 ): Promise<Booking> {
-  const bookingDate = new Date(`${data.date}T${data.time}`); // Usamos la fecha y hora completas
+  const bookingDate = new Date(`${data.date}T${data.time}`); 
 
-  // Calculamos el inicio y el fin del día para la consulta
   const startOfBookingDay = startOfDay(bookingDate);
   const endOfBookingDay = endOfDay(bookingDate);
 
@@ -115,7 +114,7 @@ async function createPendingBookingInTransaction(
   });
 }
 
-// --- 3. Handler Principal (Orquestador) ---
+// --- 3. Handler  ---
 export async function POST(req: Request) {
   try {
     const baseURL = process.env.NEXT_PUBLIC_BASE_URL;
@@ -168,10 +167,8 @@ export async function POST(req: Request) {
   const { accessToken, publicKey } = getMercadoPagoCredentials(complexData);
   const preferenceClient = getMercadoPagoPreferenceClient(accessToken);
   
-  // Construimos la URL del webhook y la mostramos en los logs.
   const notificationUrl = `${baseURL}/api/webhooks/mercado-pago`;
   console.log(`[create-preference] URL de Notificación que se enviará a Mercado Pago: "${notificationUrl}"`);
-  // --- FIN DE LA PRUEBA ---
 
   const formattedDateForMP = format(new Date(`${bookingData.date}T00:00:00`), "dd/MM/yyyy");
 

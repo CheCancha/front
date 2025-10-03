@@ -65,10 +65,8 @@ const BookingFormModal: React.FC<BookingModalProps> = ({
     depositPaid: 0,
   });
   const [isProcessing, setIsProcessing] = useState(false);
-  // --- NUEVO ESTADO PARA LA ADVERTENCIA ---
   const [warning, setWarning] = useState<string | null>(null);
 
-  // --- useEffect para inicializar el formulario ---
   useEffect(() => {
     if (isOpen) {
       if (isEditing && initialValues) {
@@ -92,9 +90,8 @@ const BookingFormModal: React.FC<BookingModalProps> = ({
     }
   }, [isOpen, isEditing, initialValues, courts, timeSlots]);
 
-  // --- NUEVO useEffect para validar superposición en tiempo real ---
   useEffect(() => {
-    if (!isOpen) return; // No validar si el modal está cerrado
+    if (!isOpen) return;
 
     const selectedCourt = courts.find((c) => c.id === formData.courtId);
     if (!selectedCourt) return;
@@ -104,7 +101,6 @@ const BookingFormModal: React.FC<BookingModalProps> = ({
     const newEndMinutes = newStartMinutes + selectedCourt.slotDurationMinutes;
 
     const overlap = existingBookings.find((booking) => {
-      // Ignoramos la propia reserva que estamos editando
       if (isEditing && booking.id === formData.bookingId) {
         return false;
       }
@@ -155,7 +151,6 @@ const BookingFormModal: React.FC<BookingModalProps> = ({
       alert("El nombre del cliente es obligatorio.");
       return;
     }
-    // No permitir enviar si hay una advertencia (doble seguridad)
     if (warning && !isEditing) {
       toast.error(warning);
       return;
@@ -179,7 +174,7 @@ const BookingFormModal: React.FC<BookingModalProps> = ({
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
             className="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-8 m-4"
-            onClick={(e) => e.stopPropagation()} // Evita que se cierre al hacer clic dentro
+            onClick={(e) => e.stopPropagation()}
           >
             <button
               onClick={onClose}

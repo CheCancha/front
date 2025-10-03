@@ -9,7 +9,6 @@ import {
 } from "@/shared/components/ui/Tabs";
 import { FileText, Building, Users } from "lucide-react";
 
-// El tipo puede quedar fuera, es una buena práctica.
 type ComplexWithManager = {
   id: string;
   name: string;

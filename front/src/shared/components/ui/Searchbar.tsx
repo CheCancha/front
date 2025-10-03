@@ -1,7 +1,7 @@
 "use client";
 
 import "@/styles/day-picker.css";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Select, {
   OptionProps,
   SingleValueProps,
@@ -17,6 +17,7 @@ import { cn } from "@/shared/lib/utils";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { DatePicker, TimePicker } from "./DateTimePicker";
+import toast from "react-hot-toast";
 
 // --- Tipos y Opciones para el Select ---
 interface ApiSport {
@@ -29,6 +30,10 @@ interface SportOption {
   value: string;
   label: string;
   icon: React.ElementType;
+}
+interface CitySuggestion {
+  nombre: string;
+  provincia: string;
 }
 
 const iconMap: { [key: string]: React.ElementType } = {
@@ -51,12 +56,25 @@ interface SearchBarProps {
   initialTime?: string;
 }
 
+// --- ¡AQUÍ ESTÁ LA CORRECCIÓN! ---
+// Implementamos una versión genérica y segura de 'debounce' sin usar 'any'.
+const debounce = <Params extends unknown[]>(
+  func: (...args: Params) => unknown,
+  delay: number
+) => {
+  let timeoutId: ReturnType<typeof setTimeout>;
+  return (...args: Params): void => {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => func(...args), delay);
+  };
+};
+
 export const SearchBar: React.FC<SearchBarProps> = ({
   className,
   variant = "default",
   initialCity = "Tostado",
   initialSport = "",
-  initialDate = new Date(),
+  initialDate,
   initialTime = "",
 }) => {
   const router = useRouter();
@@ -66,6 +84,9 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   const [sportOptions, setSportOptions] = useState<SportOption[]>([]);
   const [isLoadingSports, setIsLoadingSports] = useState(true);
   const [sport, setSport] = useState<SportOption | null>(null);
+  const [cityQuery, setCityQuery] = useState(initialCity);
+  const [citySuggestions, setCitySuggestions] = useState<CitySuggestion[]>([]);
+  const [isCityInputFocused, setIsCityInputFocused] = useState(false);
 
   useEffect(() => {
     const fetchSports = async () => {
@@ -80,7 +101,6 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         }));
         setSportOptions(options);
 
-        // Si hay un deporte inicial en la URL, lo seleccionamos
         if (initialSport) {
             const initialOption = options.find(opt => opt.value === initialSport);
             if (initialOption) setSport(initialOption);
@@ -97,19 +117,59 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   }, [initialSport]);
 
 
+  const fetchCitySuggestions = useMemo(
+    () =>
+      debounce(async (query: string) => {
+        if (query.length < 3) {
+          setCitySuggestions([]);
+          return;
+        }
+        try {
+          const response = await fetch(`/api/cities?query=${encodeURIComponent(query)}`);
+          const data = await response.json();
+          setCitySuggestions(data.cities || []);
+        } catch (error) {
+          console.error("Error fetching city suggestions:", error);
+        }
+      }, 200),
+    [] 
+  );
+
+  useEffect(() => {
+    fetchCitySuggestions(cityQuery);
+  }, [cityQuery, fetchCitySuggestions]);
+
+  const handleCityInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCityQuery(e.target.value);
+    setCity(e.target.value);
+  };
+  
+  const handleSuggestionClick = (suggestion: CitySuggestion) => {
+    const fullCityName = `${suggestion.nombre}, ${suggestion.provincia}`;
+    setCityQuery(fullCityName);
+    setCity(fullCityName);
+    setCitySuggestions([]);
+    setIsCityInputFocused(false);
+  };
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     const params = new URLSearchParams();
 
-    if (city) params.set("city", city);
-    if (sport) params.set("sport", sport.value); 
+    if (city) params.set("city", city.split(',')[0].trim());
+    if (sport) params.set("sport", sport.value);
     if (date) params.set("date", format(date, "yyyy-MM-dd"));
     if (time) params.set("time", time);
+    
+    if (!city) {
+      toast.error("Por favor, selecciona una ciudad para buscar.");
+      return;
+    }
 
     router.push(`/canchas?${params.toString()}`);
   };
 
-  // --- Clases de Tailwind ---
+  // El resto del componente (clases de Tailwind y JSX) no necesita cambios...
   const containerClass =
     variant === "hero"
       ? "bg-white text-neutral-900 rounded-lg p-4 shadow-sm max-w-7xl mx-auto"
@@ -128,7 +188,6 @@ export const SearchBar: React.FC<SearchBarProps> = ({
       ? "w-full lg:col-span-1 bg-brand-orange hover:bg-neutral-950 text-white font-medium py-3 px-6 rounded-md flex items-center justify-center transition-colors duration-300 cursor-pointer"
       : "w-full lg:col-span-1 bg-brand-orange hover:bg-neutral-950 text-white font-medium py-3 px-6 rounded-md flex items-center justify-center transition-colors duration-300 cursor-pointer";
 
-  // Componente personalizado para las opciones del menú
   const CustomOption = (props: OptionProps<SportOption>) => {
     const Icon = props.data.icon;
     return (
@@ -141,7 +200,6 @@ export const SearchBar: React.FC<SearchBarProps> = ({
     );
   };
 
-  // Componente personalizado para el valor seleccionado
   const CustomSingleValue = (props: SingleValueProps<SportOption>) => {
     const Icon = props.data.icon;
     return (
@@ -154,7 +212,6 @@ export const SearchBar: React.FC<SearchBarProps> = ({
     );
   };
 
-  // Componente personalizado para el placeholder
   const CustomPlaceholder = (props: PlaceholderProps<SportOption>) => {
     return (
       <components.Placeholder {...props}>
@@ -172,17 +229,32 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         onSubmit={handleSearch}
         className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-3 items-center"
       >
-        {/* Input: Ciudad */}
+        {/* Input: Ciudad con Autocompletado */}
         <div className="relative w-full">
           <MapPinIcon className={iconClass} />
           <input
             type="text"
             placeholder="Ciudad"
-            value={city}
-            onChange={(e) => setCity(e.target.value)}
+            value={cityQuery}
+            onChange={handleCityInputChange}
+            onFocus={() => setIsCityInputFocused(true)}
+            onBlur={() => setTimeout(() => setIsCityInputFocused(false), 200)} // Añadimos un pequeño delay al blur
             required
             className={inputClass}
           />
+          {isCityInputFocused && citySuggestions.length > 0 && (
+            <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-md shadow-lg z-20 max-h-48 overflow-y-auto">
+              {citySuggestions.map((suggestion, index) => (
+                <div
+                  key={index}
+                  className="px-4 py-2 cursor-pointer hover:bg-gray-100"
+                  onMouseDown={() => handleSuggestionClick(suggestion)}
+                >
+                  {suggestion.nombre}, {suggestion.provincia}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Input: Deporte con React-Select */}

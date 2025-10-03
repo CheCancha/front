@@ -13,17 +13,14 @@ interface InscriptionRequestsProps {
 }
 
 export default function InscriptionRequests({ initialRequests }: InscriptionRequestsProps) {
-  // El estado ahora se inicializa y confía en los datos del servidor.
   const [requests, setRequests] = useState(initialRequests);
-  // isLoading ya no es necesario para la carga inicial.
   const [isRefreshing, setIsRefreshing] = useState(false); 
   const [error, setError] = useState<string | null>(null); 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<InscriptionRequest | null>(null);
 
-  // La función fetch ahora es para 'refrescar' la lista.
   const fetchRequests = useCallback(async () => {
-    setIsRefreshing(true); // Usamos un nuevo estado para el spinner de refresco.
+    setIsRefreshing(true);
     setError(null);
     try {
       const response = await fetch('/api/admin/requests');
@@ -39,7 +36,6 @@ export default function InscriptionRequests({ initialRequests }: InscriptionRequ
     }
   }, []);
 
-  // Ya no necesitamos el useEffect para la carga inicial.
 
   const handleReviewClick = (request: InscriptionRequest) => {
     setSelectedRequest(request);
@@ -52,11 +48,10 @@ export default function InscriptionRequests({ initialRequests }: InscriptionRequ
   };
 
   const handleActionComplete = () => {
-    fetchRequests(); // Llama a la función para refrescar la lista.
+    fetchRequests(); 
     handleCloseModal();
   };
   
-  // El error se puede mostrar directamente.
   if (error) {
     return <p className="text-red-600 p-4">{error}</p>;
   }

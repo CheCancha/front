@@ -31,7 +31,7 @@ const NoDataMessage = () => (
   </div>
 );
 
-// --- COMPONENTE CORREGIDO ---
+// --- COMPONENTE  ---
 const WeekSelector = ({
   numberOfWeeks,
   selectedWeek,
@@ -41,14 +41,12 @@ const WeekSelector = ({
   selectedWeek: number;
   onWeekChange: (weekIndex: number) => void;
 }) => (
-  // Se ha añadido overflow-x-auto para permitir el scroll horizontal en móviles
   <div className="border-b border-gray-200 mb-4 overflow-x-auto whitespace-nowrap">
     <div className="flex space-x-2">
         {Array.from({ length: numberOfWeeks }).map((_, index) => (
         <button
             key={index}
             onClick={() => onWeekChange(index)}
-            // Se ha añadido shrink-0 para evitar que los botones se achiquen
             className={cn(
             "px-3 py-2 text-sm font-medium transition-colors shrink-0",
             selectedWeek === index

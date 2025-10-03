@@ -47,7 +47,7 @@ export const authOptions: NextAuthOptions = {
         const user = await db.user.findUnique({
           where: { phone: normalizedPhone },
           include: {
-            managedComplex: { // Incluimos la relación del complejo
+            managedComplex: { 
               select: { id: true },
             },
           },

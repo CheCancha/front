@@ -33,11 +33,12 @@ const ButtonSecondary = ({ href, className, children }: { href: string; classNam
   </a>
 );
 
+// --- ¡AQUÍ ESTÁN LOS PRECIOS REBALANCEADOS! ---
 const plans = [
   {
     name: "Plan Básico",
-    priceMonthly: 24990,
-    priceYearly: 24990 * 12 * 0.85,
+    priceMonthly: 29990, // Precio mensual aumentado
+    priceYearly: 29990 * 10, // Descuento estandarizado: 2 meses gratis
     description: "Para complejos de hasta 3 canchas.",
     features: [
       "Perfil público en CheCancha",
@@ -50,8 +51,8 @@ const plans = [
   },
   {
     name: "Plan Pro",
-    priceMonthly: 54990,
-    priceYearly: 450000,
+    priceMonthly: 54990, // Precio mensual se mantiene
+    priceYearly: 54990 * 10, // Descuento estandarizado: 2 meses gratis
     description: "La solución completa para optimizar tu gestión.",
     features: [
       "Todo lo del Plan Básico",
@@ -122,11 +123,11 @@ export const PricingSection = () => {
             />
           </button>
           <span className={cn("font-semibold", billingCycle === "yearly" ? "text-foreground" : "text-paragraph")}>
-            Pago Anual <span className="text-brand-green font-bold">(¡Recomendado!)</span>
+            Pago Anual <span className="text-brand-green font-bold">(¡Ahorrá 2 meses!)</span>
           </span>
         </div>
 
-        {/* Tarjetas de Precios - CONTENEDOR MODIFICADO */}
+        {/* Tarjetas de Precios */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
           {plans.map((plan) => (
             <div
@@ -178,10 +179,10 @@ export const PricingSection = () => {
               </div>
               
               <p className={cn("text-sm mb-8 h-5 font-semibold", plan.isPopular ? "text-brand-orange" : "text-brand-green")}>
-                {billingCycle === "yearly" && `¡Ahorrá ${formatPrice(plan.priceMonthly * 12 - plan.priceYearly)} al año!`}
+                {billingCycle === "yearly" && `Pagás ${formatPrice(plan.priceYearly)} en vez de ${formatPrice(plan.priceMonthly * 12)}`}
               </p>
 
-              {/* --- BOTONES --- */}
+              {/* Botones */}
               {plan.isPopular ? (
                 <ButtonPrimary
                   href={`/inscriptions?plan=${encodeURIComponent(plan.name)}`}
@@ -218,4 +219,3 @@ export const PricingSection = () => {
     </motion.section>
   );
 };
-

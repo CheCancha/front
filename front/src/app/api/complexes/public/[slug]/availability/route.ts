@@ -74,7 +74,6 @@ export async function GET(
       return NextResponse.json([]);
     }
 
-    // --- LÓGICA DE DISPONIBILIDAD ACTUALIZADA ---
     const availabilityMap = new Map<string, boolean[]>();
     const totalSlots = (closeHour - openHour) * (60 / timeGridInterval);
 

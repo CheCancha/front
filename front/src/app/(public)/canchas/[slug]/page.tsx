@@ -4,9 +4,12 @@ import "../../../../styles/day-picker.css";
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { MapPin, AlertCircle } from "lucide-react";
+import { MapPin, AlertCircle, Phone, Globe, Mail } from "lucide-react";
+import { FaFacebook, FaInstagram } from "react-icons/fa";
 import { getDay } from "date-fns";
 import { cn } from "@/shared/lib/utils";
+import dynamic from "next/dynamic";
+
 
 // --- Tipos ---
 import type { Amenity, Complex, Court, Image as PrismaImage, Schedule } from "@prisma/client";
@@ -14,13 +17,11 @@ import { AmenityIcon } from "@/shared/components/ui/AmenityIcon";
 export type PriceRule = { id: string; startTime: number; endTime: number; price: number; depositAmount: number; };
 export type CourtWithPriceRules = Court & { priceRules: PriceRule[] };
 
-
 export type ComplexProfileData = Complex & {
   images: PrismaImage[];
   courts: CourtWithPriceRules[];
   schedule: Schedule | null;
   amenities: Amenity[];
-  cancellationPolicyHours: number; // Campo añadido
 };
 export type ValidStartTime = { time: string; courts: { courtId: string; available: boolean }[] };
 
@@ -34,7 +35,13 @@ import { BookingWidget } from "@/app/features/public/components/courts/BookingWi
 import { PageSkeleton } from "@/app/features/public/components/courts/Skeleton";
 import { routes } from "@/routes";
 
-// --- Funciones Helper ---
+// --- Carga dinámica del Mapa ---
+const Map = dynamic(() => import('@/app/features/public/components/courts/Map'), {
+  ssr: false,
+  loading: () => <div className="h-[400px] w-full bg-gray-200 rounded-2xl animate-pulse" />
+});
+
+// ... (función generateWeeklySchedule sin cambios) ...
 const generateWeeklySchedule = (complex: ComplexProfileData) => {
   const schedule = [];
   const dayOrder: {
@@ -67,6 +74,7 @@ const generateWeeklySchedule = (complex: ComplexProfileData) => {
   }
   return schedule;
 };
+
 
 // --- PÁGINA DE PERFIL DEL CLUB ---
 export default function ClubProfilePage() {
@@ -148,15 +156,19 @@ export default function ClubProfilePage() {
 
   const weeklySchedule = generateWeeklySchedule(club);
   const todayIndex = (getDay(new Date()) + 6) % 7;
+  
+  const hasContactInfo = club.contactPhone || club.contactEmail || club.instagramHandle || club.facebookUrl;
 
   return (
     <>
       <div className="bg-background min-h-screen">
         <Navbar />
-        <main className="container mx-auto px-6 py-12">
+        <main className="container mx-auto px-4 sm:px-6 py-12">
           <div className="max-w-7xl mx-auto">
-            <section className="relative mb-8">
+            
+            <section className="relative mb-12 rounded-2xl overflow-hidden">
               <ImageCarousel images={club.images} />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
               <div className="absolute bottom-6 left-6 z-10">
                 <h1
                   className="text-4xl md:text-5xl font-bold text-white"
@@ -172,61 +184,80 @@ export default function ClubProfilePage() {
                 </p>
               </div>
             </section>
+
+            {/* --- LAYOUT DE CONTENIDO PRINCIPAL --- */}
             <div className="grid lg:grid-cols-3 gap-8 items-start">
-              <div className="lg:col-span-2">
+              
+              {/* Columna Principal: Widget de Reservas Y MAPA */}
+              <div className="lg:col-span-2 space-y-8">
                 <BookingWidget
-                  club={club}
-                  onSlotClick={handleSlotClick}
-                  selectedDate={selectedDate}
-                  setSelectedDate={setSelectedDate}
+                    club={club}
+                    onSlotClick={handleSlotClick}
+                    selectedDate={selectedDate}
+                    setSelectedDate={setSelectedDate}
                 />
+
+                {/* --- MAPA APAISADO DEBAJO DEL BOOKING WIDGET --- */}
+                {club.latitude && club.longitude && (
+                  <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+                    <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+                      <MapPin size={20} className="text-brand-orange" />
+                      Ubicación
+                    </h3>
+                    <div className="h-[400px] w-full rounded-lg overflow-hidden z-0">
+                      <Map lat={club.latitude} lng={club.longitude} complexName={club.name} />
+                    </div>
+                  </div>
+                )}
               </div>
+
+              {/* Columna Lateral: Información del Club */}
               <div className="lg:col-span-1 space-y-6">
+                
+                {/* Card de Contacto y Redes */}
+                {hasContactInfo && (
+                  <div className="bg-white rounded-2xl p-6 border border-gray-200">
+                    <h3 className="text-lg font-bold text-foreground mb-4">Contacto y Redes</h3>
+                    <div className="space-y-3">
+                      {club.contactPhone && <InfoItem icon={Phone} text={club.contactPhone} href={`tel:${club.contactPhone}`} />}
+                      {club.contactEmail && <InfoItem icon={Mail} text={club.contactEmail} href={`mailto:${club.contactEmail}`} />}
+                      {club.instagramHandle && <InfoItem icon={FaInstagram} text={`@${club.instagramHandle}`} href={`https://instagram.com/${club.instagramHandle}`} />}
+                      {club.facebookUrl && <InfoItem icon={FaFacebook} text="Facebook" href={club.facebookUrl} />}
+                    </div>
+                  </div>
+                )}
+
+                {/* Card de Horarios */}
                 <div className="bg-white rounded-2xl p-6 border border-gray-200">
-                  <h3 className="text-lg font-bold text-foreground mb-4">
-                    Horarios del Club
-                  </h3>
+                  <h3 className="text-lg font-bold text-foreground mb-4">Horarios</h3>
                   <ul className="space-y-2 text-paragraph">
                     {weeklySchedule.map((item, index) => (
-                      <li
-                        key={item.day}
-                        className={cn(
-                          "flex justify-between text-sm",
-                          index === todayIndex && "font-bold text-brand-orange"
-                        )}
-                      >
+                      <li key={item.day} className={cn("flex justify-between", index === todayIndex && "font-bold text-brand-orange")}>
                         <span>{item.day}</span>
-                        <span>{item.hours}</span>
+                        <span className="font-medium">{item.hours}</span>
                       </li>
                     ))}
                   </ul>
                 </div>
 
-                
-                  {club.amenities.length > 0 && (
-                    <div className="bg-white rounded-2xl p-6 border border-gray-200">
-                      <h3 className="text-lg font-bold text-foreground mb-4">
-                        Servicios Incluidos
-                      </h3>
-                      <ul className="grid grid-cols-2 gap-3 text-paragraph">
-                        {club.amenities.map((amenity) => (
-                          <li
-                            key={amenity.id}
-                            className="flex items-center gap-2 text-sm"
-                          >
-                            <AmenityIcon
-                              iconName={amenity.icon}
-                              className="h-4 w-4 text-brand-orange"
-                            />
-                            {amenity.name}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
+                {/* Card de Servicios */}
+                {club.amenities.length > 0 && (
+                  <div className="bg-white rounded-2xl p-6 border border-gray-200">
+                    <h3 className="text-lg font-bold text-foreground mb-4">Servicios</h3>
+                    <ul className="grid grid-cols-2 gap-x-4 gap-y-3 text-paragraph">
+                      {club.amenities.map((amenity) => (
+                        <li key={amenity.id} className="flex items-center gap-2">
+                          <AmenityIcon iconName={amenity.icon} className="h-4 w-4 text-brand-orange" />
+                          <span className="font-medium">{amenity.name}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             </div>
+
+          </div>
         </main>
         <Footer />
       </div>
@@ -244,3 +275,11 @@ export default function ClubProfilePage() {
     </>
   );
 }
+
+// --- Componente de Ayuda para Items de Contacto ---
+const InfoItem = ({ icon: Icon, text, href }: { icon: React.ElementType; text: string; href: string }) => (
+    <a href={href} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-paragraph hover:text-brand-orange transition-colors group">
+        <Icon size={18} className="text-gray-400 group-hover:text-brand-orange transition-colors" />
+        <span className="font-medium">{text}</span>
+    </a>
+);

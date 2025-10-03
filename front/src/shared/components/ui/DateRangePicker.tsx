@@ -8,12 +8,12 @@ import { DateRange } from "react-day-picker";
 
 import { cn } from "@/shared/lib/utils";
 import { ButtonGhost } from "@/shared/components/ui/Buttons";
-import { Calendar } from "@/shared/components/ui/calendar"; // Y este
+import { Calendar } from "@/shared/components/ui/calendar"; 
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/shared/components/ui/popover"; // Y este
+} from "@/shared/components/ui/popover"; 
 
 interface DateRangePickerProps extends React.ComponentProps<"div"> {
   date: DateRange | undefined;

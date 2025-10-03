@@ -71,7 +71,6 @@ export async function GET() {
       id: booking.id,
       complex: booking.court.complex.name,
       court: booking.court.name,
-      // Usamos toISOString para poder comparar fechas fácilmente en el frontend
       date: booking.date.toISOString(),
       startTime: `${String(booking.startTime).padStart(2, "0")}:${String(
         booking.startMinute || 0

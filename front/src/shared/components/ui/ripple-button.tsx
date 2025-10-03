@@ -52,7 +52,7 @@ const RippleButton = React.forwardRef<HTMLButtonElement, RippleButtonProps>(
       variant,
       size,
       children,
-      rippleColor = "rgba(255, 255, 255, 0.7)", // Un color de ripple neutral
+      rippleColor = "rgba(255, 255, 255, 0.7)",
       duration = 600,
       onClick,
       ...props

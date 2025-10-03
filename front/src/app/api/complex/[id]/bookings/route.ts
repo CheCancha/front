@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { db } from "@/shared/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/authOptions";
-import { startOfDay, endOfDay, startOfToday } from "date-fns";
+import { startOfDay, endOfDay, startOfToday, subMinutes } from "date-fns";
 import { BookingStatus } from "@prisma/client";
 
 // --- GET ---
@@ -19,7 +19,7 @@ export async function GET(
     const { searchParams } = new URL(req.url);
     const complexId = (await context.params).id;
 
-    // --- LÓGICA PARA PRÓXIMAS RESERVAS (WIDGET DEL DASHBOARD) ---
+    // --- LÓGICA PARA PRÓXIMAS RESERVAS  ---
     if (searchParams.get("upcoming") === "true") {
       const today = startOfToday();
       const upcomingBookings = await db.booking.findMany({
@@ -59,18 +59,28 @@ export async function GET(
       });
     }
 
-    const requestedDate = new Date(`${dateString}T00:00:00.000Z`); 
-const startOfRequestedDay = startOfDay(requestedDate);
-const endOfRequestedDay = endOfDay(requestedDate);
+    const requestedDate = new Date(`${dateString}T00:00:00.000Z`);
+    const startOfRequestedDay = startOfDay(requestedDate);
+    const endOfRequestedDay = endOfDay(requestedDate);
 
-const bookings = await db.booking.findMany({
-  where: {
-    court: { complexId: complexId },
-    date: {
-      gte: startOfRequestedDay,
-      lt: endOfRequestedDay,
+    const thirtyMinutesAgo = subMinutes(new Date(), 2);
+
+    const bookings = await db.booking.findMany({
+      where: {
+        court: { complexId: complexId },
+        date: {
+          gte: startOfRequestedDay,
+          lt: endOfRequestedDay,
         },
-        status: { not: BookingStatus.CANCELADO },
+        AND: [
+          { status: { not: BookingStatus.CANCELADO } },
+          {
+            OR: [
+              { status: { not: BookingStatus.PENDIENTE } },
+              { createdAt: { gte: thirtyMinutesAgo } },
+            ],
+          },
+        ],
       },
       include: {
         court: { select: { id: true, name: true, slotDurationMinutes: true } },
@@ -98,15 +108,8 @@ export async function POST(
     }
 
     const body = await req.json();
-    const {
-      courtId,
-      guestName,
-      guestPhone,
-      date,
-      time,
-      status,
-      depositPaid,
-    } = body;
+    const { courtId, guestName, guestPhone, date, time, status, depositPaid } =
+      body;
 
     if (!courtId || !guestName || !date || !time) {
       return new NextResponse("Faltan datos para crear la reserva", {
@@ -136,25 +139,25 @@ export async function POST(
 
     const bookingDate = new Date(`${date}T${time}`);
 
-const newBookingStartMinutes = hour * 60 + minute;
-const newBookingEndMinutes =
-  newBookingStartMinutes + court.slotDurationMinutes;
+    const newBookingStartMinutes = hour * 60 + minute;
+    const newBookingEndMinutes =
+      newBookingStartMinutes + court.slotDurationMinutes;
 
-// 2. Para buscar superposiciones, debemos buscar en TODO el día, no solo a medianoche.
-const startOfBookingDay = startOfDay(bookingDate);
-const endOfBookingDay = endOfDay(bookingDate);
+    // 2. Para buscar superposiciones, debemos buscar en TODO el día, no solo a medianoche.
+    const startOfBookingDay = startOfDay(bookingDate);
+    const endOfBookingDay = endOfDay(bookingDate);
 
-const existingBookings = await db.booking.findMany({
-  where: {
-    courtId,
-    date: {
-      gte: startOfBookingDay,
-      lt: endOfBookingDay,
-    },
-    status: { not: "CANCELADO" },
-  },
-  include: { court: { select: { slotDurationMinutes: true } } },
-});
+    const existingBookings = await db.booking.findMany({
+      where: {
+        courtId,
+        date: {
+          gte: startOfBookingDay,
+          lt: endOfBookingDay,
+        },
+        status: { not: "CANCELADO" },
+      },
+      include: { court: { select: { slotDurationMinutes: true } } },
+    });
 
     const isOverlapping = existingBookings.some((existingBooking) => {
       const existingStartMinutes =
@@ -248,4 +251,3 @@ export async function PATCH(
     return new NextResponse("Error interno del servidor", { status: 500 });
   }
 }
-

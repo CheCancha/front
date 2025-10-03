@@ -17,7 +17,7 @@ export async function middleware(req: NextRequest) {
     pathname.startsWith(routes.auth.ingreso) ||
     pathname.startsWith(routes.auth.registro);
 
-  // --- 1. Manejo de usuarios YA AUTENTICADOS ---
+  // --- 1. Manejo de usuarios AUTENTICADOS ---
   if (token) {
     if (isAuthPage) {
       const redirectUrl = roleRedirects[token.role as string] || routes.public.home;

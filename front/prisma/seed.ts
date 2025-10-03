@@ -11,7 +11,7 @@ const ADMIN_PHONE = "1154702118";
 async function main() {
   console.log("Empezando el script de seeding (modo no destructivo)...");
 
-  // --- SEED DE DEPORTES USANDO  ---
+  // --- SEED DE DEPORTES  ---
   const sportsToCreate = [
     { name: "Fútbol 5", slug: "futbol-5" },
     { name: "Fútbol 7", slug: "futbol-7" },
@@ -32,7 +32,7 @@ async function main() {
   }
   console.log("Deportes verificados/creados.");
 
-  // --- SEED DE AMENITIES USANDO "UPSERT" ---
+  // --- SEED DE AMENITIES ---
   const amenitiesToCreate = [
     { name: "Wi-Fi", slug: "wifi", icon: "Wifi" },
     { name: "Vestuarios", slug: "vestuarios", icon: "ShowerHead" },
@@ -58,7 +58,7 @@ async function main() {
   }
   console.log("Comodidades verificadas/creadas.");
 
-  // --- SEED DE USUARIO ADMIN (NO DESTRUCTIVO) ---
+  // --- SEED DE USUARIO ADMIN ---
   console.log("\n--- Verificando usuario admin ---");
   const existingUser = await prisma.user.findUnique({
     where: { email: ADMIN_EMAIL },

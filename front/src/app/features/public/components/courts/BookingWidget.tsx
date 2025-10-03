@@ -11,6 +11,7 @@ import type {
   CourtWithPriceRules,
   ValidStartTime,
 } from "@/app/(public)/canchas/[slug]/page";
+import { Calendar, Tag, Clock } from "lucide-react";
 
 interface BookingWidgetProps {
   club: ComplexProfileData;
@@ -74,14 +75,18 @@ export const BookingWidget: React.FC<BookingWidgetProps> = ({
   }
 
   return (
-    <div className="bg-white rounded-2xl p-6 border border-gray-200">
-      <h2 className="text-2xl font-bold text-foreground mb-4">
+    <div className="bg-white rounded-2xl p-6 sm:p-8 border border-gray-200">
+      <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-6">
         Reservar un turno
       </h2>
-      <div className="grid md:grid-cols-2 gap-6 mb-6">
+      
+      {/* --- SECCIÓN SUPERIOR: CALENDARIO Y CANCHAS --- */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 mb-8">
+        
+        {/* Columna del Calendario */}
         <div>
-          <label className="text-sm font-semibold text-paragraph mb-2 block">
-            1. Elegí el día
+          <label className="text-sm font-semibold text-paragraph mb-2 flex items-center gap-2">
+            <Calendar size={16} /> 1. Elegí el día
           </label>
           <DayPicker
             mode="single"
@@ -92,20 +97,22 @@ export const BookingWidget: React.FC<BookingWidgetProps> = ({
             disabled={{ before: new Date() }}
           />
         </div>
+
+        {/* Columna de Canchas */}
         <div>
-          <label className="text-sm font-semibold text-paragraph mb-2 block">
-            2. Elegí la cancha
+          <label className="text-sm font-semibold text-paragraph mb-2 flex items-center gap-2">
+            <Tag size={16} /> 2. Elegí la cancha
           </label>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-col space-y-2">
             {club.courts.map((court: CourtWithPriceRules) => (
               <button
                 key={court.id}
                 onClick={() => setSelectedCourt(court)}
                 className={cn(
-                  "px-4 py-2 rounded-full text-sm font-semibold border-2 transition-colors",
+                  "px-4 py-3 rounded-lg text-left font-semibold border-2 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-orange",
                   selectedCourt.id === court.id
-                    ? "bg-brand-orange text-white border-brand-orange"
-                    : "bg-transparent text-foreground border-gray-300 hover:border-brand-orange"
+                    ? "bg-brand-orange text-white border-brand-orange shadow-md"
+                    : "bg-gray-50 text-foreground border-gray-200 hover:border-brand-orange hover:bg-orange-50 cursor-pointer"
                 )}
               >
                 {court.name}
@@ -114,16 +121,18 @@ export const BookingWidget: React.FC<BookingWidgetProps> = ({
           </div>
         </div>
       </div>
-      <div>
-        <label className="text-sm font-semibold text-paragraph mb-2 block">
-          3. Seleccioná un horario de inicio
+
+      {/* --- SECCIÓN INFERIOR: HORARIOS --- */}
+      <div className="border-t border-gray-200 pt-6">
+        <label className="text-sm font-semibold text-paragraph mb-4 flex items-center gap-2">
+          <Clock size={16} /> 3. Seleccioná un horario de inicio
         </label>
         {isAvailabilityLoading ? (
-          <div className="h-40 flex items-center justify-center text-gray-500">
+          <div className="h-40 flex items-center justify-center text-gray-500 bg-gray-50 rounded-lg">
             Cargando disponibilidad...
           </div>
         ) : validStartTimes.length > 0 ? (
-          <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2">
             {validStartTimes.map((slot) => {
               const courtStatus = slot.courts.find(
                 (c) => c.courtId === selectedCourt.id
@@ -141,10 +150,10 @@ export const BookingWidget: React.FC<BookingWidgetProps> = ({
                     }
                   }}
                   className={cn(
-                    "p-2 rounded-md text-center font-semibold transition-colors",
+                    "p-3 rounded-md text-center font-semibold transition-colors text-sm",
                     !isAvailable || past
-                      ? "bg-gray-100 text-gray-400 cursor-not-allowed opacity-50"
-                      : "bg-neutral-200 text-neutral-700 hover:bg-brand-green hover:text-white cursor-pointer"
+                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                      : "bg-neutral-200 text-neutral-800 hover:bg-brand-orange hover:text-white cursor-pointer"
                   )}
                 >
                   {slot.time}
@@ -153,9 +162,9 @@ export const BookingWidget: React.FC<BookingWidgetProps> = ({
             })}
           </div>
         ) : (
-          <p className="text-sm text-gray-500">
-            No hay horarios disponibles para este día.
-          </p>
+          <div className="h-40 flex items-center justify-center text-center text-gray-500 bg-gray-50 rounded-lg p-4">
+            <p>No hay horarios disponibles para este día.</p>
+          </div>
         )}
       </div>
     </div>

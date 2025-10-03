@@ -1,8 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { db } from "@/shared/lib/db";
-import { Prisma, PriceRule } from "@prisma/client";
+import { Prisma, PriceRule, Schedule } from "@prisma/client";
 import { z } from "zod";
-import { getDay } from "date-fns";
+import { endOfDay, getDay, startOfDay } from "date-fns";
 
 const searchSchema = z.object({
   city: z.string().optional(),
@@ -66,39 +66,41 @@ function findNextAvailableSlots(
     "thursday",
     "friday",
     "saturday",
-  ];
-  const key = dayKeys[dayOfWeek] as keyof typeof complex.schedule;
+  ] as const; 
+  const key = dayKeys[dayOfWeek];
 
-  const openHourForDay = complex.schedule?.[`${key}Open`];
-  const closeHourForDay = complex.schedule?.[`${key}Close`];
+  const schedule = complex.schedule;
+  if (!schedule) return [];
 
-  // 2. ¡Esta es la validación clave! Si no hay hora de apertura o cierre, está cerrado.
+  const openKey = `${key}Open` as keyof Schedule;
+  const closeKey = `${key}Close` as keyof Schedule;
+  
+  const openHourForDay = schedule[openKey] as number | null;
+  const closeHourForDay = schedule[closeKey] as number | null;
+
   if (openHourForDay == null || closeHourForDay == null) {
-    // 3. Si está cerrado, devolvemos un array vacío INMEDIATAMENTE.
     return [];
   }
 
-  // Si llegamos aquí, el club está abierto. Usamos los horarios del día.
   const openHour = openHourForDay;
   const closeHour = closeHourForDay;
 
   const bookedSlotsByCourtId = new Map<string, Set<string>>();
   complex.courts.forEach((court) => {
     const bookedTimes = new Set<string>();
-    court.bookings.forEach((booking) => {
-      const timeString = `${String(booking.startTime).padStart(
-        2,
-        "0"
-      )}:${String(booking.startMinute || 0).padStart(2, "0")}`;
-      bookedTimes.add(timeString);
-    });
+    if (court.bookings) {
+        court.bookings.forEach((booking) => {
+            const timeString = `${String(booking.startTime).padStart(
+            2,
+            "0"
+            )}:${String(booking.startMinute || 0).padStart(2, "0")}`;
+            bookedTimes.add(timeString);
+        });
+    }
     bookedSlotsByCourtId.set(court.id, bookedTimes);
   });
 
   const availableSlots: AvailableSlot[] = [];
-
-  // --- LÓGICA CORREGIDA ---
-  // La hora de inicio es la más tardía entre la hora actual (si es hoy) y la hora de apertura del club.
   const startHour = isToday ? Math.max(now.getHours(), openHour) : openHour;
 
   for (let hour = startHour; hour < closeHour; hour++) {
@@ -158,51 +160,67 @@ export async function GET(req: NextRequest) {
     }
 
     const { city, sport, date } = validation.data;
-    const searchDate = new Date(
-      `${date || new Date().toISOString().split("T")[0]}T00:00:00.000-03:00`
-    );
 
     const whereClause: Prisma.ComplexWhereInput = {
       onboardingCompleted: true,
+      city: city ? { contains: city, mode: "insensitive" } : undefined,
     };
-    if (city) {
-      whereClause.city = { contains: city, mode: "insensitive" };
-    }
 
-    const complexes = await db.complex.findMany({
-      where: whereClause,
-      include: {
+    const includeClause: Prisma.ComplexInclude = {
         images: { where: { isPrimary: true }, take: 1 },
         schedule: true,
         courts: {
-          where: {
-            sport: sport ? { slug: sport } : undefined,
-          },
-          include: {
-            bookings: {
-              where: { date: searchDate },
+            where: {
+                sport: sport ? { slug: sport } : undefined,
             },
-            priceRules: true,
-          },
+            include: {
+                priceRules: true,
+                bookings: date ? {
+                    where: { 
+                        date: {
+                            gte: startOfDay(new Date(date)),
+                            lt: endOfDay(new Date(date)),
+                        }
+                    },
+                } : false,
+            },
         },
-      },
+    };
+
+    const complexes = await db.complex.findMany({
+      where: whereClause,
+      include: includeClause,
     });
 
     const filteredComplexes = complexes.filter((c) => c.courts.length > 0);
 
-    const formattedComplexes = filteredComplexes
-      .map((complex) => {
-        const availableSlots = findNextAvailableSlots(complex, searchDate, 3);
-        return {
-          id: complex.id,
-          slug: complex.slug,
-          name: complex.name,
-          address: `${complex.address}, ${complex.city}`,
-          imageUrl: complex.images[0]?.url || "/placeholder.jpg",
-          availableSlots: availableSlots,
-        };
-      })
-      .filter((complex) => complex.availableSlots.length > 0);
+    const formattedComplexes = filteredComplexes.map((complex) => {
+        const availableSlots = date ? findNextAvailableSlots(complex as unknown as ComplexWithCourtsAndBookings, new Date(date), 3) : [];
+        
+        if (!date) {
+            return {
+                id: complex.id,
+                slug: complex.slug,
+                name: complex.name,
+                address: `${complex.address}, ${complex.city}`,
+                imageUrl: complex.images[0]?.url || "/placeholder.jpg",
+                availableSlots: [],
+            };
+        }
+        
+        if (date && availableSlots.length > 0) {
+            return {
+                id: complex.id,
+                slug: complex.slug,
+                name: complex.name,
+                address: `${complex.address}, ${complex.city}`,
+                imageUrl: complex.images[0]?.url || "/placeholder.jpg",
+                availableSlots: availableSlots,
+            };
+        }
+        
+        return null; 
+    }).filter(Boolean);
 
     return NextResponse.json(formattedComplexes);
   } catch (error) {

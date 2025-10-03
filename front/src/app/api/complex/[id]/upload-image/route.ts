@@ -10,7 +10,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_KEY!
 );
 
-// ====================== UPLOAD ======================
+//  UPLOAD 
 export async function POST(
   req: Request,
   context: { params: Promise<{ id: string }> }

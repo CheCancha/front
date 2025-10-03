@@ -105,10 +105,6 @@ export async function DELETE(req: Request, context: { params: Promise<{ id: stri
       );
     }
 
-    // --- IMPORTANTE ---
-    // Aquí deberías añadir la lógica para borrar el archivo de imagen de tu proveedor de almacenamiento
-    // (Ej: Cloudinary, AWS S3, Vercel Blob, etc.) antes de borrar el registro de la base de datos.
-
     await db.image.delete({
       where: {
         id: imageId,

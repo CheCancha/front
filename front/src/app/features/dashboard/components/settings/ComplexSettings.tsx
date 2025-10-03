@@ -16,12 +16,10 @@ import { PaymentsSettings } from "./PaymentsSettings";
 import { Schedule, Sport, PriceRule, Amenity } from "@prisma/client";
 import { GeneralInfoForm } from "./GeneralInfoForm";
 import { AmenitiesForm } from "./AmenitiesForm";
-// --- NUEVO --- Importamos el nuevo componente del formulario de cancelaciones.
 import { CancellationForm } from "./CancellationForm";
 
 type ScheduleDayKey = Exclude<keyof Schedule, "id" | "complexId">;
 
-// --- ACTUALIZADO --- Añadimos la nueva pestaña de Cancelaciones.
 const TABS = [
   { id: "general", label: "Información General" },
   { id: "amenities", label: "Servicios" },
@@ -92,12 +90,23 @@ export const ComplexSettings = () => {
 
   // --- MANEJADORES DE ESTADO ---
   const handleBasicInfoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setData((prev) =>
-      prev ? { ...prev, [e.target.name]: e.target.value } : null
-    );
+    const { name, value, type } = e.target;
+    setData((prev) => {
+        if (!prev) return null;
+        let finalValue: string | number | null = value;
+        if (type === 'number') {
+            if (value === '') {
+                finalValue = null;
+            } else {
+                const parsedValue = parseFloat(value);
+                finalValue = isNaN(parsedValue) ? value : parsedValue;
+            }
+        }
+        return { ...prev, [name]: finalValue };
+    });
   };
   
-  // --- NUEVO --- Manejador para la política de cancelación.
+  // Manejador para la política de cancelación.
   const handleCancellationPolicyChange = (value: number) => {
       setData((prev) => {
         if (!prev) return null;
@@ -312,31 +321,64 @@ export const ComplexSettings = () => {
         }
       } else {
         let endpoint = "";
-        let payload = {};
 
         switch (activeTab) {
           case "general":
             endpoint = `/api/complex/${complexId}/settings/general`;
-            payload = { basicInfo: { name: data.name, address: data.address, city: data.city, province: data.province, } };
+            const generalPayload = { 
+              basicInfo: { 
+                name: data.name, 
+                address: data.address, 
+                city: data.city, 
+                province: data.province,
+                contactPhone: data.contactPhone,
+                contactEmail: data.contactEmail,
+                instagramHandle: data.instagramHandle,
+                facebookUrl: data.facebookUrl,
+                latitude: data.latitude,
+                longitude: data.longitude,
+              } 
+            };
+            await fetch(endpoint, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(generalPayload),
+            });
             break;
+
           case "amenities":
             endpoint = `/api/complex/${complexId}/settings/amenities`;
-            payload = { amenityIds: data.amenities.map(a => a.id) };
+            const amenitiesPayload = { amenityIds: data.amenities.map(a => a.id) };
+            await fetch(endpoint, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(amenitiesPayload),
+            });
             break;
+
           case "schedule":
             endpoint = `/api/complex/${complexId}/settings/schedule`;
-            payload = { schedule: data.schedule, timeSlotInterval: data.timeSlotInterval, };
+            const schedulePayload = { schedule: data.schedule, timeSlotInterval: data.timeSlotInterval, };
+            await fetch(endpoint, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(schedulePayload),
+            });
             break;
           
-          // --- NUEVO --- Caso para guardar la política de cancelación.
           case "cancellations":
             endpoint = `/api/complex/${complexId}/settings/cancellation`;
-            payload = { cancellationPolicyHours: data.cancellationPolicyHours };
+            const cancellationPayload = { cancellationPolicyHours: data.cancellationPolicyHours };
+            await fetch(endpoint, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(cancellationPayload),
+            });
             break;
 
           case "courts":
             endpoint = `/api/complex/${complexId}/settings/courts`;
-            payload = {
+            const courtsPayload = {
               courts: {
                 update: data.courts.map((c) => {
                   const originalCourt = originalData.courts.find((oc) => oc.id === c.id);
@@ -358,6 +400,11 @@ export const ComplexSettings = () => {
                 delete: courtsToDelete.map((id) => ({ id })),
               },
             };
+            await fetch(endpoint, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(courtsPayload),
+            });
             break;
           default:
             toast.dismiss();
@@ -365,22 +412,11 @@ export const ComplexSettings = () => {
             toast.error(`La pestaña "${activeTab}" no tiene una acción de guardado.`);
             return;
         }
-
-        const response = await fetch(endpoint, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || `Error al guardar en la pestaña ${activeTab}`);
-        }
       }
 
       toast.dismiss();
       toast.success("¡Cambios guardados con éxito!");
-      fetchComplexData();
+      await fetchComplexData();
     } catch (error) {
       toast.dismiss();
       toast.error(error instanceof Error ? error.message : "Error desconocido al guardar");
@@ -426,7 +462,7 @@ export const ComplexSettings = () => {
           {activeTab === "images" && data && originalData && <ImageSettings data={data} setData={setData} complexId={complexId} originalData={originalData} imagesToDelete={imagesToDelete} onDeleteImage={deleteImage} onRestoreImage={restoreImage} />}
           {activeTab === "payments" && <PaymentsSettings data={data} />}
 
-          {/* --- NUEVO --- Renderizamos el nuevo formulario en su pestaña. */}
+          {/* Renderizamos el nuevo formulario en su pestaña. */}
           {activeTab === "cancellations" && <CancellationForm value={data.cancellationPolicyHours} onChange={handleCancellationPolicyChange} />}
           
           <div className="flex justify-between items-center pt-8 border-t">

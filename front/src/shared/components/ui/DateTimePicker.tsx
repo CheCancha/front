@@ -94,23 +94,18 @@ export const DatePicker: React.FC<DatePickerProps> = ({
 
 // --- Custom TimePicker Component with react-select ---
 export const TimePicker: React.FC<TimePickerProps> = ({ value, onChange, variant }) => {
-  // ✨ 1. Generamos correctamente las opciones de tiempo
   const timeOptions: TimeOption[] = [];
   for (let h = 8; h < 24; h++) {
     const hour = String(h).padStart(2, '0');
-    // Generamos el slot de la hora en punto (ej: 09:00)
     timeOptions.push({ value: `${hour}:00`, label: `${hour}:00` });
-    // Generamos el slot de la media hora (ej: 09:30)
     if (h < 23) {
         timeOptions.push({ value: `${hour}:30`, label: `${hour}:30` });
     }
   }
 
-  // Encontrar la opción seleccionada
   const selectedTimeOption =
     timeOptions.find((option) => option.value === value) || null;
 
-  // --- Componentes personalizados para react-select (tu código estaba perfecto aquí) ---
   const CustomSingleValue = (props: SingleValueProps<TimeOption>) => {
     return (
       <components.SingleValue {...props}>

@@ -22,19 +22,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'monthly',
       priority: 0.8,
     },
-    // Agrega más rutas públicas de tu aplicación aquí
-    // Por ejemplo:
-    // {
-    //   url: `${baseUrl}/sobre-nosotros`,
-    //   lastModified: new Date(),
-    //   changeFrequency: 'monthly',
-    //   priority: 0.5,
-    // },
-    // {
-    //   url: `${baseUrl}/contacto`,
-    //   lastModified: new Date(),
-    //   changeFrequency: 'monthly',
-    //   priority: 0.5,
-    // },
   ]
 }

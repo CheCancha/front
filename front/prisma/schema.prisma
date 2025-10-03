@@ -96,8 +96,12 @@ model Complex {
   // Geolocalización para mapas
   latitude              Float?
   longitude             Float?
+  contactPhone          String? 
+  contactEmail          String? 
+  instagramHandle       String?
+  facebookUrl           String?
   
-  // --- NUEVO --- Política de Cancelación en horas.
+  // Política de Cancelación en horas.
   cancellationPolicyHours Int    @default(24)
 
   // Mercado Pago
@@ -163,7 +167,6 @@ model Court {
   complex             Complex     @relation(fields: [complexId], references: [id], onDelete: Cascade)
   priceRules          PriceRule[]
 
-  // --- ÍNDICES AÑADIDOS ---
   @@index([complexId])
   @@index([sportId])
 }
@@ -205,10 +208,7 @@ model Booking {
   user               User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
   guestName          String?
   
-  // --- NUEVO --- Teléfono para reservas de invitados.
   guestPhone         String?
-  
-  // --- NUEVO --- Flag para gestionar devoluciones pendientes.
   refundPending      Boolean       @default(false)
 
   paymentId          String?

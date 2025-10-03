@@ -7,7 +7,7 @@ export const SmoothScroller = () => {
   useEffect(() => {
     // 1. Inicializamos Lenis
     const lenis = new Lenis({
-      duration: 1.4, // Velocidad de la animación (más alto = más lento)
+      duration: 1.4,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
     });
 
