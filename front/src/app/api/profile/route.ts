@@ -2,8 +2,6 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/authOptions";
 import { db } from "@/shared/lib/db";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
 import { BookingStatus } from "@prisma/client";
 
 export async function GET() {
@@ -24,7 +22,7 @@ export async function GET() {
             court: {
               select: {
                 name: true,
-                slotDurationMinutes: true, // Necesitamos la duración para las horas jugadas
+                slotDurationMinutes: true,
                 complex: {
                   select: { name: true },
                 },
@@ -81,7 +79,6 @@ export async function GET() {
     return NextResponse.json({
       phone: userWithBookings.phone,
       image: userWithBookings.image,
-      // Nuevas estadísticas
       stats: {
         totalBookings,
         completedBookings: completedBookingsCount,

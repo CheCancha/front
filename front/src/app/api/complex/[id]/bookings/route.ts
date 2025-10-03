@@ -58,7 +58,6 @@ export async function GET(
         status: 400,
       });
     }
-
     const requestedDate = new Date(`${dateString}T00:00:00.000Z`);
     const startOfRequestedDay = startOfDay(requestedDate);
     const endOfRequestedDay = endOfDay(requestedDate);

@@ -4,7 +4,7 @@ import "../../../../styles/day-picker.css";
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { MapPin, AlertCircle, Phone, Globe, Mail } from "lucide-react";
+import { MapPin, AlertCircle, Phone, Mail } from "lucide-react";
 import { FaFacebook, FaInstagram } from "react-icons/fa";
 import { getDay } from "date-fns";
 import { cn } from "@/shared/lib/utils";

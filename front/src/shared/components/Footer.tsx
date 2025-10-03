@@ -64,12 +64,12 @@ const Footer = () => {
               </h2>
               <ul className="text-paragraph font-medium">
                 <li className="mb-4">
-                  <Link href="#" className="hover:underline">
+                  <Link href="/policy" className="hover:underline">
                     Política de Privacidad
                   </Link>
                 </li>
                 <li>
-                  <Link href="#" className="hover:underline">
+                  <Link href="/terms" className="hover:underline">
                     Términos &amp; Condiciones
                   </Link>
                 </li>

@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
 import { db } from "@/shared/lib/db";
-import { getDay } from "date-fns";
+import { startOfDay, endOfDay } from "date-fns";
 import { BookingStatus } from "@prisma/client";
 
 export async function GET(
   req: Request,
-  context: { params: Promise<{ slug: string }> }
+  context: { params: { slug: string } }
 ) {
   try {
-    const { slug } = await context.params;
+    const { slug } = context.params;
     const { searchParams } = new URL(req.url);
     const dateString = searchParams.get("date");
 
@@ -19,10 +19,7 @@ export async function GET(
       );
     }
 
-
-    const startDate = new Date(`${dateString}T00:00:00.000Z`);
-    const endDate = new Date(startDate);
-    endDate.setDate(startDate.getDate() + 1);
+    const requestedDate = new Date(`${dateString}T00:00:00Z`);
 
     const complex = await db.complex.findUnique({
       where: { slug: slug },
@@ -33,8 +30,8 @@ export async function GET(
             bookings: {
               where: {
                 date: {
-                  gte: startDate,
-                  lt: endDate, 
+                  gte: startOfDay(requestedDate),
+                  lt: endOfDay(requestedDate),
                 },
                 status: { not: BookingStatus.CANCELADO },
               },
@@ -52,8 +49,8 @@ export async function GET(
     }
 
     const timeGridInterval = complex.timeSlotInterval;
-
-    const dayOfWeek = getDay(startDate);
+    
+    const dayOfWeek = requestedDate.getUTCDay();
     const dayKeys = [ "sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday" ];
     const key = dayKeys[dayOfWeek];
 
@@ -61,8 +58,9 @@ export async function GET(
     let closeHour: number | null | undefined;
 
     if (complex.schedule) {
-      const rawOpenHour = complex.schedule[`${key}Open` as keyof typeof complex.schedule];
-      const rawCloseHour = complex.schedule[`${key}Close` as keyof typeof complex.schedule];
+      const scheduleAsRecord = complex.schedule as Record<string, unknown>;
+      const rawOpenHour = scheduleAsRecord[`${key}Open`];
+      const rawCloseHour = scheduleAsRecord[`${key}Close`];
       openHour = typeof rawOpenHour === "number" ? rawOpenHour : undefined;
       closeHour = typeof rawCloseHour === "number" ? rawCloseHour : undefined;
     }
@@ -81,10 +79,7 @@ export async function GET(
       const courtSlots = new Array(totalSlots).fill(true);
       for (const booking of court.bookings) {
         const bookingDate = new Date(booking.date);
-        const bookingHour = bookingDate.getUTCHours(); 
-        const bookingMinute = bookingDate.getUTCMinutes();
-
-        const startIdx = (bookingHour * 60 + bookingMinute - openHour * 60) / timeGridInterval;
+        const startIdx = (bookingDate.getUTCHours() * 60 + bookingDate.getUTCMinutes() - openHour * 60) / timeGridInterval;
         const slotsToBook = court.slotDurationMinutes / timeGridInterval;
         for (let i = 0; i < slotsToBook; i++) {
           if (startIdx + i < totalSlots) {
@@ -138,3 +133,4 @@ export async function GET(
     );
   }
 }
+
