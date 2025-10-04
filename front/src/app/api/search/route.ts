@@ -166,7 +166,9 @@ export async function GET(req: NextRequest) {
       city: city ? { contains: city, mode: "insensitive" } : undefined,
     };
 
-    const includeClause: Prisma.ComplexInclude = {
+    const complexes = await db.complex.findMany({
+      where: whereClause,
+      include: {
         images: { where: { isPrimary: true }, take: 1 },
         schedule: true,
         courts: {
@@ -174,7 +176,6 @@ export async function GET(req: NextRequest) {
                 sport: sport ? { slug: sport } : undefined,
             },
             include: {
-                priceRules: true,
                 bookings: date ? {
                     where: { 
                         date: {
@@ -183,13 +184,10 @@ export async function GET(req: NextRequest) {
                         }
                     },
                 } : false,
+                priceRules: true,
             },
         },
-    };
-
-    const complexes = await db.complex.findMany({
-      where: whereClause,
-      include: includeClause,
+      },
     });
 
     const filteredComplexes = complexes.filter((c) => c.courts.length > 0);
@@ -197,29 +195,35 @@ export async function GET(req: NextRequest) {
     const formattedComplexes = filteredComplexes.map((complex) => {
         const availableSlots = date ? findNextAvailableSlots(complex as unknown as ComplexWithCourtsAndBookings, new Date(date), 3) : [];
         
+        // --- ¡AQUÍ ESTÁ LA MODIFICACIÓN! ---
+        // Añadimos latitude y longitude al objeto que se devuelve.
+        const baseComplexData = {
+          id: complex.id,
+          slug: complex.slug,
+          name: complex.name,
+          address: `${complex.address}, ${complex.city}`,
+          imageUrl: complex.images[0]?.url || "/placeholder.jpg",
+          latitude: complex.latitude,
+          longitude: complex.longitude,
+          cancellationPolicyHours: complex.cancellationPolicyHours, // Pasamos esto para el modal
+        };
+
         if (!date) {
             return {
-                id: complex.id,
-                slug: complex.slug,
-                name: complex.name,
-                address: `${complex.address}, ${complex.city}`,
-                imageUrl: complex.images[0]?.url || "/placeholder.jpg",
+                ...baseComplexData,
                 availableSlots: [],
             };
         }
         
-        if (date && availableSlots.length > 0) {
-            return {
-                id: complex.id,
-                slug: complex.slug,
-                name: complex.name,
-                address: `${complex.address}, ${complex.city}`,
-                imageUrl: complex.images[0]?.url || "/placeholder.jpg",
-                availableSlots: availableSlots,
-            };
+        // Añadimos un 'return' explícito en el caso de que no haya slots disponibles
+        if (availableSlots.length === 0) {
+            return null;
         }
-        
-        return null; 
+
+        return {
+            ...baseComplexData,
+            availableSlots: availableSlots,
+        };
     }).filter(Boolean);
 
     return NextResponse.json(formattedComplexes);

@@ -14,8 +14,23 @@ import { toast } from "react-hot-toast";
 import { Spinner } from "@/shared/components/ui/Spinner";
 import BookingModal from "@/shared/components/ui/BookingModal";
 import { routes } from "@/routes";
+import dynamic from "next/dynamic";
+import { useRouter } from "next/router";
 
-// --- TIPOS DE DATOS ---
+// --- TIPOS DE DATOS (ACTUALIZADOS) ---
+// Hacemos el tipo 'Club' exportable y añadimos los campos de geolocalización
+export type Club = {
+  id: string;
+  slug: string;
+  name: string;
+  address: string;
+  imageUrl: string;
+  availableSlots: AvailableSlot[];
+  cancellationPolicyHours: number;
+  latitude: number | null;
+  longitude: number | null;
+};
+
 type PriceRule = {
   id: string;
   startTime: number;
@@ -34,16 +49,6 @@ type CourtInfo = {
 type AvailableSlot = {
   time: string;
   court: CourtInfo;
-};
-
-type Club = {
-  id: string;
-  slug: string;
-  name: string;
-  address: string;
-  imageUrl: string;
-  availableSlots: AvailableSlot[];
-  cancellationPolicyHours: number;
 };
 
 type BookingSelection = {
@@ -111,22 +116,32 @@ const ClubCard = ({ club, onBookSlot, }: { club: Club; onBookSlot: (slot: Availa
 };
 
 const SkeletonCard = () => (
-  <div className="bg-white rounded-xl shadow-md overflow-hidden animate-pulse">
-    <div className="h-48 bg-gray-200" />
-    <div className="p-4">
-      <div className="h-6 w-3/4 bg-gray-200 rounded" />
-      <div className="h-4 w-1/2 bg-gray-200 rounded mt-2" />
-      <div className="mt-4 pt-4 border-t border-gray-100">
-        <div className="h-4 w-1/3 bg-gray-200 rounded mb-2" />
-        <div className="flex flex-wrap gap-2">
-          <div className="h-7 w-16 bg-gray-200 rounded-md" />
-          <div className="h-7 w-16 bg-gray-200 rounded-md" />
-          <div className="h-7 w-16 bg-gray-200 rounded-md" />
+    <div className="bg-white rounded-xl shadow-md overflow-hidden animate-pulse">
+        <div className="h-48 bg-gray-200" />
+        <div className="p-4">
+            <div className="h-6 w-3/4 bg-gray-200 rounded" />
+            <div className="h-4 w-1/2 bg-gray-200 rounded mt-2" />
+            <div className="mt-4 pt-4 border-t border-gray-100">
+                <div className="h-4 w-1/3 bg-gray-200 rounded mb-2" />
+                <div className="flex flex-wrap gap-2">
+                    <div className="h-7 w-16 bg-gray-200 rounded-md" />
+                    <div className="h-7 w-16 bg-gray-200 rounded-md" />
+                    <div className="h-7 w-16 bg-gray-200 rounded-md" />
+                </div>
+            </div>
         </div>
-      </div>
     </div>
-  </div>
 );
+
+// --- Carga dinámica del componente de mapa ---
+const ComplexesMap = dynamic(() => 
+  import('@/app/features/public/components/courts/MapView').then(mod => mod.ComplexesMap),
+  { 
+    ssr: false, // Fundamental para que Leaflet funcione
+    loading: () => <div className="h-[60vh] bg-gray-200 rounded-xl animate-pulse" />
+  }
+);
+
 
 // --- COMPONENTE PRINCIPAL DE LA PÁGINA ---
 const SearchResultsComponent = () => {
@@ -172,6 +187,11 @@ const SearchResultsComponent = () => {
     });
     setIsModalOpen(true);
   };
+  
+  const handleMarkerClick = (club: Club) => {
+    router.push(routes.public.complexProfile(club.slug));
+  };
+  const router = useRouter(); 
 
   return (
     <>
@@ -181,13 +201,12 @@ const SearchResultsComponent = () => {
           <div className="mb-8">
             <SearchBar />
           </div>
-          <div className="mb-8">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-semibold text-foreground">
+              {isLoading ? "Buscando complejos..." : `${complexes.length} clubes encontrados ${city ? `en ${city}` : ""}`}
+            </h2>
             <FilterBar view={view} setView={setView} />
           </div>
-
-          <h2 className="text-2xl font-semibold text-foreground mb-6">
-            {isLoading ? "Buscando complejos..." : `${complexes.length} clubes encontrados ${city ? `en ${city}` : ""}`}
-          </h2>
 
           <AnimatePresence mode="wait">
             <motion.div key={view} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
@@ -203,15 +222,13 @@ const SearchResultsComponent = () => {
                     ))}
                   </div>
                 ) : (
-                  <div className="col-span-full text-center py-12 text-paragraph">
+                  <div className="col-span-full text-center py-12 text-paragraph bg-white rounded-xl shadow-md">
                     <p className="font-semibold">No se encontraron resultados</p>
                     <p className="text-sm">Intentá ajustar los filtros o buscá en otra ciudad.</p>
                   </div>
                 )
               ) : (
-                <div className="h-[60vh] bg-white rounded-xl shadow-md flex items-center justify-center text-paragraph">
-                  <p>Vista de Mapa (Próximamente)</p>
-                </div>
+                <ComplexesMap complexes={complexes} onMarkerClick={handleMarkerClick} />
               )}
             </motion.div>
           </AnimatePresence>
