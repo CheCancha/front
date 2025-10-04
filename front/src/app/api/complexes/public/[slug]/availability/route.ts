@@ -5,10 +5,10 @@ import { BookingStatus } from "@prisma/client";
 
 export async function GET(
   req: Request,
-  context: { params: { slug: string } }
+  context: { params: Promise<{ slug: string }> }
 ) {
   try {
-    const { slug } = context.params;
+    const { slug } = await context.params;
     const { searchParams } = new URL(req.url);
     const dateString = searchParams.get("date");
 
