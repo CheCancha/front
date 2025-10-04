@@ -3,6 +3,8 @@ import "./globals.css";
 import { SmoothScroller } from "@/shared/components/ui/SmoothScroller";
 import Providers from "@/app/provider";
 import GoogleAnalytics from "@/shared/components/GoogleAnalytics";
+import { Suspense } from "react";
+import { SearchStateInitializer } from "@/shared/components/SearchStateInitializer"; // 2. Importamos el inicializador
 
 export const metadata: Metadata = {
   title: {
@@ -70,6 +72,10 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
+
+        <Suspense>
+          <SearchStateInitializer />
+        </Suspense>
 
         <GoogleAnalytics />
         <SmoothScroller />

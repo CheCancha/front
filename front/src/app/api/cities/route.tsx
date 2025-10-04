@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 // --- Tipos para la respuesta de la API externa ---
-// Esto nos permite evitar el uso de 'any' y tener un código más seguro.
 interface GeoRefLocalidad {
   nombre: string;
   provincia: {
@@ -24,7 +23,6 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  // URL de la API pública
   const apiUrl = `https://apis.datos.gob.ar/georef/api/localidades?nombre=${encodeURIComponent(
     query
   )}&campos=nombre,provincia.nombre&max=5`;
@@ -38,10 +36,8 @@ export async function GET(req: NextRequest) {
       throw new Error("La API de georeferencia no respondió correctamente.");
     }
 
-    // Le decimos a TypeScript qué forma esperamos que tenga la respuesta.
     const data: GeoRefResponse = await apiResponse.json();
 
-    // Ahora podemos mapear los datos de forma segura, sin 'any'.
     return NextResponse.json({
       cities: data.localidades.map((l: GeoRefLocalidad) => ({
         nombre: l.nombre,

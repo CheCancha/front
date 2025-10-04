@@ -298,7 +298,7 @@ export default function ProfilePage() {
                         <span className={`px-3 py-1 text-xs font-semibold rounded-full ${booking.status === "CONFIRMADO" ? "bg-blue-100 text-blue-800" : booking.status === "PENDIENTE" ? "bg-yellow-100 text-yellow-800" : booking.status === "COMPLETADO" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-700"}`}>
                           {booking.status}
                         </span>
-                        {/* --- NUEVO --- Botón de Cancelar para reservas próximas */}
+                        {/* Botón de Cancelar para reservas próximas */}
                         {bookingFilter === "Próximas" && (
                           <Button variant="destructive" size="sm" onClick={() => handleOpenCancelModal(booking)}>
                             Cancelar

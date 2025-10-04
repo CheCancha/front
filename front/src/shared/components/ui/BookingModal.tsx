@@ -219,7 +219,13 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, club, cour
                 </div>
                 
                 <p className="text-sm text-center text-gray-500 mt-4">
-                  ⚠️ Podrás cancelar sin costo hasta <strong>{club.cancellationPolicyHours} horas</strong> antes del turno.
+                  ⚠️ {club.cancellationPolicyHours > 0 ? (
+                    <>
+                      Podrás cancelar sin costo hasta <strong>{club.cancellationPolicyHours} horas</strong> antes del turno.
+                    </>
+                  ) : (
+                    <strong>Una vez confirmada, esta reserva no permite reembolso.</strong>
+                  )}
                 </p>
 
                 <div className="mt-4">
