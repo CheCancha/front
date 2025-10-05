@@ -63,7 +63,7 @@ export const sendWelcomeEmail = async (
 export const sendPasswordResetEmail = async (email: string, token: string) => {
   try {
     const recipientEmail = process.env.RESEND_RECIPIENT_EMAIL || email;
-    const resetUrl = `${baseURL}/reset-password?token=${token}`;
+    const resetUrl = `${baseURL}/recover?token=${token}`;
 
     await resend.emails.send({
       from: fromEmail,
