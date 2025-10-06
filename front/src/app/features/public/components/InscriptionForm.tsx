@@ -175,9 +175,9 @@ export const InscriptionsForm = () => {
               </div>
             </div>
 
-            {/* --- SELECTOR DE PLAN (MODIFICADO) --- */}
+            {/* --- SELECTOR DE PLAN --- */}
             <div>
-              <label className={labelClass}>Plan Seleccionado</label>
+              <label className={labelClass}>Plan Seleccionado (90 dias Demo)</label>
               <Controller
                 name="selectedPlan"
                 control={control}

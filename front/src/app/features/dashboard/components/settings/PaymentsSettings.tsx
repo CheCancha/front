@@ -8,7 +8,6 @@ interface Props {
 
 export const PaymentsSettings = ({ data }: Props) => (
     <div className="space-y-6">
-        <h3 className="text-lg font-semibold">Pagos</h3>
         <MPButton complex={data} />
         {data.mp_connected_at && (
             <div className="bg-green-50 border border-green-200 rounded-lg p-4">

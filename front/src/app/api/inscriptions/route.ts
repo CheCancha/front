@@ -12,12 +12,27 @@ export async function POST(request: Request) {
 
     const validation = inscriptionSchema.safeParse(body);
     if (!validation.success) {
-      return new NextResponse(JSON.stringify(validation.error.flatten()), { status: 400 });
+      return new NextResponse(JSON.stringify(validation.error.flatten()), {
+        status: 400,
+      });
     }
 
-   const { ownerName, ownerEmail, ownerPhone, complexName, address, city, province, sports, selectedPlan, selectedCycle } = validation.data;
+    const {
+      ownerName,
+      ownerEmail,
+      ownerPhone,
+      complexName,
+      address,
+      city,
+      province,
+      sports,
+      selectedPlan,
+      selectedCycle,
+    } = validation.data;
 
-    await db.inscriptionRequest.create({
+    console.log("Datos validados:", validation.data);
+
+    const result = await db.inscriptionRequest.create({
       data: {
         ownerName,
         ownerEmail,
@@ -29,10 +44,13 @@ export async function POST(request: Request) {
         sports,
         selectedPlan,
         selectedCycle,
+        status: "PENDIENTE",
       },
     });
 
-     await resend.emails.send({
+    console.log("Registro creado:", result);
+
+    await resend.emails.send({
       from: "contacto@checancha.com",
       to: "ignacionweppler@gmail.com",
       subject: `Nueva solicitud de registro: ${complexName}`,

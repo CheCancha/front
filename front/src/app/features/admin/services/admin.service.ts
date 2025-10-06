@@ -1,4 +1,4 @@
-'use server';
+"use server";
 
 import { db } from "@/shared/lib/db";
 import { getServerSession } from "next-auth/next";
@@ -11,13 +11,13 @@ import { normalizePhoneNumber } from "@/shared/lib/utils";
 const createSlug = (text: string) => {
   return text
     .toLowerCase()
-    .replace(/ /g, '-')
-    .replace(/[^\w-]+/g, '');
+    .replace(/ /g, "-")
+    .replace(/[^\w-]+/g, "");
 };
 
 export const getPendingInscriptionRequestsForAdmin = async () => {
   const session = await getServerSession(authOptions);
-  if (session?.user?.role !== 'ADMIN') {
+  if (session?.user?.role !== "ADMIN") {
     throw new Error("Acceso no autorizado.");
   }
   const requests = await db.inscriptionRequest.findMany({
@@ -28,7 +28,8 @@ export const getPendingInscriptionRequestsForAdmin = async () => {
 };
 
 const generateTemporaryPassword = (length = 10) => {
-  const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  const chars =
+    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   let password = "";
   for (let i = 0; i < length; i++) {
     password += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -45,76 +46,108 @@ export const approveInscription = async (
       where: { id: requestId },
     });
 
-    if (!inscriptionRequest || inscriptionRequest.status !== 'PENDIENTE') {
-      return { success: false, error: "Solicitud no encontrada o ya procesada." };
+    if (!inscriptionRequest || inscriptionRequest.status !== "PENDIENTE") {
+      return {
+        success: false,
+        error: "Solicitud no encontrada o ya procesada.",
+      };
     }
-    
+
     const finalData = { ...inscriptionRequest, ...updatedData };
     const normalizedPhone = normalizePhoneNumber(finalData.ownerPhone);
 
-    const existingUser = await db.user.findFirst({
+    // 🔹 1. Buscamos si ya existe el usuario
+    let user = await db.user.findFirst({
       where: {
         OR: [{ email: finalData.ownerEmail }, { phone: normalizedPhone }],
       },
     });
 
-    if (existingUser) {
-      return { success: false, error: "Ya existe un usuario con este email o teléfono." };
-    }
+    // 🔹 2. Si no existe, lo creamos
+    let temporaryPassword: string | null = null;
+    if (!user) {
+      temporaryPassword = generateTemporaryPassword();
+      const hashedPassword = await bcrypt.hash(temporaryPassword, 10);
 
-    const temporaryPassword = generateTemporaryPassword();
-    const hashedPassword = await bcrypt.hash(temporaryPassword, 10);
-
-    await db.$transaction(async (prisma) => {
-      // 1. Creamos el nuevo usuario (manager).
-      const newUser = await prisma.user.create({
+      user = await db.user.create({
         data: {
           name: finalData.ownerName,
           email: finalData.ownerEmail,
           phone: normalizedPhone,
-          hashedPassword: hashedPassword, 
-          role: 'MANAGER',
+          hashedPassword,
+          role: "MANAGER",
         },
       });
+    }
 
-      // 2. Creamos el nuevo complejo.
-      await prisma.complex.create({
-        data: {
-          name: finalData.complexName,
-          slug: createSlug(finalData.complexName),
-          address: finalData.address,
-          city: finalData.city,
-          province: finalData.province,
-          managerId: newUser.id,
-        },
-      });
-
-      // 3. Actualizamos la solicitud original.
-      await prisma.inscriptionRequest.update({
-        where: { id: requestId },
-        data: { 
-            status: 'APROBADO',
-            ...updatedData
-        },
-      });
+    // 🔹 3. Revisamos si ya tiene complejo asignado
+    const existingComplex = await db.complex.findFirst({
+      where: { managerId: user.id },
     });
-    
-    try {
-      await sendWelcomeEmail(
-        finalData.ownerEmail,
-        normalizedPhone,
-        finalData.ownerName,
-        temporaryPassword
-      );
-    } catch (emailError) {
-      console.error("Base de datos actualizada, pero falló el envío del email:", emailError);
-      return { success: true, warning: "El usuario y complejo fueron creados, pero falló el envío del email. Contactá al usuario manualmente." };
+
+    if (existingComplex) {
+      return {
+        success: false,
+        error: `El usuario ${user.email} ya tiene asignado el complejo "${existingComplex.name}".`,
+      };
+    }
+
+    // 🔹 4. Revisamos si ya existe un complejo con ese nombre (evita duplicados)
+    const duplicateComplexName = await db.complex.findFirst({
+      where: { name: finalData.complexName },
+    });
+
+    if (duplicateComplexName) {
+      return {
+        success: false,
+        error: `Ya existe un complejo llamado "${duplicateComplexName.name}".`,
+      };
+    }
+
+    // 🔹 5. Creamos el complejo
+    await db.complex.create({
+      data: {
+        name: finalData.complexName,
+        slug: createSlug(finalData.complexName),
+        address: finalData.address,
+        city: finalData.city,
+        province: finalData.province,
+        managerId: user.id,
+      },
+    });
+
+    // 🔹 6. Actualizamos el estado de la solicitud
+    await db.inscriptionRequest.update({
+      where: { id: requestId },
+      data: { status: "APROBADO", ...updatedData },
+    });
+
+    // 🔹 7. Enviamos el mail solo si el usuario fue recién creado
+    if (temporaryPassword) {
+      try {
+        await sendWelcomeEmail(
+          finalData.ownerEmail,
+          normalizedPhone,
+          finalData.ownerName,
+          temporaryPassword
+        );
+      } catch (emailError) {
+        console.error("Fallo el envío del email de bienvenida:", emailError);
+        return {
+          success: true,
+          warning:
+            "El usuario y complejo fueron creados, pero falló el envío del email. Contactá al usuario manualmente.",
+        };
+      }
     }
 
     return { success: true };
   } catch (error) {
     console.error("Error al aprobar la solicitud:", error);
-    return { success: false, error: "Ocurrió un error en el servidor al aprobar la solicitud." };
+    return {
+      success: false,
+      error: "Error del servidor al aprobar la solicitud.",
+    };
   }
 };
 
@@ -123,10 +156,10 @@ export const rejectInscription = async (requestId: string) => {
     await db.inscriptionRequest.update({
       where: {
         id: requestId,
-        status: 'PENDIENTE',
+        status: "PENDIENTE",
       },
       data: {
-        status: 'RECHAZADO',
+        status: "RECHAZADO",
       },
     });
     return { success: true };
@@ -135,4 +168,3 @@ export const rejectInscription = async (requestId: string) => {
     return { success: false, error: "No se pudo rechazar la solicitud." };
   }
 };
-

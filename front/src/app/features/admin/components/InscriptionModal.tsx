@@ -52,11 +52,9 @@ export const InscriptionReviewModal: React.FC<InscriptionReviewModalProps> = ({
 }) => {
   const [isPending, startTransition] = useTransition();
 
-  // Nuevo estado para manejar los datos del formulario y el estado de actualización
   const [formData, setFormData] = useState<Partial<InscriptionRequest>>({});
   const [isUpdating, setIsUpdating] = useState(false);
 
-  // Cuando el modal se abre o la solicitud cambia, actualizamos el estado del formulario.
   useEffect(() => {
     if (request) {
       setFormData(request);
@@ -65,13 +63,11 @@ export const InscriptionReviewModal: React.FC<InscriptionReviewModalProps> = ({
 
   if (!request) return null;
 
-  // Manejador para actualizar el estado del formulario cuando el admin escribe
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Nueva función para guardar los cambios a través de la API
   const handleUpdate = async () => {
     if (!request) return;
     setIsUpdating(true);
@@ -88,7 +84,7 @@ export const InscriptionReviewModal: React.FC<InscriptionReviewModalProps> = ({
         throw new Error("No se pudieron guardar los cambios.");
       }
       toast.success("Cambios guardados con éxito.");
-      onActionComplete(); // Cerramos y refrescamos la lista.
+      onActionComplete();
     } catch (err) {
       toast.dismiss();
       const errorMessage =
@@ -160,7 +156,6 @@ export const InscriptionReviewModal: React.FC<InscriptionReviewModalProps> = ({
                 <span className="font-semibold">{formData.complexName}</span>
               </p>
 
-              {/* Hemos reemplazado los DetailItem estáticos por EditableDetailItem */}
               <div className="space-y-6 border-t border-b py-6 max-h-[50vh] overflow-y-auto pr-2">
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                   <EditableDetailItem
