@@ -4,7 +4,7 @@ import { SmoothScroller } from "@/shared/components/ui/SmoothScroller";
 import Providers from "@/app/provider";
 import GoogleAnalytics from "@/shared/components/GoogleAnalytics";
 import { Suspense } from "react";
-import { SearchStateInitializer } from "@/shared/components/SearchStateInitializer"; // 2. Importamos el inicializador
+import { SearchStateInitializer } from "@/shared/components/SearchStateInitializer";
 
 export const metadata: Metadata = {
   title: {
