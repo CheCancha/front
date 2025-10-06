@@ -9,7 +9,7 @@ datasource db {
 }
 
 enum SubscriptionPlan {
-  FREE // Plan Demo / Prueba
+  FREE // Plan Demo
   BASE // Plan Básico 
   ESTANDAR
   FULL // Plan Pro
