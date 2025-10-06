@@ -16,7 +16,6 @@ export async function GET(
       return new NextResponse("No autorizado", { status: 401 });
     }
 
-    // 1. Buscamos el complejo específico del manager
     const complex = await db.complex.findFirst({
       where: { id: id, managerId: session.user.id },
       include: {
@@ -37,12 +36,10 @@ export async function GET(
       return new NextResponse("Complejo no encontrado", { status: 404 });
     }
 
-    // 2. Buscamos TODAS las amenities disponibles para los checkboxes
     const allAmenities = await db.amenity.findMany({
       orderBy: { name: 'asc' }
     });
 
-    // 3. Devolvemos AMBOS resultados en un solo objeto
     return NextResponse.json({
       complex,
       allAmenities,
@@ -61,7 +58,6 @@ export async function PUT(
   try {
     const { id } = await context.params;
 
-    // 1. Autorización
     const session = await getServerSession(authOptions);
     if (!session?.user?.id || session.user.role !== "MANAGER") {
       return new NextResponse("No autorizado", { status: 401 });
@@ -75,14 +71,12 @@ export async function PUT(
       return new NextResponse("Complejo no encontrado o sin permiso.", { status: 403 });
     }
 
-    // 2. Procesar el payload del formulario
     const body = await req.json();
     const { general, courts, amenities, basicInfo } = body;
 
     const newName = basicInfo?.name || complexToUpdate.name;
     const newSlug = slugify(newName);
 
-    // 3. Actualizar la base de datos en una sola transacción
     await db.complex.update({
       where: { id: id },
       data: {
