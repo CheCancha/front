@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
       updateData.image = publicUrl;
     }
 
-    // 2. Actualizar el usuario en la base de datos con los nuevos datos
+    // 2. Actualizar el usuario en la base de datos
     const updatedUser = await db.user.update({
       where: { id: session.user.id },
       data: updateData,
