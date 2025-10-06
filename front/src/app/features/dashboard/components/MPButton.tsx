@@ -4,7 +4,7 @@ import React from "react";
 import { toast } from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import type { Complex } from "@prisma/client";
-import Image from "next/image";
+import { Img } from "@react-email/components";
 
 interface MPButtonProps {
   complex: Complex;
@@ -65,7 +65,7 @@ export default function MPButton({ complex }: MPButtonProps) {
       </p>
       
       <div className="mt-6 flex flex-col items-start gap-4 rounded-lg border p-4 sm:flex-row sm:items-center">
-        <Image
+        <Img
           src="https://logospng.org/download/mercado-pago/logo-mercado-pago-256.png"
           alt="Mercado Pago Logo"
           className="h-10 w-10 flex-shrink-0"

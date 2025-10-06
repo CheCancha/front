@@ -80,7 +80,7 @@ const Navbar: React.FC = () => {
                 }}
               />
               <span className="text-foreground text-xl font-bold">
-                CheCancha
+                Che Cancha
               </span>
             </Link>
           </div>
@@ -92,7 +92,7 @@ const Navbar: React.FC = () => {
                 <>
                   <Link
                     href={routes.public.canchas}
-                    className="flex items-center gap-2 text-gray-600 hover:text-black font-medium py-2 px-4 rounded-md transition duration-300 border border-gray-200 bg-white hover:bg-gray-50"
+                    className="flex items-center gap-2 text-gray-800 hover:text-black font-medium py-2 px-4 rounded-md transition duration-300 hover:bg-gray-100"
                   >
                     <Search size={16} />
                     Buscar Cancha
@@ -103,7 +103,7 @@ const Navbar: React.FC = () => {
                       onClick={() => setIsDesktopMenuOpen(!isDesktopMenuOpen)}
                       className="flex items-center gap-1.5 cursor-pointer rounded-md p-2 transition-colors hover:bg-gray-100"
                     >
-                      <span className="text-sm font-medium text-gray-800">
+                      <span className="font-medium text-gray-800">
                         {user?.name || "Usuario"}
                       </span>
                       <ChevronDown

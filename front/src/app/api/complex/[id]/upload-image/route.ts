@@ -47,7 +47,7 @@ export async function POST(
     const filePath = `complex-images/${id}/${fileName}`;
 
     const { error: uploadError } = await supabase.storage
-      .from("images")
+      .from("Images")
       .upload(filePath, buffer, { contentType: file.type });
 
     if (uploadError) {
@@ -57,7 +57,7 @@ export async function POST(
 
     // 4. Obtener la URL pública
     const { data: urlData } = supabase.storage
-      .from("images")
+      .from("Images")
       .getPublicUrl(filePath);
 
     if (!urlData?.publicUrl) {

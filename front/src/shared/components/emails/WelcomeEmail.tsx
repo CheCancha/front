@@ -36,9 +36,9 @@ export const WelcomeEmail = ({
           <Img src={logoUrl} alt="CheCancha Logo" width="150" />
         </Section>
         <Section style={content}>
-          <Heading as="h1" style={h1}>¡Felicitaciones, {managerName}!</Heading>
+          <Heading as="h1" style={h1}>Bienvenido/a, {managerName}!</Heading>
           <Text style={paragraph}>
-            Tu solicitud para unirte a CheCancha ha sido aprobada. ¡Ya podés empezar a gestionar tu complejo y recibir reservas online!
+            Tu solicitud para unirte a Che Cancha ha sido aprobada. ¡Ya podés empezar a gestionar tu complejo y recibir reservas online!
           </Text>
           
           <Section style={credentialsBox}>
