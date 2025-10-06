@@ -62,7 +62,10 @@ const HeroSection: FC = () => {
         </motion.p>
 
         <motion.div variants={itemVariants}>
-          <SearchBar variant="hero" />
+          {/* --- AJUSTE CLAVE: Se aplica un fondo semi-transparente con efecto de desenfoque --- */}
+          <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/20">
+            <SearchBar variant="hero" />
+          </div>
         </motion.div>
       </motion.div>
     </section>

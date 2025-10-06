@@ -32,8 +32,8 @@ export const ComplexesMap: React.FC<ComplexesMapProps> = ({ complexes, onMarkerC
 
   if (complexesWithCoords.length === 0) {
     return (
-      <div className="h-full w-full bg-gray-100 rounded-2xl flex items-center justify-center text-center p-4">
-        <p className="text-gray-500">Ningún complejo tiene una ubicación definida para mostrar en el mapa.</p>
+      <div className="h-full w-full bg-[#f8f9f9] border-gray-200 rounded-2xl flex items-center justify-center text-center p-4">
+        <p className="text-paragraph">Ningún complejo tiene una ubicación definida para mostrar en el mapa.</p>
       </div>
     );
   }

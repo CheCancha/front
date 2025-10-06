@@ -1,7 +1,6 @@
 "use client";
 
 import "@/styles/day-picker.css";
-// ¡CORRECCIÓN! - Eliminamos 'useCallback' que no se está utilizando.
 import React, { useState, useEffect, useMemo } from "react";
 import Select, {
   OptionProps,
@@ -42,20 +41,17 @@ const iconMap: { [key: string]: React.ElementType } = {
   "futbol-5": PiSoccerBall,
   "futbol-7": PiSoccerBall,
   "futbol-11": PiSoccerBall,
-  "padel": IoTennisballOutline,
-  "basquet": IoBasketballOutline,
-  "tenis": MdSportsTennis,
-  "voley": PiVolleyball,
+  padel: IoTennisballOutline,
+  basquet: IoBasketballOutline,
+  tenis: MdSportsTennis,
+  voley: PiVolleyball,
 };
 
 interface SearchBarProps {
   className?: string;
-  variant?: "default" | "hero";
+  variant?: "default" | "hero"; 
 }
 
-// --- ¡CORRECCIÓN DEFINITIVA! ---
-// Esta es la forma correcta y completamente segura de tipar una función
-// 'debounce' genérica en TypeScript, sin usar 'any'.
 const debounce = <F extends (...args: Parameters<F>) => ReturnType<F>>(
   func: F,
   delay: number
@@ -67,44 +63,44 @@ const debounce = <F extends (...args: Parameters<F>) => ReturnType<F>>(
   };
 };
 
-export const SearchBar: React.FC<SearchBarProps> = ({ className, variant = "default" }) => {
+export const SearchBar: React.FC<SearchBarProps> = ({
+  className,
+  variant = "default",
+}) => {
   const router = useRouter();
+  const { city, sport, date, time, setCity, setSport, setDate, setTime } =
+    useSearchStore();
 
-  // El estado ahora vive en Zustand, no en el componente.
-  const { city, sport, date, time, setCity, setSport, setDate, setTime } = useSearchStore();
-
-  // Estados locales solo para la UI de este componente (autocompletado, etc.)
   const [sportOptions, setSportOptions] = useState<SportOption[]>([]);
   const [isLoadingSports, setIsLoadingSports] = useState(true);
-  const [cityQuery, setCityQuery] = useState(city); // Un input local para el autocompletado
+  const [cityQuery, setCityQuery] = useState(city);
   const [citySuggestions, setCitySuggestions] = useState<CitySuggestion[]>([]);
   const [isCityInputFocused, setIsCityInputFocused] = useState(false);
 
-  // Sincroniza el input local si el estado global cambia (ej: por la URL)
   useEffect(() => {
     setCityQuery(city);
   }, [city]);
 
-  // Carga las opciones de deportes y sincroniza el deporte desde el estado global
   useEffect(() => {
     const fetchSports = async () => {
       setIsLoadingSports(true);
       try {
-        const response = await fetch('/api/sports');
+        const response = await fetch("/api/sports");
         const data: ApiSport[] = await response.json();
-        const options = data.map(s => ({
+        const options = data.map((s) => ({
           value: s.slug,
           label: s.name,
           icon: iconMap[s.slug] || FaQuestionCircle,
         }));
         setSportOptions(options);
 
-        // Si hay un deporte en el store, nos aseguramos de que esté seleccionado
         if (sport) {
-            const currentSportOption = options.find(opt => opt.value === sport.value);
-            if (currentSportOption) {
-              setSport(currentSportOption);
-            }
+          const currentSportOption = options.find(
+            (opt) => opt.value === sport.value
+          );
+          if (currentSportOption) {
+            setSport(currentSportOption);
+          }
         }
       } catch (error) {
         console.error("Error al cargar los deportes:", error);
@@ -123,20 +119,21 @@ export const SearchBar: React.FC<SearchBarProps> = ({ className, variant = "defa
           return;
         }
         try {
-          const response = await fetch(`/api/cities?query=${encodeURIComponent(query)}`);
+          const response = await fetch(
+            `/api/cities?query=${encodeURIComponent(query)}`
+          );
           const data = await response.json();
           setCitySuggestions(data.cities || []);
         } catch (error) {
           console.error("Error fetching city suggestions:", error);
         }
-      }, 300),
+      }, 200),
     []
   );
 
   useEffect(() => {
-    // Solo busca sugerencias si el usuario está escribiendo algo nuevo
     if (cityQuery !== city) {
-        fetchCitySuggestions(cityQuery);
+      fetchCitySuggestions(cityQuery);
     }
   }, [cityQuery, city, fetchCitySuggestions]);
 
@@ -144,29 +141,25 @@ export const SearchBar: React.FC<SearchBarProps> = ({ className, variant = "defa
     const newQuery = e.target.value;
     setCityQuery(newQuery);
   };
-  
+
   const handleSuggestionClick = (suggestion: CitySuggestion) => {
     const fullCityName = `${suggestion.nombre}, ${suggestion.provincia}`;
-    setCityQuery(fullCityName); // Actualiza el input visual
-    setCity(fullCityName);   // Actualiza el estado global
+    setCityQuery(fullCityName);
+    setCity(fullCityName);
     setCitySuggestions([]);
     setIsCityInputFocused(false);
   };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Al hacer la búsqueda, nos aseguramos de que el estado global tenga el valor final del input
     setCity(cityQuery);
-    
-    const params = new URLSearchParams();
 
-    // Usamos 'cityQuery' para la URL, que es el valor más actualizado del input
-    if (cityQuery) params.set("city", cityQuery.split(',')[0].trim());
+    const params = new URLSearchParams();
+    if (cityQuery) params.set("city", cityQuery.split(",")[0].trim());
     if (sport) params.set("sport", sport.value);
     if (date) params.set("date", format(date, "yyyy-MM-dd"));
     if (time) params.set("time", time);
-    
+
     if (!cityQuery) {
       toast.error("Por favor, selecciona una ciudad para buscar.");
       return;
@@ -175,18 +168,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({ className, variant = "defa
     router.push(`/canchas?${params.toString()}`);
   };
 
-  // El resto del componente (JSX, estilos, componentes personalizados) no cambia
-  const containerClass =
-    variant === "hero"
-      ? "bg-white text-neutral-900 rounded-lg p-4 shadow-sm max-w-7xl mx-auto"
-      : "bg-white text-neutral-900 rounded-lg p-4 shadow-sm max-w-8xl mx-auto";
-  const inputClass =
-    "w-full pl-10 pr-4 py-3 border border-neutral-300 rounded-md focus:ring-2 focus:ring-brand-orange outline-none";
-  const iconClass =
-    "absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-600";
-  const buttonClass =
-      "w-full lg:col-span-1 bg-brand-orange hover:bg-neutral-950 text-white font-medium py-3 px-6 rounded-md flex items-center justify-center transition-colors duration-300 cursor-pointer";
-
+  // --- COMPONENTES CUSTOM PARA REACT-SELECT ---
   const CustomOption = (props: OptionProps<SportOption>) => {
     const Icon = props.data.icon;
     return (
@@ -221,14 +203,20 @@ export const SearchBar: React.FC<SearchBarProps> = ({ className, variant = "defa
       </components.Placeholder>
     );
   };
+  
+  // --- INICIO DEL RETURN ---
+  const containerClass = "w-full max-w-4xl mx-auto";
+  const inputClass = "w-full pl-10 pr-4 py-3 border border-neutral-300 rounded-md hover:border-brand-orange outline-none bg-white text-neutral-900 placeholder-neutral-500 transition-colors";
+  const iconClass = "absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-500";
+  const buttonClass = "w-full lg:col-span-1 bg-gradient-to-r from-orange-500 to-red-600 text-white font-medium py-3 px-6 rounded-md flex items-center justify-center transition-all duration-300 cursor-pointer hover:brightness-110";
 
   return (
     <div className={cn(containerClass, className)}>
       <form
         onSubmit={handleSearch}
-        className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-3 items-center"
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 items-center"
       >
-        <div className="relative w-full">
+        <div className="relative w-full md:col-span-2 lg:col-span-1">
           <MapPinIcon className={iconClass} />
           <input
             type="text"
@@ -243,17 +231,14 @@ export const SearchBar: React.FC<SearchBarProps> = ({ className, variant = "defa
           {isCityInputFocused && citySuggestions.length > 0 && (
             <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-md shadow-lg z-20 max-h-48 overflow-y-auto">
               {citySuggestions.map((suggestion, index) => (
-                <div
-                  key={index}
-                  className="px-4 py-2 cursor-pointer hover:bg-gray-100"
-                  onMouseDown={() => handleSuggestionClick(suggestion)}
-                >
+                <div key={index} className="px-4 py-2 cursor-pointer hover:bg-gray-100 text-gray-800" onMouseDown={() => handleSuggestionClick(suggestion)}>
                   {suggestion.nombre}, {suggestion.provincia}
                 </div>
               ))}
             </div>
           )}
         </div>
+
         <div className="relative w-full">
           <Select<SportOption>
             instanceId="sport-select"
@@ -261,34 +246,43 @@ export const SearchBar: React.FC<SearchBarProps> = ({ className, variant = "defa
             value={sport}
             onChange={(selectedOption) => setSport(selectedOption)}
             isSearchable={false}
-            placeholder="Deporte"
             isLoading={isLoadingSports}
-            loadingMessage={() => 'Cargando deportes...'}
-            noOptionsMessage={() => 'No hay deportes disponibles.'}
+            loadingMessage={() => "Cargando deportes..."}
+            noOptionsMessage={() => "No hay deportes disponibles."}
             components={{
-                Option: CustomOption,
-                SingleValue: CustomSingleValue,
-                Placeholder: CustomPlaceholder,
-                IndicatorSeparator: () => null,
+              Option: CustomOption,
+              SingleValue: CustomSingleValue,
+              Placeholder: CustomPlaceholder,
+              IndicatorSeparator: () => null,
             }}
-            classNamePrefix="react-select"
-            classNames={{
-                control: () =>
-                cn(
-                    "w-full py-[5.5px] border rounded-md transition-colors cursor-pointer hover:border-brand-orange",
-                    variant === "hero"
-                    ? "border-neutral-400"
-                    : "border-neutral-300"
-                ),
-                valueContainer: () => "pl-3 pr-1",
-                menu: () => "bg-white border border-neutral-200 rounded-md shadow-lg mt-1 z-10",
-                option: () => "px-4 py-2 cursor-pointer",
-                dropdownIndicator: () => "text-neutral-600 pr-1",
+            styles={{
+              control: (base) => ({
+                ...base,
+                backgroundColor: 'white',
+                borderColor: '#d4d4d4', // neutral-300
+                paddingTop: '5.5px',
+                paddingBottom: '5.5px',
+                borderRadius: '0.375rem',
+                transition: 'border-color 0.3s',
+                '&:hover': { borderColor: '#f97316' },
+                boxShadow: 'none',
+              }),
+              singleValue: (base) => ({ ...base, color: '#171717' }), // neutral-900
+              menu: (base) => ({ ...base, backgroundColor: 'white', zIndex: 20 }),
+              option: (base, state) => ({
+                ...base,
+                backgroundColor: state.isFocused ? '#f3f4f6' : 'transparent', // gray-100
+                color: '#171717',
+                cursor: 'pointer',
+              }),
+              placeholder: (base) => ({ ...base, color: '#404040' }) // neutral-700
             }}
           />
         </div>
-        <DatePicker selectedDate={date} onSelectDate={setDate} />
+        
+        <DatePicker selectedDate={date} onSelectDate={setDate} variant={variant} />
         <TimePicker value={time} onChange={setTime} variant={variant} />
+        
         <button type="submit" className={buttonClass}>
           <MagnifyingGlassIcon className="h-5 w-5 mr-2" />
           Buscar
