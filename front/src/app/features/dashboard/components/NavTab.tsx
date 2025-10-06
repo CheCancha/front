@@ -23,6 +23,7 @@ export default function DashboardNavTabs() {
     { name: "Reservas", href: routes.app.reservations(complexId) },
     { name: "Analíticas", href: routes.app.analytics(complexId) },
     { name: "Ajustes", href: routes.app.settings(complexId) },
+    { name: "Subscripción", href: routes.app.subscripción(complexId) },
   ];
 
   return (

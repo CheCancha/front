@@ -54,5 +54,5 @@ const container = { maxWidth: "600px", margin: "20px auto", padding: "20px", bac
 const content = { lineHeight: "1.6", color: "#333" };
 const h1 = { fontSize: "24px", color: "#1a1a1a" };
 const paragraph = { fontSize: "16px" };
-const ctaButton = { display: "inline-block", padding: "12px 24px", fontSize: "16px", color: "white", backgroundColor: "#e67e22", textDecoration: "none", borderRadius: "5px", fontWeight: "bold" as const };
+const ctaButton = { display: "inline-block", padding: "12px 24px", fontSize: "16px", color: "white", backgroundColor: "#ff4e02", textDecoration: "none", borderRadius: "5px", fontWeight: "bold" as const };
 const note = { marginTop: "30px", fontSize: "12px", color: "#888" };

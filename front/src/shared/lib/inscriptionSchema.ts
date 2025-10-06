@@ -9,7 +9,8 @@ export const inscriptionSchema = z.object({
   city: z.string().min(3, "La ciudad es muy corta"),
   province: z.string().min(3, "La provincia es muy corta"),
   sports: z.string().min(3, "Menciona al menos un deporte"),
-  selectedPlan: z.string(),
+  selectedPlan: z.string().min(1, "Tenés que seleccionar un plan."),
+  selectedCycle: z.enum(['MENSUAL', 'ANUAL']),
 });
 
 export type InscriptionValues = z.infer<typeof inscriptionSchema>;

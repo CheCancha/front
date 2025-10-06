@@ -15,7 +15,6 @@ export default function Home() {
       <BookingSection />
       <FaqSection />
       <CTASection />
-
       <Footer />
     </div>
   );

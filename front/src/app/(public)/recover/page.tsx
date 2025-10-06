@@ -2,7 +2,10 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import Link from "next/link";
+import { routes } from "@/routes";
+import { Button } from "@/shared/components/ui/button";
+import { Spinner } from "@/shared/components/ui/Spinner";
 
 function ResetPasswordComponent() {
   const searchParams = useSearchParams();
@@ -68,11 +71,18 @@ function ResetPasswordComponent() {
             <input id="confirmPassword" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required className="w-full mt-1 p-2 border rounded-md" />
           </div>
           <button type="submit" disabled={loading} className="w-full py-2 px-4 bg-black text-white rounded-md hover:opacity-90 disabled:opacity-50 flex items-center justify-center">
-            {loading ? <Loader2 className="animate-spin" /> : "Guardar Contraseña"}
+            {loading ? <Spinner /> : "Guardar Contraseña"}
           </button>
         </form>
       ) : (
-        <p className="text-center text-green-600">{message}</p>
+        <div className="text-center space-y-4 pt-2">
+          <p className="text-green-600">{message}</p>
+          <Link href={routes.auth.ingreso} passHref>
+            <Button className="w-full">
+              Ir a Iniciar Sesión
+            </Button>
+          </Link>
+        </div>
       )}
       {error && <p className="text-center text-red-600">{error}</p>}
     </div>
@@ -82,7 +92,7 @@ function ResetPasswordComponent() {
 
 export default function ResetPasswordPage() {
   return (
-    <Suspense fallback={<Loader2 className="animate-spin" />}>
+    <Suspense fallback={<Spinner />}>
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
         <ResetPasswordComponent />
       </div>

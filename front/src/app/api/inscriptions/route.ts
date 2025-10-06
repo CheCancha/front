@@ -12,36 +12,37 @@ export async function POST(request: Request) {
 
     const validation = inscriptionSchema.safeParse(body);
     if (!validation.success) {
-      return new NextResponse("Datos inválidos", { status: 400 });
+      return new NextResponse(JSON.stringify(validation.error.flatten()), { status: 400 });
     }
+
+   const { ownerName, ownerEmail, ownerPhone, complexName, address, city, province, sports, selectedPlan, selectedCycle } = validation.data;
 
     await db.inscriptionRequest.create({
       data: {
-        ownerName: body.ownerName,
-        ownerEmail: body.ownerEmail,
-        ownerPhone: normalizePhoneNumber(body.ownerPhone),
-        complexName: body.complexName,
-        address: body.address,
-        city: body.city,
-        province: body.province,
-        sports: body.sports,
-        selectedPlan: body.selectedPlan,
-        status: "PENDIENTE",
+        ownerName,
+        ownerEmail,
+        ownerPhone: normalizePhoneNumber(ownerPhone),
+        complexName,
+        address,
+        city,
+        province,
+        sports,
+        selectedPlan,
+        selectedCycle,
       },
     });
 
-    await resend.emails.send({
+     await resend.emails.send({
       from: "contacto@checancha.com",
       to: "ignacionweppler@gmail.com",
-      subject: `Nueva solicitud de registro: ${body.complexName}`,
+      subject: `Nueva solicitud de registro: ${complexName}`,
       html: `
         <h1>Nueva Solicitud de Complejo</h1>
-        <p><strong>Nombre del Complejo:</strong> ${body.complexName}</p>
-        <p><strong>Nombre del Dueño:</strong> ${body.ownerName}</p>
-        <p><strong>Email:</strong> ${body.ownerEmail}</p>
-        <p><strong>Teléfono:</strong> ${body.ownerPhone}</p>
-        <p><strong>Plan Seleccionado:</strong> ${body.selectedPlan}</p>
-        <p><em>Revisá tu panel de superadmin para aprobar esta solicitud.</em></p>
+        <p><strong>Nombre del Complejo:</strong> ${complexName}</p>
+        <p><strong>Nombre del Dueño:</strong> ${ownerName}</p>
+        <p><strong>Email:</strong> ${ownerEmail}</p>
+        <p><strong>Teléfono:</strong> ${ownerPhone}</p>
+        <p><strong>Plan Seleccionado:</strong> ${selectedPlan} (${selectedCycle})</p> <p><em>Revisá tu panel de superadmin para aprobar esta solicitud.</em></p>
       `,
     });
 

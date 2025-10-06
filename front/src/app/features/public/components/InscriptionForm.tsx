@@ -38,14 +38,19 @@ export const InscriptionsForm = () => {
     register,
     handleSubmit,
     control,
+    setValue, 
+    watch,    
     formState: { errors, isSubmitting },
     reset,
   } = useForm<InscriptionValues>({
     resolver: zodResolver(inscriptionSchema),
     defaultValues: {
       selectedPlan: planFromUrl,
+      selectedCycle: 'MENSUAL',
     },
   });
+
+  const selectedCycle = watch('selectedCycle');
 
   useEffect(() => {
     const fetchSports = async () => {
@@ -150,6 +155,27 @@ export const InscriptionsForm = () => {
                 {errors.sports && <p className="mt-1 text-sm text-red-600">{errors.sports.message}</p>}
             </div>
 
+            <div>
+              <label className={labelClass}>Frecuencia de Pago</label>
+              <div className="mt-2 grid grid-cols-2 gap-2 rounded-lg bg-gray-200 p-1">
+                <button
+                  type="button"
+                  onClick={() => setValue('selectedCycle', 'MENSUAL', { shouldValidate: true })}
+                  className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${selectedCycle === 'MENSUAL' ? 'bg-white text-gray-900 shadow' : 'bg-transparent text-gray-600 hover:bg-gray-300'}`}
+                >
+                  Mensual
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setValue('selectedCycle', 'ANUAL', { shouldValidate: true })}
+                  className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${selectedCycle === 'ANUAL' ? 'bg-white text-gray-900 shadow' : 'bg-transparent text-gray-600 hover:bg-gray-300'}`}
+                >
+                  Anual (2 meses gratis)
+                </button>
+              </div>
+            </div>
+
+            {/* --- SELECTOR DE PLAN (MODIFICADO) --- */}
             <div>
               <label className={labelClass}>Plan Seleccionado</label>
               <Controller

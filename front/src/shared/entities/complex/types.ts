@@ -28,3 +28,18 @@ export interface NewCourt {
   priceRules: NewPriceRule[]; 
   isNew: true;
 }
+
+
+export type ComplexWithManager = {
+  id: string;
+  name: string;
+  manager: {
+    name: string | null;
+    phone: string | null;
+  };
+  subscriptionPlan: "FREE" | "BASE" | "FULL";
+  subscriptionStatus: "ACTIVA" | "ATRASADA" | "CANCELADA" | "EN_PRUEBA";
+  subscriptionCycle: "MENSUAL" | "ANUAL" | null;
+  trialEndsAt: Date | null;
+  subscribedAt: Date | null;
+};

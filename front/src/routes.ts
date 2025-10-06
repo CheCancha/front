@@ -22,6 +22,7 @@ export const routes = {
     reservations: (complexId: string) => `/dashboard/${complexId}/booking`,
     analytics: (complexId: string) => `/dashboard/${complexId}/analytics`,
     settings: (complexId: string) => `/dashboard/${complexId}/settings`,
+    subscripción: (complexId: string) => `/dashboard/${complexId}/billing`,
 
     perfil: "/profile",
   },

@@ -10,13 +10,13 @@ import {
   Search,
   LogOut,
   LayoutDashboard,
-  Loader2,
   Menu,
   X,
   ChevronDown,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "./ui/button";
+import { Spinner } from "./ui/Spinner";
 
 const Navbar: React.FC = () => {
   const { data: session, status } = useSession();
@@ -57,7 +57,7 @@ const Navbar: React.FC = () => {
   if (isAuthLoading) {
     return (
       <nav className="bg-background border-b sticky top-0 z-20 h-16 flex items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-gray-500" />
+        <Spinner />
       </nav>
     );
   }

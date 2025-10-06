@@ -1,4 +1,4 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 import { db } from "@/shared/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/authOptions";
@@ -34,18 +34,11 @@ export async function PUT(
 
     const body = await req.json();
 
-    // --- LOG DE DIAGNÓSTICO EN EL BACKEND ---
-    console.log("\n--- [AUDITORÍA BACKEND] ---");
-    console.log("Body recibido en /api/settings/general:", JSON.stringify(body, null, 2));
     if (body.basicInfo) {
-      console.log("Tipo de 'latitude' recibido:", typeof body.basicInfo.latitude);
-      console.log("Tipo de 'longitude' recibido:", typeof body.basicInfo.longitude);
     }
-    // --- FIN DEL LOG ---
 
     const validation = generalInfoSchema.safeParse(body);
     if (!validation.success) {
-      console.error("Falló la validación de Zod:", validation.error.format());
       return NextResponse.json({ error: validation.error.format() }, { status: 400 });
     }
 
@@ -72,7 +65,6 @@ export async function PUT(
     return NextResponse.json({ message: "Información general actualizada." }, { status: 200 });
 
   } catch (error) {
-    console.error("💥 ERROR en PUT de settings/general:", error);
     return new NextResponse("Error interno del servidor", { status: 500 });
   }
 }

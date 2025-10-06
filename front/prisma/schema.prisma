@@ -9,10 +9,32 @@ datasource db {
 }
 
 enum SubscriptionPlan {
-  BASE
+  FREE // Plan Demo / Prueba
+  BASE // Plan Básico 
   ESTANDAR
-  FULL
-  FREE
+  FULL // Plan Pro
+}
+
+enum SubscriptionStatus {
+  EN_PRUEBA //90 dias
+  ACTIVA
+  ATRASADA
+  CANCELADA
+}
+
+enum SubscriptionCycle {
+  MENSUAL
+  ANUAL
+}
+
+model SubscriptionPlanDetails {
+  id                String    @id @default(cuid())
+  plan              SubscriptionPlan 
+  cycle             SubscriptionCycle
+  price             Int 
+  mp_plan_id        String    @unique
+  isActive          Boolean   @default(true)
+  createdAt         DateTime  @default(now())
 }
 
 model User {
@@ -110,15 +132,22 @@ model Complex {
   mp_public_key         String?
   mp_user_id            String?
   mp_connected_at       DateTime?
+  reviews               Review[]
 
   // Relaciones
   manager               User     @relation("ManagedBy", fields: [managerId], references: [id])
   courts                Court[]
   images                Image[]
   schedule              Schedule?
-  subscriptionPlan      SubscriptionPlan @default(FREE)
 
-  reviews               Review[]
+// --- CAMPOS DE SUSCRIPCIÓN ---
+  subscriptionPlan        SubscriptionPlan    @default(FREE)
+  subscriptionStatus      SubscriptionStatus  @default(EN_PRUEBA)
+  subscriptionCycle       SubscriptionCycle?                     
+  trialEndsAt             DateTime?
+  subscribedAt            DateTime?
+  currentPeriodEndsAt     DateTime?  
+  mp_subscription_id      String?             @unique 
 
   averageRating         Float    @default(0)
   reviewCount           Int      @default(0)
@@ -243,6 +272,7 @@ model InscriptionRequest {
   province     String
   sports       String
   selectedPlan String
+  selectedCycle String?
   status       String   @default("PENDIENTE")
   createdAt    DateTime @default(now())
 }

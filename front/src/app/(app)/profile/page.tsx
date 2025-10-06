@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo, type FormEvent } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Calendar, Phone, Loader2, Edit3, ShieldCheck, X, AlertTriangle } from "lucide-react";
+import { Calendar, Phone, Edit3, ShieldCheck, X, AlertTriangle } from "lucide-react";
 import { toast, Toaster } from "react-hot-toast";
 import { PasswordInput } from "@/shared/components/ui/Input";
 import { format, differenceInHours, parseISO } from "date-fns";
@@ -242,7 +242,7 @@ export default function ProfilePage() {
                         </button>
                     </div>
                     <button type="submit" disabled={isUpdatingInfo} className="w-full bg-brand-orange text-white font-semibold py-2 px-4 rounded-lg hover:bg-brand-orange/90 transition-colors disabled:bg-brand-orange/50 flex items-center justify-center cursor-pointer">
-                        {isUpdatingInfo ? <Loader2 className="animate-spin" /> : "Guardar Información"}
+                        {isUpdatingInfo ? <Spinner /> : "Guardar Información"}
                     </button>
                 </form>
             </div>
@@ -255,7 +255,7 @@ export default function ProfilePage() {
                 <PasswordInput label="Nueva Contraseña" register={register("newPassword")} error={errors.newPassword?.message} autoComplete="new-password" />
                 <PasswordInput label="Confirmar Nueva Contraseña" register={register("confirmPassword")} error={errors.confirmPassword?.message} autoComplete="new-password" />
                 <button type="submit" disabled={isUpdatingPassword} className="w-full bg-gray-800 text-white font-semibold py-2 px-4 rounded-lg hover:bg-gray-900 transition-colors disabled:bg-gray-400 flex items-center justify-center cursor-pointer">
-                  {isUpdatingPassword ? <Loader2 className="animate-spin" /> : "Cambiar Contraseña"}
+                  {isUpdatingPassword ? <Spinner /> : "Cambiar Contraseña"}
                 </button>
               </form>
             </div>
@@ -350,7 +350,7 @@ export default function ProfilePage() {
                     disabled={isCancelling}
                     className="w-full sm:ml-3 sm:w-auto"
                 >
-                    {isCancelling ? <Loader2 className="animate-spin" /> : 'Sí, cancelar'}
+                    {isCancelling ? <Spinner /> : 'Sí, cancelar'}
                 </Button>
                 <Button
                     variant="ghost"

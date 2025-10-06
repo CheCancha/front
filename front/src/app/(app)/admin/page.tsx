@@ -1,5 +1,6 @@
 import { db } from "@/shared/lib/db";
 import InscriptionRequests from "./InscriptionRequests";
+import { ComplexWithManager } from '@/shared/entities/complex/types';
 import AdminDashboard from "./AdminDashboard";
 import {
   Tabs,
@@ -9,18 +10,8 @@ import {
 } from "@/shared/components/ui/Tabs";
 import { FileText, Building, Users } from "lucide-react";
 
-type ComplexWithManager = {
-  id: string;
-  name: string;
-  manager: {
-    name: string | null;
-    phone: string | null;
-  };
-  subscriptionPlan: "Básico" | "Pro";
-};
 
 export default async function AdminPage() {
-
   // 1. Obtenemos las solicitudes pendientes.
   const pendingRequests = await db.inscriptionRequest.findMany({
     where: { status: "PENDIENTE" },
@@ -40,19 +31,23 @@ export default async function AdminPage() {
 
   // 3. Mapeamos los datos de los complejos al tipo que necesita el componente.
   const activeComplexes: ComplexWithManager[] = activeComplexesRaw.map(
-    (c): ComplexWithManager => ({
-      id: c.id,
-      name: c.name,
-      manager: {
-        name: c.manager?.name || null,
-        phone: c.manager?.phone || null,
-      },
-      subscriptionPlan:
-        c.subscriptionPlan === "BASE" || c.subscriptionPlan === "FREE"
-          ? "Básico"
-          : "Pro",
-    })
-  );
+  (c): ComplexWithManager => ({
+    id: c.id,
+    name: c.name,
+    manager: {
+      name: c.manager?.name || null,
+      phone: c.manager?.phone || null,
+    },
+    subscriptionPlan:
+      c.subscriptionPlan === "BASE" || c.subscriptionPlan === "FREE"
+        ? "BASE"
+        : "FULL",
+    subscriptionStatus: c.subscriptionStatus || "EN_PRUEBA",
+    subscriptionCycle: c.subscriptionCycle || null,
+    trialEndsAt: c.trialEndsAt,
+    subscribedAt: c.subscribedAt,
+  })
+);
 
   return (
     <div className="min-h-screen bg-gray-50/50">

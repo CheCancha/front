@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Mail, Loader2 } from "lucide-react";
+import { Mail } from "lucide-react";
+import { Spinner } from "@/shared/components/ui/Spinner";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -56,7 +57,7 @@ export default function ForgotPasswordPage() {
             disabled={loading}
             className="w-full py-2 px-4 bg-black text-white rounded-md hover:opacity-90 disabled:opacity-50 flex items-center justify-center cursor-pointer"
           >
-            {loading ? <Loader2 className="animate-spin" /> : "Enviar Enlace"}
+            {loading ? <Spinner /> : "Enviar Enlace"}
           </button>
         </form>
         {message && (
