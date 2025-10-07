@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/shared/lib/db";
 import { authorizeAndVerify } from "@/shared/lib/authorize";
 import { PriceRule } from "@prisma/client";
+import { checkOnboarding } from "@/shared/lib/checkOnboarding";
 
 type PriceRulePayload = Omit<PriceRule, "id" | "courtId">;
 
@@ -46,14 +47,12 @@ export async function PUT(
 
     await db.$transaction(
       async (prisma) => {
-        // --- Eliminar canchas ---
+        // --- Lógica para eliminar, actualizar y crear canchas ---
         if (courts.delete?.length > 0) {
           await prisma.court.deleteMany({
             where: { id: { in: courts.delete.map((c) => c.id) } },
           });
         }
-        
-        // ---  Procesar actualizaciones en lotes ---
         if (courts.update?.length > 0) {
           for (const court of courts.update) {
             await prisma.court.update({
@@ -71,8 +70,6 @@ export async function PUT(
             });
           }
         }
-        
-        // ---  Procesar creaciones en lotes ---
         if (courts.create?.length > 0) {
             for (const court of courts.create) {
                 await prisma.court.create({
@@ -90,9 +87,13 @@ export async function PUT(
       { timeout: 30000 } 
     );
 
+    // --- 2. LLAMAR A LA FUNCIÓN DE VERIFICACIÓN ---
+    await checkOnboarding(id);
+
     return NextResponse.json({ message: "Canchas actualizadas exitosamente" });
   } catch (error) {
     console.error("[SETTINGS_COURTS_PUT]", error);
     return new NextResponse("Error interno del servidor", { status: 500 });
   }
 }
+

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/shared/lib/db";
 import { z } from "zod";
 import { authorizeAndVerify } from "@/shared/lib/authorize";
+import { checkOnboarding } from "@/shared/lib/checkOnboarding";
 
 // Esquema para validar el payload de entrada
 const settingsSchema = z.object({
@@ -69,6 +70,9 @@ export async function PUT(
     }
 
     await Promise.all(updatePromises);
+
+    // --- 2. LLAMAR A LA FUNCIÓN DE VERIFICACIÓN ---
+    await checkOnboarding(id);
 
     return NextResponse.json({ message: "Ajustes de horarios actualizados" });
   } catch (error) {

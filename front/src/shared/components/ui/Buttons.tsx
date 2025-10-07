@@ -53,9 +53,9 @@ export const ButtonPrimary: React.FC<ButtonProps> = ({
   ...props
 }) => {
   const primaryClasses =
-    "bg-gradient-to-r from-orange-500 to-red-600 transition-all duration-300 cursor-pointer hover:brightness-110 text-white";
+    "font-medium bg-gradient-to-r from-orange-500 to-red-600 transition-all duration-300 cursor-pointer hover:brightness-110 text-white";
   const baseClasses =
-    "inline-flex items-center justify-center rounded-full font-bold text-base transition-colors duration-300 cursor-pointer py-2 px-4";
+    "inline-flex items-center justify-center rounded-full text-base transition-colors duration-300 cursor-pointer py-3 px-4";
 
   return (
     <ButtonBase
@@ -73,7 +73,7 @@ export const ButtonSecondary: React.FC<ButtonProps> = ({
   const secondaryClasses =
     "bg-transparent border-2 border-brand-orange text-brand-orange hover:bg-brand-orange hover:text-white";
   const baseClasses =
-    "inline-flex items-center justify-center rounded-full font-bold text-base transition-colors duration-300 cursor-pointer py-3 px-8";
+    "inline-flex items-center justify-center rounded-full font-bold text-base transition-colors duration-300 cursor-pointer py-3 px-4";
 
   return (
     <ButtonBase
@@ -87,7 +87,7 @@ export const ButtonSecondary: React.FC<ButtonProps> = ({
 export const ButtonGhost: React.FC<ButtonProps> = ({ className, ...props }) => {
   const ghostClasses = "bg-transparent text-foreground hover:bg-background";
   const baseClasses =
-    "inline-flex items-center justify-center rounded-full font-bold text-base transition-colors duration-300 cursor-pointer py-3 px-8";
+    "inline-flex items-center justify-center rounded-full font-medium transition-colors duration-300 cursor-pointer py-3 px-4";
 
   return (
     <ButtonBase

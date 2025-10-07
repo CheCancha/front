@@ -3,6 +3,7 @@ import { Plus, AlertTriangle } from "lucide-react";
 import { FullComplexData, NewCourt } from "@/shared/entities/complex/types";
 import { Sport } from "@prisma/client";
 import { CourtFormRow } from "@/shared/entities/court/ui/CourtRowForm";
+import { Button } from "@/shared/components/ui/button";
 
 interface Props {
   data: FullComplexData;
@@ -49,14 +50,10 @@ export const CourtsManager = ({
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Gestión de Canchas</h3>
-        <button
-          type="button"
-          onClick={onAddNewCourt}
-          className="inline-flex items-center px-4 py-2 bg-black text-white font-medium rounded-lg hover:bg-gray-800 transition-colors shadow-sm"
-        >
+        <Button onClick={onAddNewCourt}>
           <Plus className="w-4 h-4 mr-2" />
           Agregar Cancha
-        </button>
+        </Button>
       </div>
 
       <div className="space-y-4">

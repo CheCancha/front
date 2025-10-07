@@ -76,16 +76,16 @@ export const GeneralInfoForm: React.FC<GeneralInfoFormProps> = ({ data, onChange
         <p className="mt-1 text-sm text-gray-500">Esta información será visible en tu perfil público para que los jugadores puedan contactarte.</p>
         <div className="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
           <div className="sm:col-span-3">
-            <FormField id="contactPhone" label="Teléfono Público (Opcional)" value={data.contactPhone} onChange={onChange} placeholder="3491123456" />
+            <FormField id="contactPhone" label="Teléfono Público" value={data.contactPhone} onChange={onChange} placeholder="3491123456" />
           </div>
           <div className="sm:col-span-3">
-            <FormField id="contactEmail" label="Email Público (Opcional)" type="email" value={data.contactEmail} onChange={onChange} placeholder="contacto@tuclub.com" />
+            <FormField id="contactEmail" label="Email Público" type="email" value={data.contactEmail} onChange={onChange} placeholder="contacto@tuclub.com" />
           </div>
           <div className="sm:col-span-3">
-            <FormField id="instagramHandle" label="Usuario de Instagram (Opcional)" value={data.instagramHandle} onChange={onChange} placeholder="tuclubdeportivo" note="Solo el nombre de usuario, sin el @" />
+            <FormField id="instagramHandle" label="Usuario de Instagram" value={data.instagramHandle} onChange={onChange} placeholder="tuclubdeportivo" note="Solo el nombre de usuario, sin el @" />
           </div>
           <div className="sm:col-span-3">
-            <FormField id="facebookUrl" label="URL de Facebook (Opcional)" value={data.facebookUrl} onChange={onChange} placeholder="https://facebook.com/tuclub" />
+            <FormField id="facebookUrl" label="URL de Facebook" value={data.facebookUrl} onChange={onChange} placeholder="https://facebook.com/tuclub" />
           </div>
         </div>
       </div>
@@ -96,10 +96,10 @@ export const GeneralInfoForm: React.FC<GeneralInfoFormProps> = ({ data, onChange
         <p className="mt-1 text-sm text-gray-500">Coordenadas para mostrar tu complejo en el mapa del perfil. Podés obtenerlas fácilmente desde Google Maps.</p>
         <div className="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
           <div className="sm:col-span-3">
-            <FormField id="latitude" label="Latitud (Opcional)" type="number" step="any" value={data.latitude} onChange={onChange} placeholder="-29.2345" />
+            <FormField id="latitude" label="Latitud" type="number" step="any" value={data.latitude} onChange={onChange} placeholder="-29.2345" />
           </div>
           <div className="sm:col-span-3">
-            <FormField id="longitude" label="Longitud (Opcional)" type="number" step="any" value={data.longitude} onChange={onChange} placeholder="-61.7689" />
+            <FormField id="longitude" label="Longitud" type="number" step="any" value={data.longitude} onChange={onChange} placeholder="-61.7689" />
           </div>
         </div>
       </div>

@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown } from "lucide-react";
+import Link from "next/link";
 
 const faqData = [
   {
@@ -93,7 +94,7 @@ export const FaqSection = () => {
             <h2 className="font-lora text-3xl md:text-5xl font-semibold text-foreground mt-2 mb-6">
               Preguntas Frecuentes
             </h2>
-            <div className="bg-brand-green/20 p-6 rounded-xl">
+            <div className="bg-[#56f7a2] to-[#56f776] p-3 md:p-6 rounded-xl">
               <h4 className="font-bold text-lg text-foreground">
                 ¿No encontraste lo que buscabas?
               </h4>
@@ -101,14 +102,14 @@ export const FaqSection = () => {
                 Nuestro equipo está aquí para ayudarte. Contactanos y resolvé
                 todas tus dudas.
               </p>
-              <a
-                href="https://api.whatsapp.com/send?phone=TU_NUMERO_DE_WHATSAPP"
+              <Link
+                href="https://api.whatsapp.com/send?phone=5491154702118"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-block bg-brand-green text-white font-bold py-2 px-5 rounded-full hover:bg-opacity-90 transition-transform transform"
+                className="inline-block bg-primary text-primary-foreground hover:bg-primary/90 font-medium py-3 px-4 rounded-full transition-transform"
               >
-                Contactanos
-              </a>
+                Contáctanos 
+              </Link>
             </div>
           </div>
 

@@ -34,7 +34,7 @@ export const CTASection = () => {
         </p>
         <Link
           href="#inicio"
-          className="inline-block bg-brand-orange text-white font-bold py-3 px-10 rounded-full text-lg hover:opacity-90 transition-transform transform"
+          className="inline-flex items-center justify-center rounded-full font-medium py-4 px-8 text-white bg-gradient-to-r from-orange-500 to-red-600 transition-all duration-300 hover:brightness-110 cursor-pointer"
         >
           Ir a Reservar
         </Link>

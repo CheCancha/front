@@ -102,7 +102,7 @@ const ClubCard = ({
   };
 
   return (
-    <div className="group bg-[#f8f9f9] rounded-xl shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 flex flex-col h-full">
+    <div className="group bg-[#f8f9f9] rounded-xl shadow-md overflow-hidden transition-all duration-300 flex flex-col h-full">
       <Link
         href={routes.public.complexProfile(club.slug)}
         className="block relative h-48"
@@ -118,7 +118,7 @@ const ClubCard = ({
       </Link>
       <div className="p-4 flex flex-col flex-grow">
         <Link href={routes.public.complexProfile(club.slug)}>
-          <h3 className="font-bold text-lg text-foreground hover:text-brand-orange transition-colors">
+          <h3 className="font-bold text-lg text-foreground">
             {club.name}
           </h3>
         </Link>
