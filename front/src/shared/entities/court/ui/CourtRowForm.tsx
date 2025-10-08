@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 import { Trash2, X, PlusCircle } from "lucide-react";
 import { CourtWithRelations, NewCourt } from "@/shared/entities/complex/types";
@@ -6,6 +8,16 @@ import {
   durationOptions,
   hoursOptions,
 } from "@/shared/constants/dashboard-settings";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectLabel,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/shared/components/ui/select";
+import { Input } from "@/shared/components/ui/inputshadcn";
 
 interface Props {
   court: CourtWithRelations | NewCourt;
@@ -34,6 +46,25 @@ export const CourtFormRow = ({
   const isNew = "isNew" in court;
   const id = isNew ? court.tempId : court.id;
 
+  const groupedHours = [
+    {
+      label: "Madrugada",
+      options: hoursOptions.filter((h) => h.value >= 0 && h.value <= 6),
+    },
+    {
+      label: "Mañana",
+      options: hoursOptions.filter((h) => h.value >= 7 && h.value <= 12),
+    },
+    {
+      label: "Tarde",
+      options: hoursOptions.filter((h) => h.value >= 13 && h.value <= 19),
+    },
+    {
+      label: "Noche",
+      options: hoursOptions.filter((h) => h.value >= 20 && h.value <= 23),
+    },
+  ];
+
   return (
     <div
       className={`border rounded-xl p-4 sm:p-6 space-y-4 shadow-sm ${
@@ -46,47 +77,54 @@ export const CourtFormRow = ({
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Nombre Cancha *
           </label>
-          <input
+          <Input
             type="text"
             value={court.name}
             onChange={(e) => onCourtChange(id, "name", e.target.value)}
             required
-            className="w-full rounded-lg p-2 border border-neutral-300"
           />
         </div>
         <div className="col-span-6 sm:col-span-3">
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Deporte *
           </label>
-          <select
+          <Select
             value={court.sportId}
-            onChange={(e) => onCourtChange(id, "sportId", e.target.value)}
-            className="w-full rounded-lg p-2 border border-neutral-300"
+            onValueChange={(value) => onCourtChange(id, "sportId", value)}
           >
-            {allSports.map((sport) => (
-              <option key={sport.id} value={sport.id}>
-                {sport.name}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger>
+              <SelectValue placeholder="Seleccionar deporte" />
+            </SelectTrigger>
+            <SelectContent>
+              {allSports.map((sport) => (
+                <SelectItem key={sport.id} value={sport.id}>
+                  {sport.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <div className="col-span-6 sm:col-span-4">
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Duración Turno
           </label>
-          <select
-            value={court.slotDurationMinutes}
-            onChange={(e) =>
-              onCourtChange(id, "slotDurationMinutes", Number(e.target.value))
+          <Select
+            value={String(court.slotDurationMinutes)}
+            onValueChange={(value) =>
+              onCourtChange(id, "slotDurationMinutes", Number(value))
             }
-            className="w-full rounded-lg p-2 border border-neutral-300"
           >
-            {durationOptions.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger>
+              <SelectValue placeholder="Seleccionar duración" />
+            </SelectTrigger>
+            <SelectContent>
+              {durationOptions.map((opt) => (
+                <SelectItem key={opt.value} value={String(opt.value)}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <div className="col-span-12 sm:col-span-1 flex justify-end">
           <button
@@ -102,7 +140,7 @@ export const CourtFormRow = ({
 
       {/* --- Sub-sección para Reglas de Precios --- */}
       <div className="pl-4 border-l-2 border-gray-200 space-y-3">
-        <h4 className="text-sm font-semibold text-gray-700">
+        <h4 className="text-sm font-semibold text-gray-700 pt-2">
           Reglas de Precios
         </h4>
         {court.priceRules.map((rule) => {
@@ -110,53 +148,67 @@ export const CourtFormRow = ({
           return (
             <div
               key={ruleId}
-              className="grid grid-cols-12 gap-x-3 gap-y-2 items-center bg-white p-3"
+              className="grid grid-cols-12 gap-x-3 gap-y-2 items-center bg-gray-50 p-3 rounded-md"
             >
               <div className="col-span-6 sm:col-span-3">
                 <label className="text-xs font-medium">Desde</label>
-                <select
-                  value={rule.startTime}
-                  onChange={(e) =>
-                    onPriceRuleChange(
-                      id,
-                      ruleId,
-                      "startTime",
-                      Number(e.target.value)
-                    )
+                <Select
+                  value={String(rule.startTime)}
+                  onValueChange={(value) =>
+                    onPriceRuleChange(id, ruleId, "startTime", Number(value))
                   }
-                  className="w-full p-1 text-xs border-1 rounded-md border-gray-300"
                 >
-                  {hoursOptions.map((opt) => (
-                    <option key={`start-${opt.value}`} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="bg-white text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[200px] overflow-y-auto">
+                    {groupedHours.map((group) => (
+                      <SelectGroup key={`start-group-${group.label}`}>
+                        <SelectLabel>{group.label}</SelectLabel>
+                        {group.options.map((opt) => (
+                          <SelectItem
+                            key={`start-${opt.value}`}
+                            value={String(opt.value)}
+                          >
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="col-span-6 sm:col-span-3">
                 <label className="text-xs font-medium">Hasta</label>
-                <select
-                  value={rule.endTime}
-                  onChange={(e) =>
-                    onPriceRuleChange(
-                      id,
-                      ruleId,
-                      "endTime",
-                      Number(e.target.value)
-                    )
+                <Select
+                  value={String(rule.endTime)}
+                  onValueChange={(value) =>
+                    onPriceRuleChange(id, ruleId, "endTime", Number(value))
                   }
-                  className="w-full p-1 text-xs border-1 rounded-md border-gray-300"
                 >
-                  {hoursOptions.map((opt) => (
-                    <option key={`end-${opt.value}`} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="bg-white text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[200px] overflow-y-auto">
+                    {groupedHours.map((group) => (
+                      <SelectGroup key={`end-group-${group.label}`}>
+                        <SelectLabel>{group.label}</SelectLabel>
+                        {group.options.map((opt) => (
+                          <SelectItem
+                            key={`end-${opt.value}`}
+                            value={String(opt.value)}
+                          >
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="col-span-6 sm:col-span-2">
                 <label className="text-xs font-medium">Precio</label>
-                <input
+                <Input
                   type="number"
                   placeholder="20000"
                   value={rule.price}
@@ -168,12 +220,12 @@ export const CourtFormRow = ({
                       Number(e.target.value)
                     )
                   }
-                  className="w-full p-1 text-xs border-1 rounded-md border-gray-300"
+                  className="text-xs"
                 />
               </div>
               <div className="col-span-6 sm:col-span-3">
                 <label className="text-xs font-medium">$ Seña</label>
-                <input
+                <Input
                   type="number"
                   placeholder="5000"
                   value={rule.depositAmount}
@@ -185,14 +237,14 @@ export const CourtFormRow = ({
                       Number(e.target.value)
                     )
                   }
-                  className="w-full p-1 text-xs border-1 rounded-md border-gray-300"
+                  className="text-xs"
                 />
               </div>
               <div className="col-span-12 sm:col-span-1">
                 <button
                   type="button"
                   onClick={() => onRemovePriceRule(id, ruleId)}
-                  className="w-full h-8 flex items-center justify-center text-gray-500 hover:bg-gray-100 rounded-md text-xs cursor-pointer"
+                  className="w-full h-8 flex items-center justify-center text-gray-500 hover:bg-gray-100 rounded-md text-xs cursor-pointer mt-4"
                 >
                   Quitar
                 </button>

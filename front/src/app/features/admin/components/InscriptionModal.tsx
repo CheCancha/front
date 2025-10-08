@@ -16,7 +16,7 @@ interface InscriptionReviewModalProps {
   isOpen: boolean;
   onClose: () => void;
   request: InscriptionRequest | null;
-  onActionComplete: () => void; // <-- Prop añadida
+  onActionComplete: () => void;
 }
 
 const EditableDetailItem = ({

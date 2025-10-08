@@ -121,8 +121,7 @@ export default function InscriptionRequests({ initialRequests }: { initialReques
 
         {requests.length === 0 && !isPending ? (
           <div className="text-center py-10">
-            <p className="text-gray-500">No hay nuevas solicitudes pendientes.</p>
-            <p className="text-sm text-gray-400 mt-1">¡Buen trabajo!</p>
+            <p className="text-paragraph">No hay nuevas solicitudes pendientes.</p>
           </div>
         ) : (
           <div>

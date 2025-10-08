@@ -3,9 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/shared/lib/db";
 import bcrypt from "bcryptjs";
-import { Role, SubscriptionPlan } from "@prisma/client";
+import { Role, SubscriptionPlan, SubscriptionCycle } from "@prisma/client"; // <- Importar SubscriptionCycle
 import { sendWelcomeEmail } from "@/shared/lib/email";
 import { slugify } from "@/shared/lib/utils";
+import { add } from "date-fns"; // <- Importar 'add' para calcular la fecha
 
 const getPlanEnumFromString = (planString: string): SubscriptionPlan => {
   switch (planString) {
@@ -39,6 +40,7 @@ export async function approveInscription(
     }
 
     const plan = getPlanEnumFromString(inscription.selectedPlan);
+    const trialEndsAt = add(new Date(), { days: 90 }); // Calcular fecha de fin de prueba
 
     let user = await db.user.findUnique({
       where: { email: inscription.ownerEmail },
@@ -74,15 +76,20 @@ export async function approveInscription(
       };
     }
 
+    // --- CORRECCIÓN CLAVE AQUÍ ---
+    // Añadimos los campos que faltaban al crear el complejo
     await db.complex.create({
       data: {
-        name: inscription!.complexName,
-        slug: slugify(inscription!.complexName),
-        address: inscription!.address,
-        city: inscription!.city,
-        province: inscription!.province,
+        name: inscription.complexName,
+        slug: slugify(inscription.complexName),
+        address: inscription.address,
+        city: inscription.city,
+        province: inscription.province,
         managerId: user.id,
+        inscriptionRequestId: inscription.id, // Conectar con la solicitud
         subscriptionPlan: plan,
+        subscriptionCycle: inscription.selectedCycle as SubscriptionCycle, // <- Guardar el ciclo
+        trialEndsAt: trialEndsAt, // <- Guardar la fecha de fin de prueba
       },
     });
 
