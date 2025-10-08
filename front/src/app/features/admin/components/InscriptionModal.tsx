@@ -8,15 +8,15 @@ import {
   approveInscription,
   rejectInscription,
   updateInscription,
-} from "@/app/features/admin/services/admin.service";
+} from "@/app/features/admin/inscriptionActions";
 import { toast } from "react-hot-toast";
 import { Button } from "@/shared/components/ui/button";
+import { useRouter } from "next/navigation";
 
 interface InscriptionReviewModalProps {
   isOpen: boolean;
   onClose: () => void;
   request: InscriptionRequest | null;
-  onActionComplete: () => void;
 }
 
 const EditableDetailItem = ({
@@ -49,16 +49,22 @@ export const InscriptionReviewModal: React.FC<InscriptionReviewModalProps> = ({
   isOpen,
   onClose,
   request,
-  onActionComplete, // <-- Prop añadida
 }) => {
   const [isPending, startTransition] = useTransition();
-  const [formData, setFormData] = useState<Partial<InscriptionRequest>>({});
+  const [formData, setFormData] = useState<Partial<Omit<InscriptionRequest, 'id'>>>({});
+  const router = useRouter();
 
   useEffect(() => {
     if (request) {
-      setFormData(request);
+      const { id, ...data } = request;
+      setFormData(data);
     }
   }, [request]);
+
+  const onActionComplete = () => {
+    onClose();
+    router.refresh();
+  };
 
   if (!request) return null;
 
@@ -86,10 +92,11 @@ export const InscriptionReviewModal: React.FC<InscriptionReviewModalProps> = ({
     if (!request) return;
     startTransition(async () => {
       toast.loading("Aprobando solicitud...");
-      const result = await approveInscription(request.id, formData);
+      // --- SOLUCIÓN: Se elimina el segundo argumento 'formData' ---
+      const result = await approveInscription(request.id);
       toast.dismiss();
       if (result.success) {
-        toast.success("¡Solicitud aprobada!");
+        toast.success(result.message || "¡Solicitud aprobada!");
         if (result.warning) {
           toast.error(`Advertencia: ${result.warning}`, { duration: 6000 });
         }
@@ -186,3 +193,4 @@ export const InscriptionReviewModal: React.FC<InscriptionReviewModalProps> = ({
     </AnimatePresence>
   );
 };
+

@@ -6,19 +6,20 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { inscriptionSchema, InscriptionValues } from "@/shared/lib/inscriptionSchema";
 import { CustomInput } from "@/shared/components/ui/Input";
-import { Button } from "@/shared/components/ui/button";
+import { ButtonPrimary } from "@/shared/components/ui/Buttons";
 import { SuccessModal } from "@/shared/components/ui/Modal";
 import { Sport } from "@prisma/client";
+import { Checkbox } from "@/shared/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/shared/components/ui/radio-group";
+import { Check } from "lucide-react";
 import {
-  Select as ShadcnSelect,
+  Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/shared/components/ui/select";
-import { RadioGroup, RadioGroupItem } from "@/shared/components/ui/radio-group";
-import { Checkbox } from "@/shared/components/ui/checkbox";
-import { Check } from "lucide-react";
+
 
 interface PlanOption {
     value: string;
@@ -47,20 +48,16 @@ export const InscriptionsForm = () => {
     register,
     handleSubmit,
     control,
-    setValue,
-    watch,
     formState: { errors, isSubmitting },
     reset,
   } = useForm<InscriptionValues>({
     resolver: zodResolver(inscriptionSchema),
     defaultValues: {
-      sports: "",
       selectedPlan: planFromUrl,
       selectedCycle: 'MENSUAL',
+      sports: '', // <-- SOLUCIÓN: Añadido valor por defecto
     },
   });
-
-  const selectedSports = watch("sports");
 
   useEffect(() => {
     const fetchSports = async () => {
@@ -89,7 +86,7 @@ export const InscriptionsForm = () => {
       if (!response.ok) {
         throw new Error("Algo salió mal. Por favor, intenta de nuevo más tarde.");
       }
-      reset({ selectedPlan: planFromUrl });
+      reset({ selectedPlan: planFromUrl, selectedCycle: 'MENSUAL', sports: '' });
       setIsSuccessModalOpen(true);
     } catch (error: unknown) {
       console.error("Error al enviar el formulario:", error);
@@ -122,7 +119,9 @@ export const InscriptionsForm = () => {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
           {/* --- Sección Datos del Dueño --- */}
           <section className="space-y-4 bg-gray-50 p-6 rounded-lg border">
-              <h3 className="text-lg font-semibold text-gray-800">Datos del Dueño</h3>
+            <div className="flex items-center gap-3">
+                <h3 className="text-lg font-semibold text-gray-800">Datos del Dueño</h3>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <CustomInput label="Nombre y Apellido" type="text" register={register("ownerName")} error={errors.ownerName?.message}/>
               <CustomInput label="Email" type="email" register={register("ownerEmail")} error={errors.ownerEmail?.message}/>
@@ -132,7 +131,9 @@ export const InscriptionsForm = () => {
 
           {/* --- Sección Datos del Complejo --- */}
           <section className="space-y-6 bg-gray-50 p-6 rounded-lg border">
-              <h3 className="text-lg font-semibold text-gray-800">Datos del Complejo</h3>
+             <div className="flex items-center gap-3">
+                <h3 className="text-lg font-semibold text-gray-800">Datos del Complejo</h3>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <CustomInput label="Nombre del Complejo" type="text" register={register("complexName")} error={errors.complexName?.message}/>
               <CustomInput label="Dirección" type="text" register={register("address")} error={errors.address?.message}/>
@@ -142,27 +143,40 @@ export const InscriptionsForm = () => {
             
             <div>
               <label className={labelClass}>Deportes que ofrecés</label>
-              <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-4">
-                {sportOptions.map((sport) => (
-                  <div key={sport.value} className="flex items-center gap-2">
-                    <Checkbox
-                      id={`sport-${sport.value}`}
-                      checked={selectedSports.includes(sport.value)}
-                      onCheckedChange={(checked) => {
-                        const currentSports = selectedSports ? selectedSports.split(", ") : [];
-                        const newSports = checked
-                          ? [...currentSports, sport.value]
-                          : currentSports.filter((s) => s !== sport.value);
-                        setValue("sports", newSports.filter(s => s).join(", "), { shouldValidate: true });
-                      }}
-                    />
-                    <label htmlFor={`sport-${sport.value}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                      {sport.label}
-                    </label>
-                  </div>
-                ))}
-              </div>
-              {errors.sports && <p className="mt-1 text-sm text-red-600">{errors.sports.message}</p>}
+                <Controller
+                    name="sports"
+                    control={control}
+                    render={({ field }) => (
+                        <div className="mt-2 space-y-2 rounded-lg border p-4">
+                            <p className="text-sm text-gray-500 mb-3">Seleccioná todos los que apliquen.</p>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                {sportOptions.map((sport) => {
+                                    const isChecked = field.value?.includes(sport.value) ?? false;
+                                    return (
+                                        <div key={sport.value} className="flex items-center gap-2">
+                                            <Checkbox
+                                                id={`sport-${sport.value}`}
+                                                checked={isChecked}
+                                                onCheckedChange={(checked) => {
+                                                    const currentSports = field.value ? field.value.split(', ') : [];
+                                                    const filteredSports = currentSports.filter(s => s); 
+                                                    const newSports = checked
+                                                        ? [...filteredSports, sport.value]
+                                                        : filteredSports.filter((s) => s !== sport.value);
+                                                    field.onChange(newSports.join(', '));
+                                                }}
+                                            />
+                                            <label htmlFor={`sport-${sport.value}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                                {sport.label}
+                                            </label>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+                />
+                {errors.sports && <p className="mt-1 text-sm text-red-600">{errors.sports.message}</p>}
             </div>
 
             <Controller
@@ -176,11 +190,10 @@ export const InscriptionsForm = () => {
                     onValueChange={field.onChange}
                     className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-4"
                   >
-                    {/* Opción Mensual */}
                     <label
                       htmlFor="monthly"
-                      className={` relative flex flex-col p-4 border-2 rounded-lg cursor-pointer transition-all  ${
-                        field.value === 'MENSUAL' ? 'border-brand-orange ring-2 ring-brand-orange/20' : 'bg-white border-gray-200 hover:border-gray-300'
+                      className={`relative flex flex-col p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                        field.value === 'MENSUAL' ? 'border-brand-orange ring-2 ring-brand-orange/20' : 'border-gray-200 hover:border-gray-300'
                       }`}
                     >
                       {field.value === 'MENSUAL' && (
@@ -192,15 +205,13 @@ export const InscriptionsForm = () => {
                       <span className="font-semibold text-gray-800">Mensual</span>
                       <span className="text-sm text-gray-500 mt-1">Ideal para empezar.</span>
                     </label>
-
-                    {/* Opción Anual */}
                     <label
                       htmlFor="annual"
                       className={`relative flex flex-col p-4 border-2 rounded-lg cursor-pointer transition-all ${
                         field.value === 'ANUAL' ? 'border-brand-orange ring-2 ring-brand-orange/20' : 'border-gray-200 hover:border-gray-300'
                       }`}
                     >
-                      <div className="absolute top-2 right-2 bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-0.5 rounded-full">
+                      <div className="absolute top-2 left-2 bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-0.5 rounded-full">
                         AHORRÁ 2 MESES
                       </div>
                       {field.value === 'ANUAL' && (
@@ -217,39 +228,36 @@ export const InscriptionsForm = () => {
                 </div>
               )}
             />
-
-            <Controller
-              name="selectedPlan"
-              control={control}
-              render={({ field }) => (
-                <div>
-                  <label className={labelClass}>Plan Seleccionado (90 dias Demo)</label>
-                  <ShadcnSelect
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <SelectTrigger className="w-full mt-1 bg-white">
-                      <SelectValue placeholder="Seleccioná un plan..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {planOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </ShadcnSelect>
-                  {errors.selectedPlan && <p className="mt-1 text-sm text-red-600">{errors.selectedPlan.message}</p>}
-                </div>
-              )}
-            />
+            
+            <div>
+                <label className={labelClass}>Plan Seleccionado (90 dias Demo)</label>
+                <Controller
+                    name="selectedPlan"
+                    control={control}
+                    render={({ field }) => (
+                        <Select onValueChange={field.onChange} value={field.value}>
+                            <SelectTrigger className="mt-1">
+                                <SelectValue placeholder="Seleccioná un plan..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {planOptions.map(option => (
+                                    <SelectItem key={option.value} value={option.value}>
+                                        {option.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    )}
+                />
+                {errors.selectedPlan && <p className="mt-1 text-sm text-red-600">{errors.selectedPlan.message}</p>}
+            </div>
           </section>
           
           {formError && (<p className="text-sm text-red-600 text-center">{formError}</p>)}
 
-          <Button type="submit" className="w-full text-base py-3 h-auto" disabled={isSubmitting}>
+          <ButtonPrimary type="submit" className="text-base py-3" disabled={isSubmitting}>
             {isSubmitting ? "Enviando..." : "Enviar Solicitud"}
-          </Button>
+          </ButtonPrimary>
         </form>
       </div>
     </>

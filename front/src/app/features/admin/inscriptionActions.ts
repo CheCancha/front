@@ -3,10 +3,26 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/shared/lib/db";
 import bcrypt from "bcryptjs";
-import { Role, SubscriptionPlan, SubscriptionCycle } from "@prisma/client"; // <- Importar SubscriptionCycle
+import { InscriptionRequest, Role, SubscriptionPlan, SubscriptionCycle } from "@prisma/client";
 import { sendWelcomeEmail } from "@/shared/lib/email";
 import { slugify } from "@/shared/lib/utils";
-import { add } from "date-fns"; // <- Importar 'add' para calcular la fecha
+import { add } from "date-fns";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/shared/lib/auth";
+
+
+export async function getPendingInscriptionRequestsForAdmin(): Promise<InscriptionRequest[]> {
+  const session = await getServerSession(authOptions);
+  if (session?.user?.role !== "ADMIN") {
+    throw new Error("Acceso no autorizado.");
+  }
+
+  const requests = await db.inscriptionRequest.findMany({
+    where: { status: "PENDIENTE" },
+    orderBy: { createdAt: "asc" },
+  });
+  return requests;
+}
 
 const getPlanEnumFromString = (planString: string): SubscriptionPlan => {
   switch (planString) {
@@ -27,6 +43,11 @@ export async function approveInscription(
   error?: string;
   warning?: string;
 }> {
+  const session = await getServerSession(authOptions);
+  if (session?.user?.role !== "ADMIN") {
+    return { success: false, error: "Acceso no autorizado." };
+  }
+
   try {
     const inscription = await db.inscriptionRequest.findUnique({
       where: { id: requestId, status: "PENDIENTE" },
@@ -38,9 +59,26 @@ export async function approveInscription(
         error: "Solicitud no encontrada o ya procesada.",
       };
     }
+    
+    const normalizedComplexName = inscription.complexName.trim().toLowerCase();
+    const existingComplexByName = await db.complex.findFirst({
+        where: { 
+            name: {
+                equals: normalizedComplexName,
+                mode: 'insensitive'
+            }
+        },
+    });
+
+    if (existingComplexByName) {
+        return {
+            success: false,
+            error: `Ya existe un complejo con un nombre similar a "${inscription.complexName}".`,
+        };
+    }
 
     const plan = getPlanEnumFromString(inscription.selectedPlan);
-    const trialEndsAt = add(new Date(), { days: 90 }); // Calcular fecha de fin de prueba
+    const trialEndsAt = add(new Date(), { days: 90 });
 
     let user = await db.user.findUnique({
       where: { email: inscription.ownerEmail },
@@ -65,31 +103,29 @@ export async function approveInscription(
       });
     }
 
-    const existingComplex = await db.complex.findUnique({
+    const existingComplexForManager = await db.complex.findUnique({
       where: { managerId: user.id },
     });
 
-    if (existingComplex) {
+    if (existingComplexForManager) {
       return {
         success: false,
-        error: `El usuario ${inscription.ownerEmail} ya tiene asignado el complejo "${existingComplex.name}".`,
+        error: `El usuario ${inscription.ownerEmail} ya tiene asignado el complejo "${existingComplexForManager.name}".`,
       };
     }
 
-    // --- CORRECCIÓN CLAVE AQUÍ ---
-    // Añadimos los campos que faltaban al crear el complejo
     await db.complex.create({
       data: {
-        name: inscription.complexName,
+        name: inscription.complexName.trim(),
         slug: slugify(inscription.complexName),
         address: inscription.address,
         city: inscription.city,
         province: inscription.province,
         managerId: user.id,
-        inscriptionRequestId: inscription.id, // Conectar con la solicitud
+        inscriptionRequestId: inscription.id,
         subscriptionPlan: plan,
-        subscriptionCycle: inscription.selectedCycle as SubscriptionCycle, // <- Guardar el ciclo
-        trialEndsAt: trialEndsAt, // <- Guardar la fecha de fin de prueba
+        subscriptionCycle: inscription.selectedCycle as SubscriptionCycle,
+        trialEndsAt: trialEndsAt,
       },
     });
 
@@ -133,6 +169,11 @@ export async function approveInscription(
 export async function rejectInscription(
   requestId: string
 ): Promise<{ success: boolean; error?: string }> {
+  const session = await getServerSession(authOptions);
+  if (session?.user?.role !== "ADMIN") {
+    return { success: false, error: "Acceso no autorizado." };
+  }
+
   try {
     await db.inscriptionRequest.update({
       where: { id: requestId, status: "PENDIENTE" },
@@ -146,3 +187,26 @@ export async function rejectInscription(
     return { success: false, error: "No se pudo rechazar la solicitud." };
   }
 }
+
+export async function updateInscription(
+  requestId: string,
+  dataToUpdate: Partial<Omit<InscriptionRequest, 'id'>>
+): Promise<{ success: boolean; error?: string }> {
+  const session = await getServerSession(authOptions);
+  if (session?.user?.role !== "ADMIN") {
+    return { success: false, error: "Acceso no autorizado." };
+  }
+
+  try {
+    await db.inscriptionRequest.update({
+      where: { id: requestId },
+      data: dataToUpdate,
+    });
+    
+    revalidatePath("/admin");
+    return { success: true };
+  } catch (error) {
+    console.error("Error al actualizar la solicitud:", error);
+    return { success: false, error: "No se pudo actualizar la solicitud." };
+  }
+};
