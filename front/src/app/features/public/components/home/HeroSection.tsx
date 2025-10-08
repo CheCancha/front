@@ -24,50 +24,57 @@ const HeroSection: FC = () => {
   };
 
   return (
-    <section
-      className="relative w-full min-h-[85vh] flex items-center justify-center text-white py-20 px-4 lg:h-[80vh] lg:min-h-[600px] lg:my-16 lg:py-0 lg:px-8 lg:bg-background"
-      id="inicio"
-    >
-      <div className="absolute inset-0 lg:relative lg:w-full lg:h-full lg:max-w-7xl lg:rounded-xl lg:overflow-hidden">
-        <Image
-          src="/paddle.webp"
-          alt="Jugadores de pádel en acción"
-          fill
-          className="object-cover"
-          priority
-          sizes="(min-width: 1024px) 1280px, 100vw"
-        />
-        <div className="absolute inset-0 bg-black/60 lg:bg-foreground/70"></div>
-      </div>
+    // Se ajusta el padding inferior para dar espacio a la searchbar en móvil
+    <section className="relative w-full pb-8" id="inicio">
+      <div className="relative w-full mx-auto">
+        {/* Contenedor para la imagen de fondo y el texto */}
+        <div className="relative h-[60vh] min-h-[450px] lg:h-[70dvh] rounded-b-3xl overflow-hidden flex flex-col items-center justify-center text-center text-white p-4">
+          <Image
+            src="/paddle.webp"
+            alt="Jugadores de pádel en acción"
+            fill
+            className="object-cover z-0"
+            priority
+            sizes="(max-width: 768px) 100vw, 1280px"
+          />
+          {/* Capa oscura */}
+          <div className="absolute inset-0 bg-black/60 z-10"></div>
 
-      <motion.div
-        className="relative z-10 w-full max-w-4xl mx-auto text-center lg:absolute"
-        variants={containerVariants}
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, amount: 0.5 }}
-      >
-        <motion.h1
-          variants={itemVariants}
-          className="font-lora text-4xl sm:text-5xl md:text-6xl font-medium leading-tight mb-4"
-        >
-          Encontrá tu cancha, reservá tu partido.
-        </motion.h1>
-        <motion.p
-          variants={itemVariants}
-          className="font-satoshi text-base sm:text-lg md:text-xl text-gray-200 max-w-2xl mx-auto mb-10"
-        >
-          La forma más fácil de buscar, comparar y reservar canchas de tu
-          deporte favorito en tu ciudad.
-        </motion.p>
+          <motion.div
+            className="relative z-20 w-full max-w-4xl mx-auto"
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.5 }}
+          >
+            <motion.h1
+              variants={itemVariants}
+              className="text-4xl sm:text-5xl md:text-6xl font-extrabold uppercase tracking-tight leading-tight mb-4"
+            >
+              JUGÁ. COMPETÍ. DISFRUTÁ.
+            </motion.h1>
+            <motion.p
+              variants={itemVariants}
+              className="font-medium sm:text-lg md:text-xl text-white max-w-2xl mx-auto"
+            >
+              Encontrá tu cancha, reservá tu próximo partido.
+            </motion.p>
+          </motion.div>
+        </div>
 
-        <motion.div variants={itemVariants}>
-          {/* --- AJUSTE CLAVE: Se aplica un fondo semi-transparente con efecto de desenfoque --- */}
-          <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/20">
+        {/* --- SOLUCIÓN: Contenedor de la Barra de Búsqueda con clases responsivas --- */}
+        <motion.div
+          variants={itemVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.5 }}
+          className="relative w-[90%] max-w-5xl mx-auto -mt-20 z-30 sm:absolute sm:-mt-0 sm:-bottom-10 sm:left-1/2 sm:-translate-x-1/2"
+        >
+          <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-2xl border border-gray-100">
             <SearchBar variant="hero" />
           </div>
         </motion.div>
-      </motion.div>
+      </div>
     </section>
   );
 };
