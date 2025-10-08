@@ -1,4 +1,4 @@
-"use client";
+"use client"
 
 import "@/styles/day-picker.css";
 import React, { useState, useEffect, useMemo } from "react";
@@ -8,7 +8,6 @@ import Select, {
   PlaceholderProps,
   components,
 } from "react-select";
-import { FaQuestionCircle } from "react-icons/fa";
 import { MapPinIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import { PiSoccerBall, PiVolleyball } from "react-icons/pi";
 import { MdSportsTennis } from "react-icons/md";
@@ -21,12 +20,6 @@ import toast from "react-hot-toast";
 import { useSearchStore } from "@/app/features/public/store/searchStore";
 
 // --- Tipos y Opciones ---
-interface ApiSport {
-  id: string;
-  name: string;
-  slug: string;
-  icon?: string | null;
-}
 export interface SportOption {
   value: string;
   label: string;
@@ -37,15 +30,16 @@ interface CitySuggestion {
   provincia: string;
 }
 
-const iconMap: { [key: string]: React.ElementType } = {
-  "futbol-5": PiSoccerBall,
-  "futbol-7": PiSoccerBall,
-  "futbol-11": PiSoccerBall,
-  padel: IoTennisballOutline,
-  basquet: IoBasketballOutline,
-  tenis: MdSportsTennis,
-  voley: PiVolleyball,
-};
+// --- 👇 SOLUCIÓN: LISTA DE DEPORTES DEFINIDA LOCALMENTE ---
+const sportOptions: SportOption[] = [
+    { value: "futbol-5", label: "Fútbol 5", icon: PiSoccerBall },
+    { value: "futbol-7", label: "Fútbol 7", icon: PiSoccerBall },
+    { value: "futbol-11", label: "Fútbol 11", icon: PiSoccerBall },
+    { value: "padel", label: "Pádel", icon: IoTennisballOutline },
+    { value: "basquet", label: "Básquet", icon: IoBasketballOutline },
+    { value: "tenis", label: "Tenis", icon: MdSportsTennis },
+    { value: "voley", label: "Vóley", icon: PiVolleyball },
+].sort((a, b) => a.label.localeCompare(b.label)); // Ordenamos alfabéticamente
 
 interface SearchBarProps {
   className?: string;
@@ -71,8 +65,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   const { city, sport, date, time, setCity, setSport, setDate, setTime } =
     useSearchStore();
 
-  const [sportOptions, setSportOptions] = useState<SportOption[]>([]);
-  const [isLoadingSports, setIsLoadingSports] = useState(true);
+  // Se eliminaron los estados 'sportOptions' y 'isLoadingSports'
   const [cityQuery, setCityQuery] = useState(city);
   const [citySuggestions, setCitySuggestions] = useState<CitySuggestion[]>([]);
   const [isCityInputFocused, setIsCityInputFocused] = useState(false);
@@ -81,35 +74,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
     setCityQuery(city);
   }, [city]);
 
-  useEffect(() => {
-    const fetchSports = async () => {
-      setIsLoadingSports(true);
-      try {
-        const response = await fetch("/api/sports");
-        const data: ApiSport[] = await response.json();
-        const options = data.map((s) => ({
-          value: s.slug,
-          label: s.name,
-          icon: iconMap[s.slug] || FaQuestionCircle,
-        }));
-        setSportOptions(options);
-
-        if (sport) {
-          const currentSportOption = options.find(
-            (opt) => opt.value === sport.value
-          );
-          if (currentSportOption) {
-            setSport(currentSportOption);
-          }
-        }
-      } catch (error) {
-        console.error("Error al cargar los deportes:", error);
-      } finally {
-        setIsLoadingSports(false);
-      }
-    };
-    fetchSports();
-  }, [sport, setSport]);
+  // --- El useEffect para fetchSports fue ELIMINADO ---
 
   const fetchCitySuggestions = useMemo(
     () =>
@@ -246,7 +211,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
             value={sport}
             onChange={(selectedOption) => setSport(selectedOption)}
             isSearchable={false}
-            isLoading={isLoadingSports}
+            isLoading={false}
             loadingMessage={() => "Cargando deportes..."}
             noOptionsMessage={() => "No hay deportes disponibles."}
             components={{

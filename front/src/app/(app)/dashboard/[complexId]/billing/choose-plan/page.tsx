@@ -144,7 +144,7 @@ export default function ChoosePlanPage() {
           />
         </button>
         <span className={cn("font-semibold", billingCycle === "ANUAL" ? "text-gray-900" : "text-gray-500")}>
-          Pago Anual <span className="text-green-600 font-bold">(¡Ahorrá 2 meses!)</span>
+          Pago Anual
         </span>
       </div>
 

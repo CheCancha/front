@@ -55,7 +55,9 @@ function findNextAvailableSlots(
   count: number = 3
 ): AvailableSlot[] {
   const now = new Date();
-  const isToday = now.toDateString() === searchDate.toDateString();
+  const isToday = now.getFullYear() === searchDate.getFullYear() &&
+                  now.getMonth() === searchDate.getMonth() &&
+                  now.getDate() === searchDate.getDate();
 
   const dayOfWeek = getDay(searchDate);
   const dayKeys = [
@@ -101,7 +103,7 @@ function findNextAvailableSlots(
   });
 
   const availableSlots: AvailableSlot[] = [];
-  const startHour = isToday ? Math.max(now.getHours(), openHour) : openHour;
+  const startHour = isToday ? Math.max(now.getHours() + 1, openHour) : openHour;
 
   for (let hour = startHour; hour < closeHour; hour++) {
     for (let minute = 0; minute < 60; minute += 30) {
@@ -110,12 +112,8 @@ function findNextAvailableSlots(
       const timeString = `${String(hour).padStart(2, "0")}:${String(
         minute
       ).padStart(2, "0")}`;
-
-      if (
-        isToday &&
-        (hour < now.getHours() ||
-          (hour === now.getHours() && minute < now.getMinutes()))
-      ) {
+      
+      if (isToday && new Date().getTime() > new Date(searchDate.getFullYear(), searchDate.getMonth(), searchDate.getDate(), hour, minute).getTime()) {
         continue;
       }
 
@@ -161,6 +159,8 @@ export async function GET(req: NextRequest) {
 
     const { city, sport, date } = validation.data;
 
+    const searchDate = date ? new Date(`${date}T00:00:00`) : null;
+
     const whereClause: Prisma.ComplexWhereInput = {
       onboardingCompleted: true,
       city: city ? { contains: city, mode: "insensitive" } : undefined,
@@ -176,11 +176,11 @@ export async function GET(req: NextRequest) {
                 sport: sport ? { slug: sport } : undefined,
             },
             include: {
-                bookings: date ? {
+                bookings: searchDate ? {
                     where: { 
                         date: {
-                            gte: startOfDay(new Date(date)),
-                            lt: endOfDay(new Date(date)),
+                            gte: startOfDay(searchDate),
+                            lt: endOfDay(searchDate),
                         }
                     },
                 } : false,
@@ -193,10 +193,8 @@ export async function GET(req: NextRequest) {
     const filteredComplexes = complexes.filter((c) => c.courts.length > 0);
 
     const formattedComplexes = filteredComplexes.map((complex) => {
-        const availableSlots = date ? findNextAvailableSlots(complex as unknown as ComplexWithCourtsAndBookings, new Date(date), 3) : [];
+        const availableSlots = searchDate ? findNextAvailableSlots(complex as unknown as ComplexWithCourtsAndBookings, searchDate, 3) : [];
         
-        // --- ¡AQUÍ ESTÁ LA MODIFICACIÓN! ---
-        // Añadimos latitude y longitude al objeto que se devuelve.
         const baseComplexData = {
           id: complex.id,
           slug: complex.slug,
@@ -205,26 +203,28 @@ export async function GET(req: NextRequest) {
           imageUrl: complex.images[0]?.url || "/placeholder.jpg",
           latitude: complex.latitude,
           longitude: complex.longitude,
-          cancellationPolicyHours: complex.cancellationPolicyHours, // Pasamos esto para el modal
+          cancellationPolicyHours: complex.cancellationPolicyHours,
         };
 
-        if (!date) {
+        if (!searchDate) {
             return {
                 ...baseComplexData,
                 availableSlots: [],
             };
         }
         
-        // Añadimos un 'return' explícito en el caso de que no haya slots disponibles
         if (availableSlots.length === 0) {
-            return null;
+            return {
+              ...baseComplexData,
+              availableSlots: []
+            };
         }
 
         return {
             ...baseComplexData,
             availableSlots: availableSlots,
         };
-    }).filter(Boolean);
+    }).filter(Boolean); 
 
     return NextResponse.json(formattedComplexes);
   } catch (error) {

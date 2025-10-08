@@ -157,7 +157,7 @@ export const LoginForm = () => {
 
       <button
         onClick={() => signIn("google")}
-        className="w-full flex items-center justify-center gap-3 py-3 px-4 border border-gray-300 rounded-lg bg-white text-gray-700 font-medium text-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-all duration-300 cursor-pointer"
+        className="w-full flex items-center justify-center gap-3 py-3 px-4 border border-gray-300 rounded-lg bg-white text-gray-700 font-medium text-sm hover:bg-gray-50 transition-all duration-300 cursor-pointer"
       >
         <GoogleIcon />
         Continuar con Google

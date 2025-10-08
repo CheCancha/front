@@ -1,12 +1,15 @@
+//front\src\shared\components\ui\Input.tsx
+
 "use client";
+
 import React, { useState } from 'react';
 import { UseFormRegisterReturn } from 'react-hook-form';
 import { cn } from "@/shared/lib/utils";
 import { Eye, EyeClosed } from 'lucide-react';
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  label: string;
-  register: UseFormRegisterReturn;
+  label?: string;
+  register?: UseFormRegisterReturn;
   error?: string;
 }
 

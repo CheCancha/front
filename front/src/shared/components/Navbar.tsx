@@ -14,15 +14,56 @@ import {
   X,
   ChevronDown,
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useScroll, useMotionValueEvent } from "framer-motion";
 import { Button } from "./ui/button";
-import { Spinner } from "./ui/Spinner";
+
+
+const NavbarSkeleton: React.FC = () => (
+  <nav className="bg-background border-b sticky top-0 z-20 animate-pulse">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="flex items-center justify-between h-16">
+        {/* Skeleton del Logo y Nombre */}
+        <div className="flex items-center gap-2">
+          <div className="h-8 w-8 bg-gray-200 rounded-full" />
+          <div className="h-4 w-24 bg-gray-200 rounded" />
+        </div>
+
+        {/* Skeleton de los botones de la derecha */}
+        <div className="hidden md:flex items-center space-x-6">
+          <div className="h-4 w-32 bg-gray-200 rounded" />
+          <div className="h-9 w-28 bg-gray-200 rounded-md" />
+        </div>
+
+        {/* Skeleton del menú hamburguesa */}
+        <div className="flex md:hidden">
+            <div className="h-8 w-8 bg-gray-200 rounded-md" />
+        </div>
+      </div>
+    </div>
+  </nav>
+);
 
 const Navbar: React.FC = () => {
   const { data: session, status } = useSession();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDesktopMenuOpen, setIsDesktopMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // --- Lógica para ocultar/mostrar navbar con el scroll ---
+  const { scrollY } = useScroll();
+  const [hidden, setHidden] = useState(false);
+
+  useMotionValueEvent(scrollY, "change", (latest) => {
+    const previous = scrollY.getPrevious() || 0;
+    if (latest > previous && latest > 150) {
+      setHidden(true);
+      setIsDesktopMenuOpen(false);
+      setIsMobileMenuOpen(false);
+    } else { 
+      setHidden(false);
+    }
+  });
+
 
   const user = session?.user;
   const isLoggedIn = status === "authenticated";
@@ -55,15 +96,19 @@ const Navbar: React.FC = () => {
   }, [menuRef]);
 
   if (isAuthLoading) {
-    return (
-      <nav className="bg-background border-b sticky top-0 z-20 h-16 flex items-center justify-center">
-        <Spinner />
-      </nav>
-    );
+    return <NavbarSkeleton />;
   }
 
   return (
-    <nav className="bg-background border-b sticky top-0 z-20">
+    <motion.nav
+      variants={{
+        visible: { y: 0 },
+        hidden: { y: "-100%" },
+      }}
+      animate={hidden ? "hidden" : "visible"}
+      transition={{ duration: 0.35, ease: "easeInOut" }}
+      className="bg-background border-b sticky top-0 z-20"
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* --- Logo --- */}
@@ -72,12 +117,8 @@ const Navbar: React.FC = () => {
               <Image
                 src="/logochecancha.png"
                 alt="Logo de Che Cancha"
-                height={50}
-                width={50}
-                onError={(e) => {
-                  e.currentTarget.src =
-                    "https://placehold.co/40x40/000000/FFFFFF?text=CC";
-                }}
+                height={40}
+                width={40}
               />
               <span className="text-foreground text-xl font-bold">
                 Che Cancha
@@ -191,13 +232,13 @@ const Navbar: React.FC = () => {
       <AnimatePresence>
         {isMobileMenuOpen && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="md:hidden"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="absolute top-full left-0 w-full bg-background border-t md:hidden"
             id="mobile-menu"
           >
-            <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 border-t">
+            <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
               {isLoggedIn ? (
                 <>
                   <div className="px-3 py-2 flex items-center gap-3">
@@ -212,21 +253,21 @@ const Navbar: React.FC = () => {
                   <Link
                     href={routes.public.canchas}
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 text-gray-700 hover:bg-gray-100  px-3 py-2 rounded-md text-base font-medium"
+                    className="w-full text-left flex items-center gap-3 px-3 py-2 text-base font-medium rounded-md text-gray-700 hover:bg-gray-100"
                   >
                     <Search size={18} /> Buscar Cancha
                   </Link>
                   <Link
                     href={routes.app.perfil}
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 text-gray-700 hover:bg-gray-100  px-3 py-2 rounded-md text-base font-medium"
+                    className="w-full text-left flex items-center gap-3 px-3 py-2 text-base font-medium rounded-md text-gray-700 hover:bg-gray-100"
                   >
                     <UserCircle size={18} /> Mi Perfil
                   </Link>
                   <Link
                     href={getDashboardUrl()}
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 text-gray-700 hover:bg-gray-100  px-3 py-2 rounded-md text-base font-medium"
+                    className="w-full text-left flex items-center gap-3 px-3 py-2 text-base font-medium rounded-md text-gray-700 hover:bg-gray-100"
                   >
                     <LayoutDashboard size={18} /> Mi Panel
                   </Link>
@@ -235,7 +276,7 @@ const Navbar: React.FC = () => {
                       signOut({ callbackUrl: routes.public.home });
                       setIsMobileMenuOpen(false);
                     }}
-                    className="w-full text-left flex items-center gap-3 px-3 py-2 text-base font-medium text-red-600 hover:bg-red-50 rounded-md"
+                    className="w-full text-left flex items-center gap-3 px-3 py-2 text-base font-medium rounded-md text-red-600 hover:bg-red-50 "
                   >
                     <LogOut size={18} />
                     Cerrar Sesión
@@ -263,7 +304,7 @@ const Navbar: React.FC = () => {
           </motion.div>
         )}
       </AnimatePresence>
-    </nav>
+    </motion.nav>
   );
 };
 

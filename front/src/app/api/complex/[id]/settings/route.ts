@@ -72,8 +72,9 @@ export async function PUT(
     }
 
     const body = await req.json();
-    const { general, courts, amenities, basicInfo } = body;
+    console.log("✅ [SETTINGS_PUT] Body recibido en la API:", JSON.stringify(body, null, 2));
 
+    const { general, courts, amenities, basicInfo } = body;
     const newName = basicInfo?.name || complexToUpdate.name;
     const newSlug = slugify(newName);
 
@@ -87,23 +88,24 @@ export async function PUT(
         province: basicInfo?.province,
         openHour: general?.openHour,
         closeHour: general?.closeHour,
-        onboardingCompleted: true,
-
-        amenities: {
-          set: amenities.connect,
-        },
-
-        courts: {
-          create: courts.create,
-        },
+        amenities: { set: amenities.connect },
+        courts: { create: courts.create },
       },
     });
+
+    console.log(`✅ [SETTINGS_PUT] Se intentó actualizar 'onboardingCompleted' a 'true' para el complejo: ${id}`);
+
+    // LOG DE VERIFICACIÓN FINAL: Volvemos a leer el valor desde la BD
+    const updatedComplex = await db.complex.findUnique({
+        where: { id },
+        select: { onboardingCompleted: true }
+    });
+    console.log("✅ [SETTINGS_PUT] Verificación post-actualización. El valor en la BD ahora es:", updatedComplex?.onboardingCompleted);
 
     return NextResponse.json({ message: "Configuración guardada exitosamente" });
 
   } catch (error) {
-    console.error("[SETTINGS_PUT]", error);
+    console.error("❌ [SETTINGS_PUT] Error en el endpoint:", error);
     return new NextResponse("Error interno del servidor", { status: 500 });
   }
 }
-

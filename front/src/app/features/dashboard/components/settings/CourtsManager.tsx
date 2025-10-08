@@ -1,8 +1,10 @@
 import React from "react";
 import { Plus, AlertTriangle } from "lucide-react";
 import { FullComplexData, NewCourt } from "@/shared/entities/complex/types";
-import { Sport } from "@prisma/client";
+import { Sport, SubscriptionPlan } from "@prisma/client";
 import { CourtFormRow } from "@/shared/entities/court/ui/CourtRowForm";
+import { Button } from "@/shared/components/ui/button";
+import Link from "next/link";
 
 interface Props {
   data: FullComplexData;
@@ -10,6 +12,7 @@ interface Props {
   allSports: Sport[];
   newCourts: NewCourt[];
   courtsToDelete: string[];
+  subscriptionPlan: SubscriptionPlan;
   onCourtChange: (id: string, field: string, value: string | number) => void;
   onAddNewCourt: () => void;
   onDeleteCourt: (id: string) => void;
@@ -30,6 +33,7 @@ export const CourtsManager = ({
   allSports,
   newCourts,
   courtsToDelete,
+  subscriptionPlan,
   onCourtChange,
   onAddNewCourt,
   onDeleteCourt,
@@ -38,6 +42,10 @@ export const CourtsManager = ({
   onAddPriceRule,
   onRemovePriceRule,
 }: Props) => {
+  const isBasicPlan = subscriptionPlan === 'BASE';
+  const currentCourtCount = data.courts.length + newCourts.length;
+  const isCourtLimitReached = isBasicPlan && currentCourtCount >= 3;
+
   const getDeletedCourtName = (courtId: string) => {
     return (
       originalData?.courts.find((c) => c.id === courtId)?.name ||
@@ -49,14 +57,19 @@ export const CourtsManager = ({
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Gestión de Canchas</h3>
-        <button
-          type="button"
-          onClick={onAddNewCourt}
-          className="inline-flex items-center px-4 py-2 bg-black text-white font-medium rounded-lg hover:bg-gray-800 transition-colors shadow-sm"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Agregar Cancha
-        </button>
+        <div className="flex flex-col items-end">
+          {/* El botón ahora se deshabilita condicionalmente */}
+          <Button onClick={onAddNewCourt} disabled={isCourtLimitReached}>
+            <Plus className="w-4 h-4 mr-2" />
+            Agregar Cancha
+          </Button>
+          {/* Mensaje que aparece cuando se alcanza el límite */}
+          {isCourtLimitReached && (
+            <p className="text-xs text-yellow-600 mt-1 text-right">
+              Límite de 3 canchas alcanzado. <Link href={`/dashboard/${data.id}/billing`} className="font-bold underline hover:text-yellow-700">Actualizá a Pro</Link>.
+            </p>
+          )}
+        </div>
       </div>
 
       <div className="space-y-4">

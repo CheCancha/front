@@ -12,23 +12,18 @@ import { z } from "zod";
 const createBookingSchema = z.object({
   complexId: z.string().min(1),
   courtId: z.string().min(1),
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, {
-    message: "El formato de fecha debe ser YYYY-MM-DD",
-  }),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, { message: "El formato de fecha debe ser YYYY-MM-DD" }),
   time: z.string().regex(/^\d{2}:\d{2}$/),
   price: z.number().min(0),
   depositAmount: z.number().min(0),
   guestName: z.string().optional(),
   guestPhone: z.string().optional(),
+  couponCode: z.string().optional(),
 });
 
 type BookingRequest = z.infer<typeof createBookingSchema>;
 
-
-function getMercadoPagoCredentials(complex: {
-  mp_access_token: string | null;
-  mp_public_key: string | null;
-}) {
+function getMercadoPagoCredentials(complex: { mp_access_token: string | null; mp_public_key: string | null; }) {
   if (complex.mp_access_token && complex.mp_public_key) {
     console.log("Usando credenciales de producción del complejo.");
     const secretKey = process.env.ENCRYPTION_KEY;
@@ -56,10 +51,10 @@ function getMercadoPagoCredentials(complex: {
 async function createPendingBookingInTransaction(
   data: BookingRequest,
   userId: string | undefined,
-  court: Court
+  court: Court,
+  couponId: string | undefined
 ): Promise<Booking> {
-  const bookingDate = new Date(`${data.date}T${data.time}`); 
-
+  const bookingDate = new Date(`${data.date}T${data.time}`);
   const startOfBookingDay = startOfDay(bookingDate);
   const endOfBookingDay = endOfDay(bookingDate);
 
@@ -101,14 +96,15 @@ async function createPendingBookingInTransaction(
       data: {
         courtId: data.courtId,
         date: bookingDate,
-        startTime: hour,
-        startMinute: minute,
+        startTime: parseInt(data.time.split(":")[0]),
+        startMinute: parseInt(data.time.split(":")[1]),
         totalPrice: data.price,
         depositAmount: data.depositAmount,
         depositPaid: 0,
         remainingBalance: data.price,
         status: BookingStatus.PENDIENTE,
-        ...(userId ? { userId: userId } : { guestName: data.guestName }),
+        couponId: couponId,
+        ...(userId ? { userId: userId } : { guestName: data.guestName, guestPhone: data.guestPhone }),
       },
     });
   });
@@ -158,35 +154,60 @@ export async function POST(req: Request) {
     }
     const court = complexData.courts[0];
 
-  const pendingBooking = await createPendingBookingInTransaction(
-    bookingData,
-    userId,
-    court
-  );
+    let couponId: string | undefined = undefined;
+    if (bookingData.couponCode) {
+        const coupon = await db.coupon.findFirst({
+            where: { 
+                code: bookingData.couponCode.toUpperCase(), 
+                complexId: bookingData.complexId, 
+                isActive: true 
+            }
+        });
+        if (coupon) {
+            // Verificaciones adicionales por seguridad (opcional, ya se hicieron en frontend)
+            const isExpired = coupon.validUntil && new Date(coupon.validUntil) < new Date();
+            const hasUsesLeft = coupon.maxUses == null || coupon.uses < coupon.maxUses;
+            if (!isExpired && hasUsesLeft) {
+                couponId = coupon.id;
+            }
+        }
+    }
 
-  const { accessToken, publicKey } = getMercadoPagoCredentials(complexData);
-  const preferenceClient = getMercadoPagoPreferenceClient(accessToken);
-  
-  const notificationUrl = `${baseURL}/api/webhooks/mercado-pago`;
-  console.log(`[create-preference] URL de Notificación que se enviará a Mercado Pago: "${notificationUrl}"`);
+    const pendingBooking = await createPendingBookingInTransaction(
+      bookingData,
+      userId,
+      court,
+      couponId
+    );
 
-  const formattedDateForMP = format(new Date(`${bookingData.date}T00:00:00`), "dd/MM/yyyy");
+    const { accessToken, publicKey } = getMercadoPagoCredentials(complexData);
+    const preferenceClient = getMercadoPagoPreferenceClient(accessToken);
 
-  const preference = await preferenceClient.create({
-    body: {
-      items: [
-        {
-          id: bookingData.courtId,
-          title: `Seña para ${court.sport.name} en ${complexData.name}`,
-          description: `Turno para ${court.name} el ${formattedDateForMP} a las ${bookingData.time}hs`,
-          quantity: 1,
-          currency_id: "ARS",
-          unit_price: bookingData.depositAmount,
-        },
-      ],
-      external_reference: pendingBooking.id,
-      notification_url: notificationUrl,
-      back_urls: {
+    const notificationUrl = `${baseURL}/api/webhooks/mercado-pago`;
+    console.log(
+      `[create-preference] URL de Notificación que se enviará a Mercado Pago: "${notificationUrl}"`
+    );
+
+    const formattedDateForMP = format(
+      new Date(`${bookingData.date}T00:00:00`),
+      "dd/MM/yyyy"
+    );
+
+    const preference = await preferenceClient.create({
+      body: {
+        items: [
+          {
+            id: bookingData.courtId,
+            title: `Seña para ${court.sport.name} en ${complexData.name}`,
+            description: `Turno para ${court.name} el ${formattedDateForMP} a las ${bookingData.time}hs`,
+            quantity: 1,
+            currency_id: "ARS",
+            unit_price: bookingData.depositAmount,
+          },
+        ],
+        external_reference: pendingBooking.id,
+        notification_url: notificationUrl,
+        back_urls: {
           success: `${baseURL}/booking-status?status=success&booking_id=${pendingBooking.id}`,
           failure: `${baseURL}/booking-status?status=failure&booking_id=${pendingBooking.id}`,
           pending: `${baseURL}/booking-status?status=pending&booking_id=${pendingBooking.id}`,
@@ -201,10 +222,13 @@ export async function POST(req: Request) {
     });
   } catch (error: unknown) {
     if (error instanceof z.ZodError) {
-      return new NextResponse(JSON.stringify({ message: "Datos inválidos", issues: error.issues }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return new NextResponse(
+        JSON.stringify({ message: "Datos inválidos", issues: error.issues }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
     }
     if (
       error instanceof Error &&

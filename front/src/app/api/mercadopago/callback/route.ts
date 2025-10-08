@@ -4,6 +4,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/authOptions";
 import { db } from "@/shared/lib/db";
 import SimpleCrypto from "simple-crypto-js";
 import { routes } from "@/routes";
+import { checkOnboarding } from "@/shared/lib/checkOnboarding";
 
 const getMercadoPagoTokens = async (authCode: string) => {
   const response = await fetch("https://api.mercadopago.com/oauth/token", {
@@ -71,6 +72,9 @@ export async function GET(req: NextRequest) {
       },
     });
 
+    // --- 2. LLAMAR A LA FUNCIÓN DE VERIFICACIÓN ---
+    await checkOnboarding(complexId);
+
     const successUrl = new URL(
       routes.app.settings(complexId),
       process.env.NEXT_PUBLIC_BASE_URL!
@@ -88,4 +92,3 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(errorUrl);
   }
 }
-

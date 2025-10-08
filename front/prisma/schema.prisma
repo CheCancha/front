@@ -27,6 +27,11 @@ enum SubscriptionCycle {
   ANUAL
 }
 
+enum DiscountType {
+  PERCENTAGE
+  FIXED_AMOUNT
+}
+
 model SubscriptionPlanDetails {
   id                String    @id @default(cuid())
   plan              SubscriptionPlan 
@@ -101,6 +106,28 @@ model Review {
   @@index([userId])
 }
 
+
+model Coupon {
+  id            String       @id @default(cuid())
+  complexId     String
+  complex       Complex      @relation(fields: [complexId], references: [id], onDelete: Cascade)
+  code          String
+  description   String?
+  discountType  DiscountType
+  discountValue Int
+  validUntil    DateTime?
+  maxUses       Int?
+  uses          Int          @default(0)
+  isActive      Boolean      @default(true)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  bookings    Booking[]
+
+  @@unique([complexId, code])
+  @@index([complexId])
+}
+
 model Complex {
   id                    String   @id @default(cuid())
   name                  String
@@ -149,8 +176,9 @@ model Complex {
   currentPeriodEndsAt     DateTime?  
   mp_subscription_id      String?             @unique 
 
-  averageRating         Float    @default(0)
-  reviewCount           Int      @default(0)
+  averageRating           Float    @default(0)
+  reviewCount             Int      @default(0)
+  coupons                 Coupon[]
 
   @@index([managerId])
 }
@@ -242,6 +270,10 @@ model Booking {
 
   paymentId          String?
   review             Review?
+
+  couponId  String?
+  coupon    Coupon?  @relation(fields: [couponId], references: [id], onDelete: SetNull)
+
 
   @@unique([courtId, date, startTime])
   @@index([courtId])
