@@ -21,8 +21,9 @@ const imagesPayloadSchema = z.object({
     .optional(),
 });
 
-
-export async function PUT(req: Request, context: { params: Promise<{ id: string }> }
+export async function PUT(
+  req: Request,
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id: complexId } = await context.params;
@@ -76,8 +77,9 @@ export async function PUT(req: Request, context: { params: Promise<{ id: string 
   }
 }
 
-
-export async function DELETE(req: Request, context: { params: Promise<{ id: string, imageId: string }> }
+export async function DELETE(
+  req: Request,
+  context: { params: Promise<{ id: string; imageId: string }> }
 ) {
   try {
     const { id: complexId, imageId } = await context.params;

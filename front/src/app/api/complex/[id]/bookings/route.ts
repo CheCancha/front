@@ -33,6 +33,7 @@ export async function GET(
         include: {
           court: { select: { name: true } },
           user: { select: { name: true, phone: true } },
+          coupon: { select: { code: true } },
         },
       });
 
@@ -46,6 +47,7 @@ export async function GET(
           b.startMinute ?? 0
         ).padStart(2, "0")}`,
         isPaid: b.depositAmount > 0,
+        couponCode: b.coupon?.code || null,
       }));
 
       return NextResponse.json(formattedBookings);
@@ -58,7 +60,7 @@ export async function GET(
         status: 400,
       });
     }
-    const requestedDate = new Date(`${dateString}T00:00:00.000Z`);
+    const requestedDate = new Date(`${dateString}T00:00:00`); // T00:00:00.000Z
     const startOfRequestedDay = startOfDay(requestedDate);
     const endOfRequestedDay = endOfDay(requestedDate);
 
@@ -84,6 +86,7 @@ export async function GET(
       include: {
         court: { select: { id: true, name: true, slotDurationMinutes: true } },
         user: { select: { name: true, phone: true } },
+        coupon: true,
       },
     });
 

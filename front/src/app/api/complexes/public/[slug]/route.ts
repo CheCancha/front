@@ -9,15 +9,10 @@ export async function GET(
     const { slug } = await params;
 
     const complex = await db.complex.findUnique({
-      where: {
-        slug: slug,
-        onboardingCompleted: true,
-      },
+      where: { slug: slug, onboardingCompleted: true },
       include: {
         images: {
-          orderBy: {
-            isPrimary: "desc",
-          },
+          orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }],
         },
         courts: {
           include: {
@@ -35,7 +30,7 @@ export async function GET(
 
     return NextResponse.json(complex);
   } catch (error) {
-    console.error("[COMPLEX_PUBLIC_GET_BY_SLUG]", error);
+    console.error("[COMPLEX_SLUG_GET]", error);
     return new NextResponse("Error interno del servidor", { status: 500 });
   }
 }

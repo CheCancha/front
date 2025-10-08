@@ -53,24 +53,26 @@ export default async function AnalyticsPage({
   params: Promise<{ complexId: string }>;
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
-  const resolvedParams = await params;
+  const { complexId } = await params;
   const resolvedSearchParams = await searchParams;
 
   const from = resolvedSearchParams.from
     ? parseISO(resolvedSearchParams.from as string)
     : startOfMonth(new Date());
+
   const to = resolvedSearchParams.to
     ? parseISO(resolvedSearchParams.to as string)
     : endOfMonth(new Date());
+
   const courtIds = resolvedSearchParams.courtIds
     ? (resolvedSearchParams.courtIds as string).split(",")
     : undefined;
 
   const data = await getAnalyticsData({
-    complexId: resolvedParams.complexId,
+    complexId,
     startDate: from,
     endDate: to,
-    courtIds: courtIds,
+    courtIds,
   });
 
   const { kpis, charts, tables, filters } = data;
@@ -143,7 +145,7 @@ export default async function AnalyticsPage({
         </div>
       </div>
 
-      <div className="bg-white p-6 rounded-lg border shadow-sm">
+      <div className="bg-white p-6 rounded-lg border shadow-sm flex flex-col items-center">
         <h3 className="text-lg font-semibold mb-4">
           Horarios de Mayor Demanda
         </h3>

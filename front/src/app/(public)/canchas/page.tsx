@@ -12,7 +12,7 @@ import { SearchBar } from "@/shared/components/ui/Searchbar";
 import { useSearchParams, useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
 import { Spinner } from "@/shared/components/ui/Spinner";
-import BookingModal from "@/shared/components/ui/BookingModal";
+import BookingModal from "@/app/features/public/components/courts/BookingModal";
 import { routes } from "@/routes";
 import dynamic from "next/dynamic";
 
@@ -118,9 +118,7 @@ const ClubCard = ({
       </Link>
       <div className="p-4 flex flex-col flex-grow">
         <Link href={routes.public.complexProfile(club.slug)}>
-          <h3 className="font-bold text-lg text-foreground">
-            {club.name}
-          </h3>
+          <h3 className="font-bold text-lg text-foreground">{club.name}</h3>
         </Link>
         <p className="text-sm text-paragraph flex items-center gap-1.5 mt-1">
           <MapPin size={14} /> {club.address}

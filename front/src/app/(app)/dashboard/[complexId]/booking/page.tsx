@@ -13,31 +13,30 @@ import type {
   Sport,
   BookingStatus,
   PriceRule,
+  Coupon,
 } from "@prisma/client";
 import { toast } from "react-hot-toast";
-import BookingFormModal from "@/shared/components/ui/BookingFormModal";
+import BookingFormModal, {
+  type BookingWithDetails,
+  type SubmitPayload,
+} from "@/shared/components/ui/BookingFormModal";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/shared/components/ui/alert-dialog";
 
 // --- TIPOS ---
 type CourtWithSportAndPriceRules = Court & {
   sport: Sport;
   priceRules: PriceRule[];
 };
-
 type ComplexWithCourts = Complex & { courts: CourtWithSportAndPriceRules[] };
-type BookingWithDetails = PrismaBooking & {
-  court: { id: string; name: string; slotDurationMinutes: number };
-  user?: { name: string | null } | null;
-};
-
-type SubmitPayload = {
-  guestName: string;
-  courtId: string;
-  time: string;
-  status: BookingStatus;
-  depositPaid: number;
-  bookingId?: string;
-  date?: string;
-};
 
 // --- SKELETON ---
 const CalendarSkeleton = () => (
@@ -64,87 +63,94 @@ export default function BookingCalendarPage() {
   const [bookings, setBookings] = useState<BookingWithDetails[]>([]);
   const [currentDate, setCurrentDate] = useState(startOfDay(new Date()));
   const [isLoading, setIsLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [sportFilter, setSportFilter] = useState<string>("Todos");
-  const [isEditing, setIsEditing] = useState(false);
-  const [modalData, setModalData] = useState<Partial<SubmitPayload & { id: string }>>();
+
+  // --- ESTADOS SIMPLIFICADOS PARA UN SOLO MODAL ---
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalBooking, setModalBooking] = useState<BookingWithDetails | null>(
+    null
+  );
+  const [modalSlot, setModalSlot] = useState<{
+    courtId: string;
+    time: string;
+  } | null>(null);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [actionToConfirm, setActionToConfirm] = useState<{
+    bookingId: string;
+    status: "CANCELADO";
+  } | null>(null);
 
   const timeSlots = useMemo(() => {
     if (!complex) return [];
-    console.log("LOG (useMemo timeSlots): Calculando time slots porque 'complex' existe.");
     const slots = [];
     const open = complex.openHour ?? 9;
     const close = complex.closeHour ?? 23;
     const interval = complex.timeSlotInterval || 30;
     for (let h = open; h < close; h++) {
       for (let m = 0; m < 60; m += interval) {
-        slots.push(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
+        slots.push(
+          `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`
+        );
       }
     }
     return slots;
   }, [complex]);
 
-  const isPast = useCallback((time: string) => {
-    const today = startOfDay(new Date());
-    if (isBefore(currentDate, today)) return true;
-    if (!isToday(currentDate)) return false;
-    
-    const [slotHour, slotMinute] = time.split(":").map(Number);
-    const now = new Date();
-    const currentHour = now.getHours();
-    const currentMinute = now.getMinutes();
-    if (slotHour < currentHour) return true;
-    if (slotHour === currentHour && slotMinute < currentMinute) return true;
-    return false;
-  }, [currentDate]);
+  const isPast = useCallback(
+    (time: string) => {
+      const today = startOfDay(new Date());
+      if (isBefore(currentDate, today)) return true;
+      if (!isToday(currentDate)) return false;
 
-  const fetchBookingsForDate = useCallback(async (date: Date) => {
-    if (!complexId) return;
-    const dateString = format(date, "yyyy-MM-dd");
-    console.log(`LOG (fetchBookingsForDate): Iniciando fetch de reservas para fecha: ${dateString}`);
-    try {
-      const res = await fetch(`/api/complex/${complexId}/bookings?date=${dateString}`);
-      if (!res.ok) throw new Error("Error al cargar las reservas.");
-      const data = await res.json();
-      console.log("LOG (fetchBookingsForDate): Reservas recibidas:", data);
-      setBookings(data);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Error inesperado");
-      console.error("LOG (fetchBookingsForDate): Error en el fetch:", error);
-    }
-  }, [complexId]);
+      const [slotHour, slotMinute] = time.split(":").map(Number);
+      const now = new Date();
+      const currentHour = now.getHours();
+      const currentMinute = now.getMinutes();
+      if (slotHour < currentHour) return true;
+      if (slotHour === currentHour && slotMinute < currentMinute) return true;
+      return false;
+    },
+    [currentDate]
+  );
+
+  const fetchBookingsForDate = useCallback(
+    async (date: Date) => {
+      if (!complexId) return;
+      const dateString = format(date, "yyyy-MM-dd");
+      try {
+        const res = await fetch(
+          `/api/complex/${complexId}/bookings?date=${dateString}`
+        );
+        if (!res.ok) throw new Error("Error al cargar las reservas.");
+        const data = await res.json();
+        setBookings(data);
+      } catch (error) {
+        toast.error(
+          error instanceof Error ? error.message : "Error inesperado"
+        );
+      }
+    },
+    [complexId]
+  );
 
   useEffect(() => {
     if (!complexId) return;
     const fetchComplexData = async () => {
-      console.log("LOG (useEffect fetchComplexData): Iniciando fetch de datos del complejo.");
       setIsLoading(true);
       try {
         const res = await fetch(`/api/complex/${complexId}/settings`);
         if (!res.ok) throw new Error("Error al cargar datos del complejo.");
-        
         const responseData = await res.json();
-        console.log("LOG (useEffect fetchComplexData): Respuesta COMPLETA de la API recibida:", responseData);
-        
         const complexData = responseData.complex;
-
-        if (!complexData) {
-            console.error("LOG: El objeto 'complex' no se encontró dentro de la respuesta de la API.", responseData);
-            throw new Error("El formato de la respuesta de la API es incorrecto.");
+        if (!complexData || !Array.isArray(complexData.courts)) {
+          throw new Error("Formato de datos del complejo incorrecto.");
         }
-
-        if (!Array.isArray(complexData.courts)) {
-            console.error("LOG: Los datos recibidos del complejo no tienen un array de 'courts'.", complexData);
-            throw new Error("Formato de datos del complejo incorrecto.");
-        }
-        
-        console.log("LOG (useEffect fetchComplexData): Datos del complejo extraídos y validados. Guardando en el estado:", complexData);
         setComplex(complexData);
-
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Error inesperado");
-        console.error("LOG (useEffect fetchComplexData): Error en el fetch:", error);
+        toast.error(
+          error instanceof Error ? error.message : "Error inesperado"
+        );
       } finally {
         setIsLoading(false);
       }
@@ -154,23 +160,17 @@ export default function BookingCalendarPage() {
 
   useEffect(() => {
     if (complex) {
-      console.log("LOG (useEffect fetchBookings): 'complex' existe, llamando a fetchBookingsForDate.");
       fetchBookingsForDate(currentDate);
-    } else {
-      console.log("LOG (useEffect fetchBookings): 'complex' todavía es null, esperando...");
     }
   }, [complex, currentDate, fetchBookingsForDate]);
 
-  const handleDateChange = (days: number) => {
+  const handleDateChange = (days: number) =>
     setCurrentDate((prev) => add(prev, { days }));
-  };
-  
-  const handleGoToToday = () => {
-    setCurrentDate(startOfDay(new Date()));
-  };
+  const handleGoToToday = () => setCurrentDate(startOfDay(new Date()));
 
   const handleBookingSubmit = async (bookingData: SubmitPayload) => {
     setIsSubmitting(true);
+    const isEditing = !!bookingData.bookingId;
     const endpoint = `/api/complex/${complexId}/bookings`;
     const method = isEditing ? "PATCH" : "POST";
     const successMessage = isEditing ? "Reserva actualizada" : "Reserva creada";
@@ -189,7 +189,7 @@ export default function BookingCalendarPage() {
         throw new Error(errorData.message || "Ocurrió un error.");
       }
       toast.success(successMessage);
-      setIsModalOpen(false);
+      closeModal();
       await fetchBookingsForDate(currentDate);
     } catch (error) {
       toast.error(
@@ -202,45 +202,65 @@ export default function BookingCalendarPage() {
     }
   };
 
-  const openModalForSlot = (courtId: string, time: string) => {
-    setIsEditing(false);
-    setModalData({ courtId, time });
+  const executeStatusUpdate = async (bookingId: string, status: "COMPLETADO" | "CANCELADO") => {
+    toast.loading("Actualizando reserva...");
+    try {
+        const response = await fetch(`/api/complex/${complexId}/bookings`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ bookingId, status }),
+        });
+        if (!response.ok) throw new Error("No se pudo actualizar la reserva.");
+        toast.dismiss();
+        toast.success("Reserva actualizada.");
+        closeModal();
+        await fetchBookingsForDate(currentDate);
+    } catch (error) {
+        toast.dismiss();
+        toast.error(error instanceof Error ? error.message : "Error desconocido.");
+    }
+  };
+
+  const handleUpdateBookingStatus = (bookingId: string, status: "COMPLETADO" | "CANCELADO") => {
+    if (status === 'CANCELADO') {
+        setActionToConfirm({ bookingId, status });
+    } else {
+        executeStatusUpdate(bookingId, status);
+    }
+  };
+
+  const openModalForNew = (courtId: string, time: string) => {
+    setModalBooking(null);
+    setModalSlot({ courtId, time });
     setIsModalOpen(true);
   };
 
-  const openModalForEdit = (booking: BookingWithDetails) => {
-    setIsEditing(true);
-    setModalData({
-      ...booking,
-      guestName: booking.guestName ?? "",
-      time: `${String(booking.startTime).padStart(2, "0")}:${String(
-        booking.startMinute || 0
-      ).padStart(2, "0")}`,
-      date: format(booking.date, "yyyy-MM-dd"),
-    });
+  const openModalForExisting = (booking: BookingWithDetails) => {
+    setModalBooking(booking);
+    setModalSlot(null);
     setIsModalOpen(true);
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
     setTimeout(() => {
-      setModalData(undefined);
-      setIsEditing(false);
+      setModalBooking(null);
+      setModalSlot(null);
     }, 300);
   };
 
   const { filteredCourts, sportFilters } = useMemo(() => {
-    console.log("LOG (useMemo filteredCourts): Recalculando canchas filtradas. 'complex' es:", complex);
     if (!complex || !complex.courts) {
-      console.warn("LOG (useMemo filteredCourts): 'complex' o 'complex.courts' es nulo/indefinido. Devolviendo arrays vacíos.");
       return { filteredCourts: [], sportFilters: ["Todos"] };
     }
-    
-    console.log("LOG (useMemo filteredCourts): 'complex.courts' es un array, procediendo a mapear deportes.");
-    const sports = ["Todos", ...new Set(complex.courts.map((c) => c.sport.name))];
-    const courts = sportFilter === "Todos"
-      ? complex.courts
-      : complex.courts.filter((c) => c.sport.name === sportFilter);
+    const sports = [
+      "Todos",
+      ...new Set(complex.courts.map((c) => c.sport.name)),
+    ];
+    const courts =
+      sportFilter === "Todos"
+        ? complex.courts
+        : complex.courts.filter((c) => c.sport.name === sportFilter);
     return { filteredCourts: courts, sportFilters: sports };
   }, [complex, sportFilter]);
 
@@ -310,21 +330,23 @@ export default function BookingCalendarPage() {
             ))}
           </div>
         </header>
-         <div className="bg-white border rounded-lg shadow-sm overflow-x-auto">
+        <div className="bg-white border rounded-lg shadow-sm overflow-x-auto">
           <div
             className="grid"
             style={{
-              gridTemplateColumns: `minmax(70px, auto) repeat(${filteredCourts.length}, minmax(150px, 1fr))`,
-              gridAutoRows: "2.5rem",
+              gridTemplateColumns: `minmax(80px, auto) repeat(${filteredCourts.length}, minmax(180px, 1fr))`,
+              gridAutoRows: "4.5rem",
             }}
           >
             <div className="sticky top-0 left-0 bg-white z-20 flex items-center justify-center p-2 border-b border-r">
               <button
                 onClick={() => {
                   if (filteredCourts.length > 0 && timeSlots.length > 0) {
-                    openModalForSlot(filteredCourts[0].id, timeSlots[0]);
+                    openModalForNew(filteredCourts[0].id, timeSlots[0]);
                   } else {
-                    toast.error("No hay canchas o horarios disponibles para crear una reserva.");
+                    toast.error(
+                      "No hay canchas o horarios disponibles para crear una reserva."
+                    );
                   }
                 }}
                 disabled={filteredCourts.length === 0}
@@ -352,7 +374,6 @@ export default function BookingCalendarPage() {
                   const slotStartMinutes =
                     parseInt(time.split(":")[0]) * 60 +
                     parseInt(time.split(":")[1]);
-
                   const bookingStartingNow = courtBookings.find(
                     (b) =>
                       b.startTime * 60 + (b.startMinute || 0) ===
@@ -361,7 +382,8 @@ export default function BookingCalendarPage() {
 
                   if (bookingStartingNow) {
                     const interval = complex.timeSlotInterval || 30;
-                    const rowSpan = bookingStartingNow.court.slotDurationMinutes / interval;
+                    const rowSpan =
+                      bookingStartingNow.court.slotDurationMinutes / interval;
                     return (
                       <div
                         key={`${court.id}-${time}`}
@@ -369,7 +391,9 @@ export default function BookingCalendarPage() {
                         style={{ gridRow: `span ${rowSpan}` }}
                       >
                         <button
-                          onClick={() => openModalForEdit(bookingStartingNow)}
+                          onClick={() =>
+                            openModalForExisting(bookingStartingNow)
+                          }
                           className={cn(
                             "rounded-md w-full h-full p-2 text-left text-xs font-semibold cursor-pointer flex flex-col justify-between",
                             statusColors[bookingStartingNow.status]
@@ -405,7 +429,6 @@ export default function BookingCalendarPage() {
                           (b.startMinute || 0) +
                           b.court.slotDurationMinutes
                   );
-
                   if (isSlotCovered) {
                     return null;
                   }
@@ -417,7 +440,7 @@ export default function BookingCalendarPage() {
                       className="relative border-b border-l p-1"
                     >
                       <button
-                        onClick={() => openModalForSlot(court.id, time)}
+                        onClick={() => openModalForNew(court.id, time)}
                         disabled={past}
                         className={cn(
                           "h-full w-full rounded-md flex items-center justify-center transition-colors",
@@ -441,14 +464,39 @@ export default function BookingCalendarPage() {
           isOpen={isModalOpen}
           onClose={closeModal}
           onSubmit={handleBookingSubmit}
+          onUpdateStatus={handleUpdateBookingStatus}
           courts={complex.courts}
           timeSlots={timeSlots}
-          initialValues={modalData}
-          isEditing={isEditing}
+          initialBooking={modalBooking}
+          initialSlot={modalSlot}
           existingBookings={bookings}
           isSubmitting={isSubmitting}
         />
       )}
+
+      <AlertDialog open={!!actionToConfirm} onOpenChange={(open) => !open && setActionToConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Estás seguro de que querés cancelar?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción marcará la reserva como cancelada y no se puede deshacer. No se realizará ningún reembolso automático de la seña.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Volver</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (actionToConfirm) {
+                  await executeStatusUpdate(actionToConfirm.bookingId, actionToConfirm.status);
+                }
+              }}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Sí, cancelar reserva
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

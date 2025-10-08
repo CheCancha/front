@@ -38,16 +38,37 @@ export async function PUT(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await context.params;
-    const { error } = await authorizeAndVerify(id);
+    const { id: complexId } = await context.params;
+    const { complex, error } = await authorizeAndVerify(complexId);
     if (error) return error;
+    
+    if (!complex) {
+        return new NextResponse("Complejo no encontrado.", { status: 404 });
+    }
 
     const body = (await req.json()) as { courts: CourtsPayload };
     const { courts } = body;
 
+    const isBasicPlan = complex.subscriptionPlan === 'BASE';
+    const courtsToCreateCount = courts.create?.length || 0;
+
+    if (isBasicPlan && courtsToCreateCount > 0) {
+        const currentCourtCount = await db.court.count({
+            where: { complexId },
+        });
+        const courtsToDeleteCount = courts.delete?.length || 0;
+        const finalCourtCount = currentCourtCount + courtsToCreateCount - courtsToDeleteCount;
+
+        if (finalCourtCount > 3) {
+            return new NextResponse(
+                JSON.stringify({ message: "Alcanzaste el límite de 3 canchas para el Plan Básico. Actualizá a Pro para agregar más." }),
+                { status: 403 } 
+            );
+        }
+    }
+
     await db.$transaction(
       async (prisma) => {
-        // --- Lógica para eliminar, actualizar y crear canchas ---
         if (courts.delete?.length > 0) {
           await prisma.court.deleteMany({
             where: { id: { in: courts.delete.map((c) => c.id) } },
@@ -74,7 +95,7 @@ export async function PUT(
             for (const court of courts.create) {
                 await prisma.court.create({
                     data: {
-                        complexId: id,
+                        complexId: complexId,
                         name: court.name,
                         sportId: court.sportId,
                         slotDurationMinutes: court.slotDurationMinutes,
@@ -88,7 +109,7 @@ export async function PUT(
     );
 
     // --- 2. LLAMAR A LA FUNCIÓN DE VERIFICACIÓN ---
-    await checkOnboarding(id);
+    await checkOnboarding(complexId);
 
     return NextResponse.json({ message: "Canchas actualizadas exitosamente" });
   } catch (error) {

@@ -1,6 +1,6 @@
 import { create, StateCreator } from 'zustand';
 import { devtools } from 'zustand/middleware';
-import { SportOption } from '@/shared/components/ui/Searchbar'; // Asumimos que exportarás este tipo
+import { SportOption } from '@/shared/components/ui/Searchbar';
 
 interface SearchState {
   city: string;
@@ -14,9 +14,6 @@ interface SearchState {
   initializeFromUrl: (params: URLSearchParams) => void;
 }
 
-// --- ¡AQUÍ ESTÁ LA CORRECCIÓN! ---
-// Se utiliza el tipo `StateCreator` de Zustand para darle un tipo explícito
-// a la función que crea el estado, lo que a su vez tipa correctamente el parámetro `set`.
 const createSearchSlice: StateCreator<SearchState> = (set) => ({
   // --- Estado Inicial ---
   city: 'Tostado',
@@ -24,7 +21,7 @@ const createSearchSlice: StateCreator<SearchState> = (set) => ({
   date: new Date(),
   time: '',
 
-  // --- Acciones para modificar el estado (ya estaban bien tipadas por la interfaz) ---
+  // --- Acciones para modificar el estado  ---
   setCity: (city) => set({ city }),
   setSport: (sport) => set({ sport }),
   setDate: (date) => set({ date }),
@@ -36,8 +33,6 @@ const createSearchSlice: StateCreator<SearchState> = (set) => ({
     const urlDate = params.get('date');
     const urlTime = params.get('time');
     
-    // El objeto que se pasa a 'set' debe coincidir con el estado,
-    // por lo que creamos un objeto parcial y lo llenamos.
     const newState: Partial<SearchState> = {};
     if (urlCity) newState.city = urlCity;
     if (urlDate) newState.date = new Date(`${urlDate}T00:00:00`);
@@ -49,7 +44,7 @@ const createSearchSlice: StateCreator<SearchState> = (set) => ({
 
 export const useSearchStore = create<SearchState>()(
   devtools(
-    createSearchSlice, // Usamos nuestra función tipada
+    createSearchSlice,
     { name: 'SearchStore' }
   )
 );

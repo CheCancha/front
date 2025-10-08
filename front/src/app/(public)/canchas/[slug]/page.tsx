@@ -10,11 +10,22 @@ import { getDay } from "date-fns";
 import { cn } from "@/shared/lib/utils";
 import dynamic from "next/dynamic";
 
-
 // --- Tipos ---
-import type { Amenity, Complex, Court, Image as PrismaImage, Schedule } from "@prisma/client";
+import type {
+  Amenity,
+  Complex,
+  Court,
+  Image as PrismaImage,
+  Schedule,
+} from "@prisma/client";
 import { AmenityIcon } from "@/shared/components/ui/AmenityIcon";
-export type PriceRule = { id: string; startTime: number; endTime: number; price: number; depositAmount: number; };
+export type PriceRule = {
+  id: string;
+  startTime: number;
+  endTime: number;
+  price: number;
+  depositAmount: number;
+};
 export type CourtWithPriceRules = Court & { priceRules: PriceRule[] };
 
 export type ComplexProfileData = Complex & {
@@ -23,25 +34,31 @@ export type ComplexProfileData = Complex & {
   schedule: Schedule | null;
   amenities: Amenity[];
 };
-export type ValidStartTime = { time: string; courts: { courtId: string; available: boolean }[] };
-
+export type ValidStartTime = {
+  time: string;
+  courts: { courtId: string; available: boolean }[];
+};
 
 // --- Componentes ---
 import Navbar from "@/shared/components/Navbar";
 import Footer from "@/shared/components/Footer";
-import BookingModal from "@/shared/components/ui/BookingModal";
+import BookingModal from "@/app/features/public/components/courts/BookingModal";
 import { ImageCarousel } from "@/app/features/public/components/courts/ImageCarousel";
 import { BookingWidget } from "@/app/features/public/components/courts/BookingWidget";
 import { PageSkeleton } from "@/app/features/public/components/courts/Skeleton";
 import { routes } from "@/routes";
 
 // --- Carga dinámica del Mapa ---
-const Map = dynamic(() => import('@/app/features/public/components/courts/Map'), {
-  ssr: false,
-  loading: () => <div className="h-[400px] w-full bg-gray-200 rounded-2xl animate-pulse" />
-});
+const Map = dynamic(
+  () => import("@/app/features/public/components/courts/Map"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[400px] w-full bg-gray-200 rounded-2xl animate-pulse" />
+    ),
+  }
+);
 
-// ... (función generateWeeklySchedule sin cambios) ...
 const generateWeeklySchedule = (complex: ComplexProfileData) => {
   const schedule = [];
   const dayOrder: {
@@ -74,7 +91,6 @@ const generateWeeklySchedule = (complex: ComplexProfileData) => {
   }
   return schedule;
 };
-
 
 // --- PÁGINA DE PERFIL DEL CLUB ---
 export default function ClubProfilePage() {
@@ -156,8 +172,12 @@ export default function ClubProfilePage() {
 
   const weeklySchedule = generateWeeklySchedule(club);
   const todayIndex = (getDay(new Date()) + 6) % 7;
-  
-  const hasContactInfo = club.contactPhone || club.contactEmail || club.instagramHandle || club.facebookUrl;
+
+  const hasContactInfo =
+    club.contactPhone ||
+    club.contactEmail ||
+    club.instagramHandle ||
+    club.facebookUrl;
 
   return (
     <>
@@ -165,7 +185,6 @@ export default function ClubProfilePage() {
         <Navbar />
         <main className="container mx-auto px-4 sm:px-6 py-12">
           <div className="max-w-7xl mx-auto">
-            
             <section className="relative mb-12 rounded-2xl overflow-hidden">
               <ImageCarousel images={club.images} />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
@@ -187,14 +206,13 @@ export default function ClubProfilePage() {
 
             {/* --- LAYOUT DE CONTENIDO PRINCIPAL --- */}
             <div className="grid lg:grid-cols-3 gap-8 items-start">
-              
               {/* Columna Principal: Widget de Reservas Y MAPA */}
               <div className="lg:col-span-2 space-y-8">
                 <BookingWidget
-                    club={club}
-                    onSlotClick={handleSlotClick}
-                    selectedDate={selectedDate}
-                    setSelectedDate={setSelectedDate}
+                  club={club}
+                  onSlotClick={handleSlotClick}
+                  selectedDate={selectedDate}
+                  setSelectedDate={setSelectedDate}
                 />
 
                 {/* --- MAPA APAISADO DEBAJO DEL BOOKING WIDGET --- */}
@@ -205,7 +223,11 @@ export default function ClubProfilePage() {
                       Ubicación
                     </h3>
                     <div className="h-[400px] w-full rounded-lg overflow-hidden z-0">
-                      <Map lat={club.latitude} lng={club.longitude} complexName={club.name} />
+                      <Map
+                        lat={club.latitude}
+                        lng={club.longitude}
+                        complexName={club.name}
+                      />
                     </div>
                   </div>
                 )}
@@ -213,26 +235,59 @@ export default function ClubProfilePage() {
 
               {/* Columna Lateral: Información del Club */}
               <div className="lg:col-span-1 space-y-6">
-                
                 {/* Card de Contacto y Redes */}
                 {hasContactInfo && (
                   <div className="bg-white rounded-2xl p-6 border border-gray-200">
-                    <h3 className="text-lg font-bold text-foreground mb-4">Contacto y Redes</h3>
+                    <h3 className="text-lg font-bold text-foreground mb-4">
+                      Contacto y Redes
+                    </h3>
                     <div className="space-y-3">
-                      {club.contactPhone && <InfoItem icon={Phone} text={club.contactPhone} href={`tel:${club.contactPhone}`} />}
-                      {club.contactEmail && <InfoItem icon={Mail} text={club.contactEmail} href={`mailto:${club.contactEmail}`} />}
-                      {club.instagramHandle && <InfoItem icon={FaInstagram} text={`@${club.instagramHandle}`} href={`https://instagram.com/${club.instagramHandle}`} />}
-                      {club.facebookUrl && <InfoItem icon={FaFacebook} text="Facebook" href={club.facebookUrl} />}
+                      {club.contactPhone && (
+                        <InfoItem
+                          icon={Phone}
+                          text={club.contactPhone}
+                          href={`tel:${club.contactPhone}`}
+                        />
+                      )}
+                      {club.contactEmail && (
+                        <InfoItem
+                          icon={Mail}
+                          text={club.contactEmail}
+                          href={`mailto:${club.contactEmail}`}
+                        />
+                      )}
+                      {club.instagramHandle && (
+                        <InfoItem
+                          icon={FaInstagram}
+                          text={`@${club.instagramHandle}`}
+                          href={`https://instagram.com/${club.instagramHandle}`}
+                        />
+                      )}
+                      {club.facebookUrl && (
+                        <InfoItem
+                          icon={FaFacebook}
+                          text="Facebook"
+                          href={club.facebookUrl}
+                        />
+                      )}
                     </div>
                   </div>
                 )}
 
                 {/* Card de Horarios */}
                 <div className="bg-white rounded-2xl p-6 border border-gray-200">
-                  <h3 className="text-lg font-bold text-foreground mb-4">Horarios</h3>
+                  <h3 className="text-lg font-bold text-foreground mb-4">
+                    Horarios
+                  </h3>
                   <ul className="space-y-2 text-paragraph">
                     {weeklySchedule.map((item, index) => (
-                      <li key={item.day} className={cn("flex justify-between", index === todayIndex && "font-bold text-brand-orange")}>
+                      <li
+                        key={item.day}
+                        className={cn(
+                          "flex justify-between",
+                          index === todayIndex && "font-bold text-brand-orange"
+                        )}
+                      >
                         <span>{item.day}</span>
                         <span className="font-medium">{item.hours}</span>
                       </li>
@@ -243,11 +298,19 @@ export default function ClubProfilePage() {
                 {/* Card de Servicios */}
                 {club.amenities.length > 0 && (
                   <div className="bg-white rounded-2xl p-6 border border-gray-200">
-                    <h3 className="text-lg font-bold text-foreground mb-4">Servicios</h3>
+                    <h3 className="text-lg font-bold text-foreground mb-4">
+                      Servicios
+                    </h3>
                     <ul className="grid grid-cols-2 gap-x-4 gap-y-3 text-paragraph">
                       {club.amenities.map((amenity) => (
-                        <li key={amenity.id} className="flex items-center gap-2">
-                          <AmenityIcon iconName={amenity.icon} className="h-4 w-4 text-brand-orange" />
+                        <li
+                          key={amenity.id}
+                          className="flex items-center gap-2"
+                        >
+                          <AmenityIcon
+                            iconName={amenity.icon}
+                            className="h-4 w-4 text-brand-orange"
+                          />
                           <span className="font-medium">{amenity.name}</span>
                         </li>
                       ))}
@@ -256,7 +319,6 @@ export default function ClubProfilePage() {
                 )}
               </div>
             </div>
-
           </div>
         </main>
         <Footer />
@@ -277,9 +339,25 @@ export default function ClubProfilePage() {
 }
 
 // --- Componente de Ayuda para Items de Contacto ---
-const InfoItem = ({ icon: Icon, text, href }: { icon: React.ElementType; text: string; href: string }) => (
-    <a href={href} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-paragraph hover:text-brand-orange transition-colors group">
-        <Icon size={18} className="text-gray-400 group-hover:text-brand-orange transition-colors" />
-        <span className="font-medium">{text}</span>
-    </a>
+const InfoItem = ({
+  icon: Icon,
+  text,
+  href,
+}: {
+  icon: React.ElementType;
+  text: string;
+  href: string;
+}) => (
+  <a
+    href={href}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="flex items-center gap-3 text-paragraph hover:text-brand-orange transition-colors group"
+  >
+    <Icon
+      size={18}
+      className="text-gray-400 group-hover:text-brand-orange transition-colors"
+    />
+    <span className="font-medium">{text}</span>
+  </a>
 );

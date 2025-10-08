@@ -458,7 +458,23 @@ export const ComplexSettings = () => {
           {activeTab === "general" && <GeneralInfoForm data={data} onChange={handleBasicInfoChange} />}
           {activeTab === "amenities" && <AmenitiesForm allAmenities={allAmenities} selectedAmenities={data.amenities.map(a => a.id)} onAmenityChange={handleAmenityChange} />}
           {activeTab === "schedule" && <ScheduleForm data={data} onComplexChange={handleComplexChange} onScheduleChange={handleScheduleDayChange} />}
-          {activeTab === "courts" && <CourtsManager data={data} originalData={originalData} allSports={allSports} newCourts={newCourts} courtsToDelete={courtsToDelete} onCourtChange={handleCourtChange} onDeleteCourt={deleteCourt} onAddNewCourt={addNewCourt} onRestoreCourt={restoreCourt} onPriceRuleChange={handlePriceRuleChange} onAddPriceRule={addPriceRule} onRemovePriceRule={removePriceRule} />}
+          {activeTab === "courts" && (
+            <CourtsManager
+              data={data}
+              originalData={originalData}
+              allSports={allSports}
+              newCourts={newCourts}
+              courtsToDelete={courtsToDelete}
+              subscriptionPlan={data.subscriptionPlan}
+              onCourtChange={handleCourtChange}
+              onDeleteCourt={deleteCourt}
+              onAddNewCourt={addNewCourt}
+              onRestoreCourt={restoreCourt}
+              onPriceRuleChange={handlePriceRuleChange}
+              onAddPriceRule={addPriceRule}
+              onRemovePriceRule={removePriceRule}
+            />
+          )}
           {activeTab === "images" && data && originalData && <ImageSettings data={data} setData={setData} complexId={complexId} originalData={originalData} imagesToDelete={imagesToDelete} onDeleteImage={deleteImage} onRestoreImage={restoreImage} />}
           {activeTab === "payments" && <PaymentsSettings data={data} />}
 

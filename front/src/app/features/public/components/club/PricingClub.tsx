@@ -12,7 +12,7 @@ const ButtonPrimary = ({ href, className, children }: { href: string; className?
     href={href}
     className={cn(
       "inline-block text-center w-full px-6 py-3 font-semibold text-white rounded-lg transition-colors duration-300",
-      "bg-brand-orange hover:bg-orange-600",
+      "text-white bg-gradient-to-r from-orange-500 to-red-600 hover:brightness-110 transition-all duration-300 cursor-pointer",
       className
     )}
   >
@@ -37,8 +37,8 @@ const ButtonSecondary = ({ href, className, children }: { href: string; classNam
 const plans = [
   {
     name: "Plan Básico",
-    priceMonthly: 29990, // Precio mensual aumentado
-    priceYearly: 29990 * 10, // Descuento estandarizado: 2 meses gratis
+    priceMonthly: 29990,
+    priceYearly: 29990 * 10,
     description: "Para complejos de hasta 3 canchas.",
     features: [
       "Perfil público en CheCancha",
