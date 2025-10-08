@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/authOptions";
 import { db } from "@/shared/lib/db";
 
+// Evita que Next.js cachee esta ruta, asegurando datos frescos en cada petición.
 export const dynamic = 'force-dynamic';
 
 export async function GET() {

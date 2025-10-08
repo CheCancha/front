@@ -1,41 +1,91 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useTransition } from "react";
 import type { InscriptionRequest } from "@prisma/client";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { InscriptionReviewModal } from "@/app/features/admin/components/InscriptionModal";
-import { Spinner } from "@/shared/components/ui/Spinner"; 
-import { Briefcase, User, Calendar } from "lucide-react";
+import { Spinner } from "@/shared/components/ui/Spinner";
+import { Briefcase, User, Calendar, RefreshCw } from "lucide-react";
+import { getPendingInscriptionRequestsForAdmin } from "@/app/features/admin/services/admin.service";
 
-interface InscriptionRequestsProps {
-  initialRequests: InscriptionRequest[];
+// Props para los componentes de item individual
+interface RequestItemProps {
+  request: InscriptionRequest;
+  onReview: (request: InscriptionRequest) => void;
 }
 
-export default function InscriptionRequests({ initialRequests }: InscriptionRequestsProps) {
+// Componente para la tarjeta en vista móvil
+const RequestCard: React.FC<RequestItemProps> = ({ request, onReview }) => (
+  <div className="p-4 border rounded-lg bg-white shadow-sm hover:shadow-md transition-shadow">
+    <div className="flex justify-between items-start gap-4">
+      <div className="flex-grow">
+        <p className="font-semibold text-gray-800 break-words">{request.complexName}</p>
+        <p className="text-sm text-gray-500 flex items-center gap-1.5 mt-1">
+          <User size={14} className="flex-shrink-0" /> {request.ownerName}
+        </p>
+      </div>
+      <button
+        onClick={() => onReview(request)}
+        className="px-3 py-1.5 bg-brand-orange text-white text-xs font-semibold rounded-md hover:bg-neutral-950 transition-colors cursor-pointer flex-shrink-0"
+      >
+        Revisar
+      </button>
+    </div>
+    <div className="mt-3 pt-3 border-t flex justify-between items-center text-sm text-gray-600">
+      <span className="flex items-center gap-1.5 bg-gray-100 px-2 py-0.5 rounded-md text-xs">
+        <Briefcase size={14} /> {request.selectedPlan}
+      </span>
+      <span className="flex items-center gap-1.5 text-xs">
+        <Calendar size={14} /> {format(new Date(request.createdAt), "dd MMM yyyy", { locale: es })}
+      </span>
+    </div>
+  </div>
+);
+
+// Componente para la fila de la tabla en vista de escritorio
+const RequestTableRow: React.FC<RequestItemProps> = ({ request, onReview }) => (
+  <tr className="border-b hover:bg-gray-50 transition-colors">
+    <td className="p-3 font-medium text-gray-800">{request.complexName}</td>
+    <td className="p-3 text-gray-600">{request.ownerName}</td>
+    <td className="p-3 text-gray-600">{request.selectedPlan}</td>
+    <td className="p-3 text-gray-600">{format(new Date(request.createdAt), "dd MMM yyyy", { locale: es })}</td>
+    <td className="p-3 text-center">
+      <button
+        onClick={() => onReview(request)}
+        className="px-3 py-1 bg-brand-orange text-white text-xs font-semibold rounded-md hover:bg-neutral-950 transition-colors cursor-pointer"
+      >
+        Revisar
+      </button>
+    </td>
+  </tr>
+);
+
+
+// Componente principal
+export default function InscriptionRequests({ initialRequests }: { initialRequests: InscriptionRequest[] }) {
   const [requests, setRequests] = useState(initialRequests);
-  const [isRefreshing, setIsRefreshing] = useState(false); 
-  const [error, setError] = useState<string | null>(null); 
+  const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<InscriptionRequest | null>(null);
+  const [isPending, startTransition] = useTransition();
 
+  // --- 2. Actualizamos fetchRequests para que use la Server Action ---
   const fetchRequests = useCallback(async () => {
-    setIsRefreshing(true);
     setError(null);
     try {
-      const response = await fetch('/api/admin/requests');
-      if (!response.ok) {
-        throw new Error('No se pudieron cargar las solicitudes pendientes.');
-      }
-      const data = await response.json();
+      const data = await getPendingInscriptionRequestsForAdmin();
       setRequests(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ocurrió un error inesperado.');
-    } finally {
-      setIsRefreshing(false);
+      setError(err instanceof Error ? err.message : 'Ocurrió un error inesperado al cargar las solicitudes.');
     }
   }, []);
 
+  const handleRefresh = () => {
+    startTransition(() => {
+      fetchRequests();
+    });
+  };
 
   const handleReviewClick = (request: InscriptionRequest) => {
     setSelectedRequest(request);
@@ -48,26 +98,35 @@ export default function InscriptionRequests({ initialRequests }: InscriptionRequ
   };
 
   const handleActionComplete = () => {
-    fetchRequests(); 
+    handleRefresh();
     handleCloseModal();
   };
-  
-  if (error) {
-    return <p className="text-red-600 p-4">{error}</p>;
-  }
 
   return (
     <>
-      <div className="bg-white p-4 sm:p-6 rounded-lg border shadow-sm">
-        <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">Solicitudes de Inscripción Pendientes</h2>
-            {isRefreshing && <Spinner />}
+      <div className="bg-[#f8f9f9] p-4 sm:p-6 rounded-lg border">
+        <div className="flex items-center justify-between mb-4 gap-4">
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900">Solicitudes Pendientes</h2>
+          <button onClick={handleRefresh} disabled={isPending} className="p-2 rounded-full hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-wait">
+            {isPending ? <Spinner /> : <RefreshCw className="w-4 h-4 text-gray-600" />}
+          </button>
         </div>
-        
-        {requests.length === 0 && !isRefreshing ? (
-          <p className="text-gray-500">No hay nuevas solicitudes pendientes.</p>
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4" role="alert">
+            <p className="font-bold">Error</p>
+            <p className="text-sm">{error}</p>
+          </div>
+        )}
+
+        {requests.length === 0 && !isPending ? (
+          <div className="text-center py-10">
+            <p className="text-gray-500">No hay nuevas solicitudes pendientes.</p>
+            <p className="text-sm text-gray-400 mt-1">¡Buen trabajo!</p>
+          </div>
         ) : (
           <div>
+            {/* Tabla para Escritorio */}
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead className="border-b bg-gray-50">
@@ -81,39 +140,16 @@ export default function InscriptionRequests({ initialRequests }: InscriptionRequ
                 </thead>
                 <tbody>
                   {requests.map((req) => (
-                    <tr key={req.id} className="border-b hover:bg-gray-50">
-                      <td className="p-3 font-medium">{req.complexName}</td>
-                      <td className="p-3 text-gray-600">{req.ownerName}</td>
-                      <td className="p-3 text-gray-600">{req.selectedPlan}</td>
-                      <td className="p-3 text-gray-600">{format(new Date(req.createdAt), "dd MMM yyyy", { locale: es })}</td>
-                      <td className="p-3 text-center">
-                          <button onClick={() => handleReviewClick(req)} className="px-3 py-1 bg-brand-orange text-white text-xs font-semibold rounded-md hover:bg-neutral-950 transition-colors cursor-pointer">
-                              Revisar
-                          </button>
-                      </td>
-                    </tr>
+                    <RequestTableRow key={req.id} request={req} onReview={handleReviewClick} />
                   ))}
                 </tbody>
               </table>
             </div>
 
-            <div className="md:hidden space-y-4">
+            {/* Tarjetas para Móvil */}
+            <div className="md:hidden space-y-3">
               {requests.map((req) => (
-                <div key={req.id} className="p-4 border rounded-lg bg-gray-50">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="font-semibold text-gray-800">{req.complexName}</p>
-                      <p className="text-sm text-gray-500 flex items-center gap-1.5 mt-1"><User size={12}/> {req.ownerName}</p>
-                    </div>
-                    <button onClick={() => handleReviewClick(req)} className="px-3 py-1 bg-brand-orange text-white text-xs font-semibold rounded-md hover:bg-neutral-950 transition-colors cursor-pointer">
-                      Revisar
-                    </button>
-                  </div>
-                  <div className="mt-3 pt-3 border-t flex justify-between text-xs text-gray-500">
-                    <span className="flex items-center gap-1.5"><Briefcase size={12}/> {req.selectedPlan}</span>
-                    <span className="flex items-center gap-1.5"><Calendar size={12}/> {format(new Date(req.createdAt), "dd MMM yyyy", { locale: es })}</span>
-                  </div>
-                </div>
+                <RequestCard key={req.id} request={req} onReview={handleReviewClick} />
               ))}
             </div>
           </div>

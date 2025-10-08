@@ -1,12 +1,23 @@
 "use server";
 
 import { db } from "@/shared/lib/db";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/app/api/auth/[...nextauth]/authOptions";
-import { InscriptionRequest } from "@prisma/client";
+import { InscriptionRequest, SubscriptionCycle, SubscriptionPlan } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { sendWelcomeEmail } from "@/shared/lib/email";
 import { normalizePhoneNumber } from "@/shared/lib/utils";
+import { add } from "date-fns";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/shared/lib/auth";
+
+
+export const getPendingInscriptionRequestsForAdmin = async () => {
+  const requests = await db.inscriptionRequest.findMany({
+    where: { status: "PENDIENTE" },
+    orderBy: { createdAt: "asc" },
+  });
+  return requests;
+};
+
 
 const createSlug = (text: string) => {
   return text
@@ -15,21 +26,8 @@ const createSlug = (text: string) => {
     .replace(/[^\w-]+/g, "");
 };
 
-export const getPendingInscriptionRequestsForAdmin = async () => {
-  const session = await getServerSession(authOptions);
-  if (session?.user?.role !== "ADMIN") {
-    throw new Error("Acceso no autorizado.");
-  }
-  const requests = await db.inscriptionRequest.findMany({
-    where: { status: "PENDIENTE" },
-    orderBy: { createdAt: "asc" },
-  });
-  return requests;
-};
-
 const generateTemporaryPassword = (length = 10) => {
-  const chars =
-    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   let password = "";
   for (let i = 0; i < length; i++) {
     password += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -47,28 +45,20 @@ export const approveInscription = async (
     });
 
     if (!inscriptionRequest || inscriptionRequest.status !== "PENDIENTE") {
-      return {
-        success: false,
-        error: "Solicitud no encontrada o ya procesada.",
-      };
+      return { success: false, error: "Solicitud no encontrada o ya procesada." };
     }
 
     const finalData = { ...inscriptionRequest, ...updatedData };
     const normalizedPhone = normalizePhoneNumber(finalData.ownerPhone);
 
-    // 🔹 1. Buscamos si ya existe el usuario
     let user = await db.user.findFirst({
-      where: {
-        OR: [{ email: finalData.ownerEmail }, { phone: normalizedPhone }],
-      },
+      where: { OR: [{ email: finalData.ownerEmail }, { phone: normalizedPhone }] },
     });
 
-    // 🔹 2. Si no existe, lo creamos
     let temporaryPassword: string | null = null;
     if (!user) {
       temporaryPassword = generateTemporaryPassword();
       const hashedPassword = await bcrypt.hash(temporaryPassword, 10);
-
       user = await db.user.create({
         data: {
           name: finalData.ownerName,
@@ -80,31 +70,18 @@ export const approveInscription = async (
       });
     }
 
-    // 🔹 3. Revisamos si ya tiene complejo asignado
-    const existingComplex = await db.complex.findFirst({
-      where: { managerId: user.id },
-    });
-
+    const existingComplex = await db.complex.findFirst({ where: { managerId: user.id } });
     if (existingComplex) {
-      return {
-        success: false,
-        error: `El usuario ${user.email} ya tiene asignado el complejo "${existingComplex.name}".`,
-      };
+      return { success: false, error: `El usuario ${user.email} ya gestiona el complejo "${existingComplex.name}".` };
     }
 
-    // 🔹 4. Revisamos si ya existe un complejo con ese nombre (evita duplicados)
-    const duplicateComplexName = await db.complex.findFirst({
-      where: { name: finalData.complexName },
-    });
-
+    const duplicateComplexName = await db.complex.findFirst({ where: { name: finalData.complexName } });
     if (duplicateComplexName) {
-      return {
-        success: false,
-        error: `Ya existe un complejo llamado "${duplicateComplexName.name}".`,
-      };
+        return { success: false, error: `Ya existe un complejo llamado "${duplicateComplexName.name}".` };
     }
+    
+    const trialEndsAt = add(new Date(), { days: 90 });
 
-    // 🔹 5. Creamos el complejo
     await db.complex.create({
       data: {
         name: finalData.complexName,
@@ -113,16 +90,18 @@ export const approveInscription = async (
         city: finalData.city,
         province: finalData.province,
         managerId: user.id,
+        inscriptionRequestId: inscriptionRequest.id,
+        subscriptionPlan: finalData.selectedPlan as SubscriptionPlan,
+        subscriptionCycle: finalData.selectedCycle as SubscriptionCycle,
+        trialEndsAt: trialEndsAt,
       },
     });
 
-    // 🔹 6. Actualizamos el estado de la solicitud
     await db.inscriptionRequest.update({
       where: { id: requestId },
-      data: { status: "APROBADO", ...updatedData },
+      data: { status: "APROBADO" },
     });
 
-    // 🔹 7. Enviamos el mail solo si el usuario fue recién creado
     if (temporaryPassword) {
       try {
         await sendWelcomeEmail(
@@ -135,8 +114,7 @@ export const approveInscription = async (
         console.error("Fallo el envío del email de bienvenida:", emailError);
         return {
           success: true,
-          warning:
-            "El usuario y complejo fueron creados, pero falló el envío del email. Contactá al usuario manualmente.",
+          warning: "El complejo fue creado, pero falló el envío del email. Contactá al usuario manualmente.",
         };
       }
     }
@@ -144,10 +122,7 @@ export const approveInscription = async (
     return { success: true };
   } catch (error) {
     console.error("Error al aprobar la solicitud:", error);
-    return {
-      success: false,
-      error: "Error del servidor al aprobar la solicitud.",
-    };
+    return { success: false, error: "Error del servidor al aprobar la solicitud." };
   }
 };
 
@@ -166,5 +141,29 @@ export const rejectInscription = async (requestId: string) => {
   } catch (error) {
     console.error("Error al rechazar la solicitud:", error);
     return { success: false, error: "No se pudo rechazar la solicitud." };
+  }
+};
+
+export const updateInscription = async (
+  requestId: string,
+  dataToUpdate: Partial<InscriptionRequest>
+) => {
+  try {
+    const session = await getServerSession(authOptions);
+    if (session?.user?.role !== "ADMIN") {
+      throw new Error("Acceso no autorizado.");
+    }
+    
+    const { id, ...data } = dataToUpdate;
+
+    await db.inscriptionRequest.update({
+      where: { id: requestId },
+      data,
+    });
+    
+    return { success: true };
+  } catch (error) {
+    console.error("Error al actualizar la solicitud:", error);
+    return { success: false, error: "No se pudo actualizar la solicitud." };
   }
 };

@@ -9,10 +9,7 @@ interface Context {
   }>;
 }
 
-export async function PATCH(
-  request: Request,
-  context: Context
-) {
+export async function PATCH(request: Request, context: Context) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id || session.user.role !== "ADMIN") {

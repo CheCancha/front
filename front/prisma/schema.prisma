@@ -129,45 +129,47 @@ model Coupon {
 }
 
 model Complex {
-  id                    String   @id @default(cuid())
-  name                  String
-  slug                  String   @unique
-  address               String
-  city                  String
-  province              String
-  managerId             String   @unique
-  onboardingCompleted   Boolean  @default(false)
-  openHour              Int?
-  closeHour             Int?
-  courtCount            Int?
-  timeSlotInterval      Int      @default(30)
-  amenities             Amenity[]
+  id                      String   @id @default(cuid())
+  name                    String
+  slug                    String   @unique
+  address                 String
+  city                    String
+  province                String
+  managerId               String   @unique
+  onboardingCompleted     Boolean  @default(false)
+  openHour                Int?
+  closeHour               Int?
+  courtCount              Int?
+  timeSlotInterval        Int      @default(30)
+  amenities               Amenity[]
   // Geolocalización para mapas
-  latitude              Float?
-  longitude             Float?
-  contactPhone          String? 
-  contactEmail          String? 
-  instagramHandle       String?
-  facebookUrl           String?
+  latitude                Float?
+  longitude               Float?
+  contactPhone            String? 
+  contactEmail            String? 
+  instagramHandle         String?
+  facebookUrl             String?
   
   // Política de Cancelación en horas.
   cancellationPolicyHours Int    @default(24)
 
   // Mercado Pago
-  mp_access_token       String?
-  mp_refresh_token      String?
-  mp_public_key         String?
-  mp_user_id            String?
-  mp_connected_at       DateTime?
-  reviews               Review[]
+  mp_access_token         String?
+  mp_refresh_token        String?
+  mp_public_key           String?
+  mp_user_id              String?
+  mp_connected_at         DateTime?
+  reviews                 Review[]
 
   // Relaciones
-  manager               User     @relation("ManagedBy", fields: [managerId], references: [id])
-  courts                Court[]
-  images                Image[]
-  schedule              Schedule?
-
-// --- CAMPOS DE SUSCRIPCIÓN ---
+  manager                 User     @relation("ManagedBy", fields: [managerId], references: [id])
+  courts                  Court[]
+  images                  Image[]
+  schedule                Schedule?
+  
+// SUSCRIPCIÓN
+  inscriptionRequest      InscriptionRequest? @relation(fields: [inscriptionRequestId], references: [id])
+  inscriptionRequestId    String?             @unique
   subscriptionPlan        SubscriptionPlan    @default(FREE)
   subscriptionStatus      SubscriptionStatus  @default(EN_PRUEBA)
   subscriptionCycle       SubscriptionCycle?                     
@@ -294,19 +296,21 @@ model PriceRule {
 }
 
 model InscriptionRequest {
-  id           String   @id @default(cuid())
-  ownerName    String
-  ownerPhone   String
-  ownerEmail   String
-  complexName  String
-  address      String
-  city         String
-  province     String
-  sports       String
-  selectedPlan String
+  id            String   @id @default(cuid())
+  ownerName     String
+  ownerPhone    String
+  ownerEmail    String
+  complexName   String
+  address       String
+  city          String
+  province      String
+  sports        String
+  selectedPlan  String
   selectedCycle String?
-  status       String   @default("PENDIENTE")
-  createdAt    DateTime @default(now())
+  status        String   @default("PENDIENTE") 
+  createdAt     DateTime @default(now())
+
+  complex       Complex?
 }
 
 enum Role {

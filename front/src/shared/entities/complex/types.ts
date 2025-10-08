@@ -1,4 +1,4 @@
-import { Complex, Schedule, Court, Image, Sport, PriceRule } from "@prisma/client";
+import { Complex, Schedule, Court, Image, Sport, PriceRule, SubscriptionCycle, SubscriptionPlan, SubscriptionStatus } from "@prisma/client";
 
 export type CourtWithRelations = Court & { 
   sport: Sport;
@@ -37,9 +37,13 @@ export type ComplexWithManager = {
     name: string | null;
     phone: string | null;
   };
-  subscriptionPlan: "FREE" | "BASE" | "FULL";
-  subscriptionStatus: "ACTIVA" | "ATRASADA" | "CANCELADA" | "EN_PRUEBA";
-  subscriptionCycle: "MENSUAL" | "ANUAL" | null;
+  subscriptionPlan: SubscriptionPlan;
+  subscriptionStatus: SubscriptionStatus;
+  subscriptionCycle: SubscriptionCycle | null;
   trialEndsAt: Date | null;
   subscribedAt: Date | null;
+  onboardingCompleted: boolean;
+  hasCourts: boolean;
+  hasSchedule: boolean;
+  hasPaymentInfo: boolean;
 };

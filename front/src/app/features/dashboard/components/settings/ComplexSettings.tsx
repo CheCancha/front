@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import { Schedule, Sport, PriceRule, Amenity } from "@prisma/client";
 import { toast } from "react-hot-toast";
 import { useParams } from "next/navigation";
 import { Spinner } from "@/shared/components/ui/Spinner";
@@ -13,7 +14,6 @@ import { ScheduleForm } from "./ScheduleForm";
 import { CourtsManager } from "./CourtsManager";
 import ImageSettings from "./ImageSettings";
 import { PaymentsSettings } from "./PaymentsSettings";
-import { Schedule, Sport, PriceRule, Amenity } from "@prisma/client";
 import { GeneralInfoForm } from "./GeneralInfoForm";
 import { AmenitiesForm } from "./AmenitiesForm";
 import { CancellationForm } from "./CancellationForm";

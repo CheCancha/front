@@ -7,6 +7,7 @@ import { InscriptionRequest } from "@prisma/client";
 import {
   approveInscription,
   rejectInscription,
+  updateInscription,
 } from "@/app/features/admin/services/admin.service";
 import { toast } from "react-hot-toast";
 import { Button } from "@/shared/components/ui/button";
@@ -15,7 +16,7 @@ interface InscriptionReviewModalProps {
   isOpen: boolean;
   onClose: () => void;
   request: InscriptionRequest | null;
-  onActionComplete: () => void;
+  onActionComplete: () => void; // <-- Prop añadida
 }
 
 const EditableDetailItem = ({
@@ -48,12 +49,10 @@ export const InscriptionReviewModal: React.FC<InscriptionReviewModalProps> = ({
   isOpen,
   onClose,
   request,
-  onActionComplete,
+  onActionComplete, // <-- Prop añadida
 }) => {
   const [isPending, startTransition] = useTransition();
-
   const [formData, setFormData] = useState<Partial<InscriptionRequest>>({});
-  const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
     if (request) {
@@ -68,41 +67,29 @@ export const InscriptionReviewModal: React.FC<InscriptionReviewModalProps> = ({
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleUpdate = async () => {
+  const handleUpdate = () => {
     if (!request) return;
-    setIsUpdating(true);
-    toast.loading("Guardando cambios...");
-    try {
-      const response = await fetch(`/api/admin/requests/${request.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-
+    startTransition(async () => {
+      toast.loading("Guardando cambios...");
+      const result = await updateInscription(request.id, formData);
       toast.dismiss();
-      if (!response.ok) {
-        throw new Error("No se pudieron guardar los cambios.");
+      if (result.success) {
+        toast.success("Cambios guardados.");
+        onActionComplete();
+      } else {
+        toast.error(`Error: ${result.error}`);
       }
-      toast.success("Cambios guardados con éxito.");
-      onActionComplete();
-    } catch (err) {
-      toast.dismiss();
-      const errorMessage =
-        err instanceof Error ? err.message : "Ocurrió un error.";
-      toast.error(errorMessage);
-    } finally {
-      setIsUpdating(false);
-    }
+    });
   };
 
   const handleApprove = () => {
+    if (!request) return;
     startTransition(async () => {
       toast.loading("Aprobando solicitud...");
       const result = await approveInscription(request.id, formData);
-
       toast.dismiss();
       if (result.success) {
-        toast.success("¡Solicitud aprobada con éxito!");
+        toast.success("¡Solicitud aprobada!");
         if (result.warning) {
           toast.error(`Advertencia: ${result.warning}`, { duration: 6000 });
         }
@@ -114,12 +101,17 @@ export const InscriptionReviewModal: React.FC<InscriptionReviewModalProps> = ({
   };
 
   const handleReject = () => {
+    if (!request) return;
     startTransition(async () => {
       toast.loading("Rechazando solicitud...");
-      await rejectInscription(request.id);
+      const result = await rejectInscription(request.id);
       toast.dismiss();
-      toast.success("Solicitud rechazada.");
-      onActionComplete();
+       if (result.success) {
+        toast.success("Solicitud rechazada.");
+        onActionComplete();
+      } else {
+        toast.error(`Error: ${result.error}`);
+      }
     });
   };
 
@@ -158,86 +150,31 @@ export const InscriptionReviewModal: React.FC<InscriptionReviewModalProps> = ({
 
               <div className="space-y-6 border-t border-b py-6 max-h-[50vh] overflow-y-auto pr-2">
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                  <EditableDetailItem
-                    label="Nombre del Dueño"
-                    name="ownerName"
-                    value={formData.ownerName || ""}
-                    onChange={handleInputChange}
-                  />
-                  <EditableDetailItem
-                    label="Email de Contacto"
-                    name="ownerEmail"
-                    value={formData.ownerEmail || ""}
-                    onChange={handleInputChange}
-                  />
-                  <EditableDetailItem
-                    label="Teléfono"
-                    name="ownerPhone"
-                    value={formData.ownerPhone || ""}
-                    onChange={handleInputChange}
-                  />
+                  <EditableDetailItem label="Nombre del Dueño" name="ownerName" value={formData.ownerName || ""} onChange={handleInputChange}/>
+                  <EditableDetailItem label="Email de Contacto" name="ownerEmail" value={formData.ownerEmail || ""} onChange={handleInputChange}/>
+                  <EditableDetailItem label="Teléfono" name="ownerPhone" value={formData.ownerPhone || ""} onChange={handleInputChange}/>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                  <EditableDetailItem
-                    label="Dirección"
-                    name="address"
-                    value={formData.address || ""}
-                    onChange={handleInputChange}
-                  />
-                  <EditableDetailItem
-                    label="Ciudad"
-                    name="city"
-                    value={formData.city || ""}
-                    onChange={handleInputChange}
-                  />
-                  <EditableDetailItem
-                    label="Provincia"
-                    name="province"
-                    value={formData.province || ""}
-                    onChange={handleInputChange}
-                  />
+                    <EditableDetailItem label="Dirección" name="address" value={formData.address || ""} onChange={handleInputChange} />
+                    <EditableDetailItem label="Ciudad" name="city" value={formData.city || ""} onChange={handleInputChange} />
+                    <EditableDetailItem label="Provincia" name="province" value={formData.province || ""} onChange={handleInputChange} />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Estos campos pueden ser no editables si lo preferís */}
-                  <EditableDetailItem
-                    label="Deportes Ofrecidos"
-                    name="sports"
-                    value={formData.sports || ""}
-                    onChange={handleInputChange}
-                  />
-                  <EditableDetailItem
-                    label="Plan Seleccionado"
-                    name="selectedPlan"
-                    value={formData.selectedPlan || ""}
-                    onChange={handleInputChange}
-                  />
+                    <EditableDetailItem label="Deportes Ofrecidos" name="sports" value={formData.sports || ""} onChange={handleInputChange}/>
+                    <EditableDetailItem label="Plan Seleccionado" name="selectedPlan" value={formData.selectedPlan || ""} onChange={handleInputChange}/>
                 </div>
               </div>
 
               <div className="mt-8 flex flex-col-reverse sm:flex-row justify-end gap-3">
-                <Button
-                variant='ghost'
-                  onClick={handleReject}
-                  disabled={isPending || isUpdating}
-                  className="w-full sm:w-auto"
-                >
+                <Button variant='ghost' onClick={handleReject} disabled={isPending} className="w-full sm:w-auto">
                   <XCircle size={16} className="mr-2" />
                   {isPending ? "Rechazando..." : "Rechazar"}
                 </Button>
-                <Button
-                variant='ghost'
-                  onClick={handleUpdate}
-                  disabled={isPending || isUpdating}
-                  className="w-full sm:w-auto border-gray-400"
-                >
+                <Button variant='ghost' onClick={handleUpdate} disabled={isPending} className="w-full sm:w-auto border-gray-400">
                   <Save size={16} className="mr-2" />
-                  {isUpdating ? "Guardando..." : "Guardar Cambios"}
+                  {isPending ? "Guardando..." : "Guardar Cambios"}
                 </Button>
-                <Button
-                  onClick={handleApprove}
-                  disabled={isPending || isUpdating}
-                  className="w-full sm:w-auto"
-                >
+                <Button onClick={handleApprove} disabled={isPending} className="w-full sm:w-auto">
                   <Check size={16} className="mr-2" />
                   {isPending ? "Aprobando..." : "Aprobar Solicitud"}
                 </Button>
