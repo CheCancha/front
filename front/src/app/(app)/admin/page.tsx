@@ -66,7 +66,7 @@ export default async function AdminPage() {
 
   return (
     <div className="min-h-screen">
-      <main className="container mx-auto px-4 py-6 sm:px-6 lg:px-8 sm:py-8">
+      <main className="container mx-auto px-4 py-16 sm:px-6 lg:px-24">
         <header className="mb-6 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900">
             Panel de Administración

@@ -248,7 +248,7 @@ const SearchResultsComponent = () => {
       <div className="bg-[#f0f0ef] min-h-screen flex flex-col">
         <Navbar />
 
-        <main className="container mx-auto px-6 py-8 flex-grow">
+        <main className="container mx-auto px-6 py-24 flex-grow">
           <div className="bg-[#f8f9f9] border border-gray-200 rounded-xl p-6 mb-8">
             <h2 className="text-xl font-bold text-gray-800 mb-4">
               Buscá tu cancha

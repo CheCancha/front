@@ -45,7 +45,7 @@ export default async function DashboardComplexLayout({
   const isAccessingProRoute = proRoutes.some(route => pathname.startsWith(route));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pt-24">
       <header>
         <h1 className="text-3xl font-bold tracking-tight text-gray-900">
           Panel de {complex.name}

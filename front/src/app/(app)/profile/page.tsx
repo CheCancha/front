@@ -43,7 +43,7 @@ type ProfileResponse = {
 
 // --- COMPONENTES AUXILIARES ---
 const StatCard = ({ icon: Icon, label, value, }: { icon: React.ElementType; label: string; value: string | number; }) => (
-  <div className="flex items-center p-4 bg-gray-100 rounded-xl">
+  <div className="flex items-center p-4 bg-white border rounded-xl">
     <div className="p-3 mr-4 text-orange-500 bg-orange-100 rounded-full">
       <Icon className="w-6 h-6" />
     </div>
@@ -219,12 +219,12 @@ export default function ProfilePage() {
   return (
     <>
       <Toaster position="bottom-center" />
-      <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
+      <div className="min-h-screen p-4 sm:p-6 lg:py-24">
         <main className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Columna Izquierda: Perfil y Seguridad */}
           <div className="lg:col-span-1 space-y-8">
             {/* Tarjeta de Información Personal */}
-            <div className="bg-white p-6 rounded-2xl border shadow-sm">
+            <div className="bg-white p-6 rounded-2xl border">
                 <div className="flex flex-col items-center text-center">
                     <h2 className="text-xl font-bold text-gray-800">{user?.name}</h2>
                     <p className="text-sm text-gray-500">{user?.email}</p>
@@ -248,7 +248,7 @@ export default function ProfilePage() {
             </div>
 
             {/* Tarjeta de Seguridad */}
-            <div className="bg-white p-6 rounded-2xl border shadow-sm">
+            <div className="bg-white p-6 rounded-2xl border">
               <h3 className="text-lg font-semibold mb-4 flex items-center gap-2"><ShieldCheck size={20} /> Seguridad</h3>
               <form onSubmit={handleSubmit(handleChangePassword)} className="space-y-4">
                 <PasswordInput label="Contraseña Actual" register={register("currentPassword")} error={errors.currentPassword?.message} autoComplete="current-password" />
@@ -271,7 +271,7 @@ export default function ProfilePage() {
                 <StatCard icon={Star} label="Tu Club Favorito" value={stats.favoriteComplex || "-"} />
               </div>
             )}
-            <div className="bg-white p-6 rounded-2xl border shadow-sm">
+            <div className="bg-white p-6 rounded-2xl border">
               <h2 className="text-xl font-semibold mb-4">Mis Reservas</h2>
               <div className="border-b border-gray-200 mb-4">
                 <nav className="-mb-px flex space-x-6" aria-label="Tabs">

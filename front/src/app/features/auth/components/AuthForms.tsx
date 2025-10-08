@@ -92,13 +92,13 @@ export const LoginForm = () => {
     <div className="w-full">
       <div className="text-center mb-8">
         <h2 className="font-lora text-3xl font-semibold text-gray-900">
-          Iniciá sesión en tu cuenta
+          Iniciá sesión
         </h2>
-        <p className="mt-2 text-gray-600">
+        <p className="mt-2 text-sm text-paragraph">
           ¿Aún no tenés una?{" "}
           <Link
             href={routes.auth.registro}
-            className="font-medium text-orange-600 hover:underline"
+            className="font-medium text-sm text-orange-600 hover:underline"
           >
             Registrate acá
           </Link>
@@ -249,11 +249,11 @@ export const RegisterForm = () => {
         <h2 className="font-lora text-3xl font-semibold text-foreground">
           Creá tu cuenta
         </h2>
-        <p className="mt-2 text-paragraph">
+        <p className="mt-2 text-sm text-paragraph">
           ¿Ya tenés una?
           <Link
             href="/login"
-            className="font-medium text-brand-orange hover:underline"
+            className="font-medium text-sm text-brand-orange hover:underline"
           >
             {" "}
             Iniciá sesión

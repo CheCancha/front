@@ -107,14 +107,14 @@ const Navbar: React.FC = () => {
         "fixed top-0 w-full z-50 transition-all duration-300",
         isTransparent
           ? "bg-transparent border-transparent"
-          : "bg-background border-b shadow-sm"
+          : "bg-background border-b"
       )}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex-shrink-0">
-            <Link href={routes.public.home} className="flex items-center gap-2 rounded-lg p-1">
-              <Image src="/logochecancha.png" alt="Logo de Che Cancha" height={40} width={40} />
+            <Link href={routes.public.home} className="flex items-center gap-2">
+              <Image src="/logochecancha.png" alt="Logo de Che Cancha" height={40} width={40} className="rounded-md" />
               <span className={cn(
                 "text-xl font-bold transition-colors",
                 isTransparent ? "text-white" : "text-foreground"
