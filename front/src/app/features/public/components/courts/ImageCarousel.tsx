@@ -46,8 +46,6 @@ export const ImageCarousel: React.FC<ImageCarouselProps> = ({ images }) => {
         </AnimatePresence>
       </div>
 
-      {/* --- 👇 LÓGICA CORREGIDA --- */}
-      {/* Solo mostramos los botones si hay más de una imagen */}
       {hasMultipleImages && (
         <>
           <button

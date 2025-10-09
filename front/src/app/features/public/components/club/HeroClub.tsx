@@ -24,14 +24,14 @@ export const HeroClub = () => {
               Automatiza tus reservas y maximiza tus ingresos.
             </h1>
             <p className="text-muted-foreground mx-auto my-8 max-w-2xl text-xl font-satoshi">
-              CheCancha es la plataforma todo en uno que simplifica la gestión
+              Che Cancha es la plataforma todo en uno que simplifica la gestión
               de tu complejo deportivo. Menos administración, más crecimiento.
             </p>
 
             {/* 2. Botón CTA  */}
             <Button asChild size="lg">
               <Link href={routes.public.inscripciones}>
-                <span>Comenzá ahora</span>
+                <span>Comenzá ahora 90 días gratis</span>
               </Link>
             </Button>
           </div>

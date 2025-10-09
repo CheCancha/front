@@ -5,7 +5,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { MapPin, Clock } from 'lucide-react';
 
-// Definimos un tipo para los resultados de búsqueda que recibirán los componentes
 export type SearchResult = {
   id: string;
   slug: string;

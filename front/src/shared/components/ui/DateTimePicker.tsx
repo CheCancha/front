@@ -109,10 +109,10 @@ export const TimePicker: React.FC<TimePickerProps> = ({
   variant,
 }) => {
   const timeOptions: TimeOption[] = [];
-  for (let h = 8; h < 24; h++) {
+  for (let h = 0; h < 24; h++) {
     const hour = String(h).padStart(2, "0");
     timeOptions.push({ value: `${hour}:00`, label: `${hour}:00` });
-    if (h < 23) {
+    if (h < 24) {
       timeOptions.push({ value: `${hour}:30`, label: `${hour}:30` });
     }
   }

@@ -30,7 +30,7 @@ interface CitySuggestion {
   provincia: string;
 }
 
-// --- 👇 SOLUCIÓN: LISTA DE DEPORTES DEFINIDA LOCALMENTE ---
+// --- LISTA DE DEPORTES ---
 const sportOptions: SportOption[] = [
     { value: "futbol-5", label: "Fútbol 5", icon: PiSoccerBall },
     { value: "futbol-7", label: "Fútbol 7", icon: PiSoccerBall },
@@ -39,7 +39,7 @@ const sportOptions: SportOption[] = [
     { value: "basquet", label: "Básquet", icon: IoBasketballOutline },
     { value: "tenis", label: "Tenis", icon: MdSportsTennis },
     { value: "voley", label: "Vóley", icon: PiVolleyball },
-].sort((a, b) => a.label.localeCompare(b.label)); // Ordenamos alfabéticamente
+].sort((a, b) => a.label.localeCompare(b.label));
 
 interface SearchBarProps {
   className?: string;
@@ -65,7 +65,6 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   const { city, sport, date, time, setCity, setSport, setDate, setTime } =
     useSearchStore();
 
-  // Se eliminaron los estados 'sportOptions' y 'isLoadingSports'
   const [cityQuery, setCityQuery] = useState(city);
   const [citySuggestions, setCitySuggestions] = useState<CitySuggestion[]>([]);
   const [isCityInputFocused, setIsCityInputFocused] = useState(false);
@@ -73,8 +72,6 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   useEffect(() => {
     setCityQuery(city);
   }, [city]);
-
-  // --- El useEffect para fetchSports fue ELIMINADO ---
 
   const fetchCitySuggestions = useMemo(
     () =>
@@ -133,7 +130,6 @@ export const SearchBar: React.FC<SearchBarProps> = ({
     router.push(`/canchas?${params.toString()}`);
   };
 
-  // --- COMPONENTES CUSTOM PARA REACT-SELECT ---
   const CustomOption = (props: OptionProps<SportOption>) => {
     const Icon = props.data.icon;
     return (
@@ -224,7 +220,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
               control: (base) => ({
                 ...base,
                 backgroundColor: 'white',
-                borderColor: '#d4d4d4', // neutral-300
+                borderColor: '#d4d4d4',
                 paddingTop: '5.5px',
                 paddingBottom: '5.5px',
                 borderRadius: '0.375rem',
@@ -232,15 +228,15 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                 '&:hover': { borderColor: '#f97316' },
                 boxShadow: 'none',
               }),
-              singleValue: (base) => ({ ...base, color: '#171717' }), // neutral-900
+              singleValue: (base) => ({ ...base, color: '#171717' }),
               menu: (base) => ({ ...base, backgroundColor: 'white', zIndex: 20 }),
               option: (base, state) => ({
                 ...base,
-                backgroundColor: state.isFocused ? '#f3f4f6' : 'transparent', // gray-100
+                backgroundColor: state.isFocused ? '#f3f4f6' : 'transparent', 
                 color: '#171717',
                 cursor: 'pointer',
               }),
-              placeholder: (base) => ({ ...base, color: '#404040' }) // neutral-700
+              placeholder: (base) => ({ ...base, color: '#404040' }) 
             }}
           />
         </div>

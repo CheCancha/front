@@ -95,7 +95,7 @@ export const ManagmentClub = () => {
                 variants={itemVariants}
               >
                 {feature.icon}
-                <span className="font-semibold text-foreground">
+                <span className="font-medium text-paragraph leading-relaxed">
                   {feature.text}
                 </span>
               </motion.li>

@@ -46,6 +46,7 @@ export const sendWelcomeEmail = async (
       react: WelcomeEmail({
         managerName,
         managerPhone,
+        managerEmail,
         temporaryPassword,
         loginUrl: `${baseURL}/login`,
         logoUrl,
@@ -79,8 +80,7 @@ export const sendPasswordResetEmail = async (email: string, token: string) => {
   }
 };
 
-
-
+// --- Función de enviar a MANAGER que el turno fue cancelado ---
 export async function sendBookingCancelledByPlayerEmail(booking: BookingWithDetailsForEmail) {
   if (!booking.user || !booking.court.complex.manager.email) {
     console.warn("Faltan datos de usuario o manager para enviar el email de cancelación.");
@@ -103,7 +103,7 @@ export async function sendBookingCancelledByPlayerEmail(booking: BookingWithDeta
   }
 }
 
-
+// --- Función de enviar a JUGADOR que el turno fue cancelado ---
 export async function sendBookingCancelledByManagerEmail(booking: BookingWithDetailsForEmail) {
   if (!booking.user?.email) {
     console.warn("El usuario de la reserva no tiene un email para notificar la cancelación.");

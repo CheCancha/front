@@ -98,7 +98,7 @@ export const PricingSection = () => {
             Una solución para cada complejo
           </h2>
           <p className="text-lg text-paragraph mt-4">
-            Todos nuestros planes incluyen una <span className="font-semibold text-brand-orange">prueba gratuita de 3 meses</span>. Sin compromisos ni tarjeta de crédito.
+            Todos nuestros planes incluyen una <span className="font-semibold text-brand-orange">prueba gratuita de 90 días</span>. Sin compromisos ni tarjeta de crédito.
           </p>
         </div>
 

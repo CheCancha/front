@@ -10,33 +10,28 @@ import {
 } from "@/shared/components/ui/Tabs";
 import { FileText, Building, Users } from "lucide-react";
 
-// Con esta línea, forzamos a Next.js a que esta página sea siempre dinámica
-// y no utilice caché para los datos que obtiene.
 export const dynamic = 'force-dynamic';
 
 export default async function AdminPage() {
-  // 1. Obtenemos las solicitudes pendientes.
   const pendingRequests = await db.inscriptionRequest.findMany({
     where: { status: "PENDIENTE" },
     orderBy: { createdAt: "asc" },
   });
 
-  // 2. Obtenemos los complejos con datos adicionales.
   const activeComplexesRaw = await db.complex.findMany({
     include: {
       manager: {
-        select: { name: true, phone: true },
+        select: { id: true, name: true, phone: true, email: true },
       },
       _count: {
         select: { courts: true },
       },
       schedule: true,
-      inscriptionRequest: true, // Incluimos la solicitud original
+      inscriptionRequest: true,
     },
     orderBy: { name: "asc" },
   });
 
-  // 3. Mapeamos los datos de los complejos.
   const activeComplexes: ComplexWithManager[] = activeComplexesRaw.map(
     (c): ComplexWithManager => {
       const hasCourts = c._count.courts > 0;
@@ -48,8 +43,10 @@ export default async function AdminPage() {
         id: c.id,
         name: c.name,
         manager: {
+          id: c.manager?.id,
           name: c.manager?.name || null,
           phone: c.manager?.phone || null,
+          email: c.manager?.email || null,
         },
         subscriptionPlan: c.subscriptionPlan,
         subscriptionStatus: c.subscriptionStatus,
@@ -66,7 +63,7 @@ export default async function AdminPage() {
 
   return (
     <div className="min-h-screen">
-      <main className="container mx-auto px-4 py-16 sm:px-6 lg:px-24">
+      <main className="container mx-auto px-4 py-6 sm:px-6 lg:px-8 sm:py-16">
         <header className="mb-6 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900">
             Panel de Administración
@@ -102,7 +99,7 @@ export default async function AdminPage() {
           </TabsContent>
 
           <TabsContent value="users" className="mt-6">
-            <div className="bg-[#f8f8f9] p-6 rounded-lg border">
+            <div className="bg-[#f8f9f9] p-6 rounded-lg border">
               <h2 className="text-lg font-semibold mb-4">
                 Gestión de Usuarios
               </h2>

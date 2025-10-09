@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation"; // 1. Importar el hook
+import { usePathname } from "next/navigation";
 import { routes } from "@/routes";
 import { useSession, signOut } from "next-auth/react";
 import {

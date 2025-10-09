@@ -101,13 +101,13 @@ const itemVariants = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
 };
 
+
 export const KeyFeatures = () => {
   return (
     <motion.section
       className="pt-16 pb-32"
       initial="hidden"
-      whileInView="visible"
-      viewport={{ once: true, amount: 0.5 }}
+      animate="visible"
       variants={{ visible: { transition: { staggerChildren: 0.3 } } }}
     >
       <div className="max-w-7xl mx-auto px-6">
@@ -136,7 +136,7 @@ export const KeyFeatures = () => {
               <h3 className="text-2xl font-bold text-foreground mb-2">
                 {feature.title}
               </h3>
-              <p className="text-paragraph max-w-xs text-lg">
+              <p className="text-lg text-paragraph max-w-xs leading-relaxed">
                 {feature.description}
               </p>
             </motion.div>

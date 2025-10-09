@@ -1,13 +1,21 @@
 "use client";
 
-import "../../../../styles/day-picker.css";
+import "@/styles/day-picker.css";
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
-import { MapPin, AlertCircle, Phone, Mail } from "lucide-react";
-import { FaFacebook, FaInstagram } from "react-icons/fa";
+import { routes } from "@/routes";
 import { getDay } from "date-fns";
+import { useParams } from "next/navigation";
+import { FaFacebook, FaInstagram } from "react-icons/fa";
+import { MapPin, AlertCircle, Phone, Mail } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
+import Navbar from "@/shared/components/Navbar";
+import Footer from "@/shared/components/Footer";
+import { AmenityIcon } from "@/shared/components/ui/AmenityIcon";
+import BookingModal from "@/app/features/public/components/courts/BookingModal";
+import { ImageCarousel } from "@/app/features/public/components/courts/ImageCarousel";
+import { BookingWidget } from "@/app/features/public/components/courts/BookingWidget";
+import { PageSkeleton } from "@/app/features/public/components/courts/Skeleton";
 import dynamic from "next/dynamic";
 
 // --- Tipos ---
@@ -18,7 +26,8 @@ import type {
   Image as PrismaImage,
   Schedule,
 } from "@prisma/client";
-import { AmenityIcon } from "@/shared/components/ui/AmenityIcon";
+
+
 export type PriceRule = {
   id: string;
   startTime: number;
@@ -38,15 +47,6 @@ export type ValidStartTime = {
   time: string;
   courts: { courtId: string; available: boolean }[];
 };
-
-// --- Componentes ---
-import Navbar from "@/shared/components/Navbar";
-import Footer from "@/shared/components/Footer";
-import BookingModal from "@/app/features/public/components/courts/BookingModal";
-import { ImageCarousel } from "@/app/features/public/components/courts/ImageCarousel";
-import { BookingWidget } from "@/app/features/public/components/courts/BookingWidget";
-import { PageSkeleton } from "@/app/features/public/components/courts/Skeleton";
-import { routes } from "@/routes";
 
 // --- Carga dinámica del Mapa ---
 const Map = dynamic(
@@ -96,7 +96,6 @@ const generateWeeklySchedule = (complex: ComplexProfileData) => {
 export default function ClubProfilePage() {
   const params = useParams();
   const clubSlug = params.slug as string;
-
   const [club, setClub] = useState<ComplexProfileData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -183,7 +182,7 @@ export default function ClubProfilePage() {
     <>
       <div className="bg-background min-h-screen">
         <Navbar />
-        <main className="container mx-auto px-4 sm:px-6 py-12">
+        <main className="container mx-auto px-4 sm:px-6 py-24">
           <div className="max-w-7xl mx-auto">
             <section className="relative mb-12 rounded-2xl overflow-hidden">
               <ImageCarousel images={club.images} />

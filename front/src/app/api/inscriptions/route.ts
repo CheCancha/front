@@ -31,7 +31,7 @@ const createConfirmationEmailHtml = (ownerName: string) => {
           <td align="center">
             <div class="container">
               <div class="header">
-                <img src="${logoUrl}" alt="CheCancha Logo" width="150">
+                <img src="${logoUrl}" alt="Che Cancha Logo" width="150">
               </div>
               <div class="content">
                 <h1 style="font-size: 24px; font-weight: 600; margin-bottom: 24px; color: #0f172a;">¡Hemos recibido tu solicitud!</h1>

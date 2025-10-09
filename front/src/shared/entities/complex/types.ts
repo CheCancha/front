@@ -1,13 +1,23 @@
-import { Complex, Schedule, Court, Image, Sport, PriceRule, SubscriptionCycle, SubscriptionPlan, SubscriptionStatus } from "@prisma/client";
+import {
+  Complex,
+  Schedule,
+  Court,
+  Image,
+  Sport,
+  PriceRule,
+  SubscriptionCycle,
+  SubscriptionPlan,
+  SubscriptionStatus,
+} from "@prisma/client";
 
-export type CourtWithRelations = Court & { 
+export type CourtWithRelations = Court & {
   sport: Sport;
   priceRules: (PriceRule | NewPriceRule)[];
 };
 
 export type FullComplexData = Complex & {
   schedule: Schedule | null;
-  courts: CourtWithRelations[]; 
+  courts: CourtWithRelations[];
   images: Image[];
   amenities: Sport[];
 };
@@ -25,16 +35,17 @@ export interface NewCourt {
   name: string;
   sportId: string;
   slotDurationMinutes: number;
-  priceRules: NewPriceRule[]; 
+  priceRules: NewPriceRule[];
   isNew: true;
 }
-
 
 export type ComplexWithManager = {
   id: string;
   name: string;
   manager: {
+    id: string;
     name: string | null;
+    email: string | null;
     phone: string | null;
   };
   subscriptionPlan: SubscriptionPlan;
