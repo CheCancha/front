@@ -133,7 +133,7 @@ export const InscriptionsForm = () => {
         message="Gracias por tu interés. Nos pondremos en contacto a la brevedad para configurar tu cuenta."
       />
 
-      <div className="w-full max-w-3xl pt-16 mx-auto bg-white">
+      <div className="w-full max-w-3xl pt-16 px-4 mx-auto bg-white">
         {/* --- Indicador de Pasos --- */}
         <div className="mb-10">
           <ul className="flex items-center">
