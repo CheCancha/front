@@ -205,7 +205,6 @@ export default function ClubProfilePage() {
 
             {/* --- LAYOUT DE CONTENIDO PRINCIPAL --- */}
             <div className="grid lg:grid-cols-3 gap-8 items-start">
-              {/* Columna Principal: Widget de Reservas Y MAPA */}
               <div className="lg:col-span-2 space-y-8">
                 <BookingWidget
                   club={club}

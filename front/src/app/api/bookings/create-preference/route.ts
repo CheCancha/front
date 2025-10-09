@@ -4,11 +4,11 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/authOptions";
 import { db } from "@/shared/lib/db";
 import { getMercadoPagoPreferenceClient } from "@/shared/lib/mercadopago";
 import { endOfDay, format, startOfDay } from "date-fns";
-import { Booking, BookingStatus, Court } from "@prisma/client";
+import { Booking, BookingStatus, Court, Coupon } from "@prisma/client"; 
 import SimpleCrypto from "simple-crypto-js";
 import { z } from "zod";
 
-// --- 1. Esquema de Validación con Zod ---
+// --- 1. Esquema de Validación con Zod---
 const createBookingSchema = z.object({
   complexId: z.string().min(1),
   courtId: z.string().min(1),
@@ -48,17 +48,20 @@ function getMercadoPagoCredentials(complex: { mp_access_token: string | null; mp
   return { accessToken, publicKey };
 }
 
+
+// --- 2. Transacción de Base de Datos (Refactorizada) ---
 async function createPendingBookingInTransaction(
   data: BookingRequest,
   userId: string | undefined,
   court: Court,
-  couponId: string | undefined
+  coupon: Coupon | null 
 ): Promise<Booking> {
   const bookingDate = new Date(`${data.date}T${data.time}`);
   const startOfBookingDay = startOfDay(bookingDate);
   const endOfBookingDay = endOfDay(bookingDate);
 
   return db.$transaction(async (prisma) => {
+    // Verificación de conflictos (sin cambios)
     const conflictingBookings = await prisma.booking.findMany({
       where: {
         courtId: data.courtId,
@@ -66,13 +69,13 @@ async function createPendingBookingInTransaction(
           gte: startOfBookingDay,
           lt: endOfBookingDay,
         },
-        status: { in: ["CONFIRMADO", "PENDIENTE"] },
+        // MEJORA: Usar el enum de Prisma para consistencia
+        status: { in: [BookingStatus.CONFIRMADO, BookingStatus.PENDIENTE] },
       },
       include: { court: { select: { slotDurationMinutes: true } } },
     });
 
     const [hour, minute] = data.time.split(":").map(Number);
-
     const requestedStartMinutes = hour * 60 + minute;
     const requestedEndMinutes =
       requestedStartMinutes + court.slotDurationMinutes;
@@ -91,6 +94,25 @@ async function createPendingBookingInTransaction(
     if (isConflict) {
       throw new Error("Lo sentimos, este horario ya no está disponible.");
     }
+    
+    // ---  Lógica de cupón dentro de la transacción para evitar race conditions ---
+    if (coupon) {
+      // Se vuelve a traer el cupón dentro de la transacción para bloquear la fila
+      const freshCoupon = await prisma.coupon.findUnique({
+          where: { id: coupon.id }
+      });
+
+      // Se vuelve a validar por si cambió entre la primera verificación y ahora
+      if (!freshCoupon || !freshCoupon.isActive || (freshCoupon.maxUses != null && freshCoupon.uses >= freshCoupon.maxUses)) {
+          throw new Error("El cupón ya no es válido o ha alcanzado su límite de usos.");
+      }
+
+      // Se incrementa el contador de usos
+      await prisma.coupon.update({
+          where: { id: coupon.id },
+          data: { uses: { increment: 1 } }
+      });
+    }
 
     return prisma.booking.create({
       data: {
@@ -103,14 +125,14 @@ async function createPendingBookingInTransaction(
         depositPaid: 0,
         remainingBalance: data.price,
         status: BookingStatus.PENDIENTE,
-        couponId: couponId,
+        couponId: coupon?.id, 
         ...(userId ? { userId: userId } : { guestName: data.guestName, guestPhone: data.guestPhone }),
       },
     });
   });
 }
 
-// --- 3. Handler  ---
+// --- 3. Handler ---
 export async function POST(req: Request) {
   try {
     const baseURL = process.env.NEXT_PUBLIC_BASE_URL;
@@ -154,7 +176,8 @@ export async function POST(req: Request) {
     }
     const court = complexData.courts[0];
 
-    let couponId: string | undefined = undefined;
+    // --- Se busca y valida el cupón antes de la transacción ---
+    let validCoupon: Coupon | null = null;
     if (bookingData.couponCode) {
         const coupon = await db.coupon.findFirst({
             where: { 
@@ -164,11 +187,10 @@ export async function POST(req: Request) {
             }
         });
         if (coupon) {
-            // Verificaciones adicionales por seguridad (opcional, ya se hicieron en frontend)
             const isExpired = coupon.validUntil && new Date(coupon.validUntil) < new Date();
             const hasUsesLeft = coupon.maxUses == null || coupon.uses < coupon.maxUses;
             if (!isExpired && hasUsesLeft) {
-                couponId = coupon.id;
+                validCoupon = coupon; 
             }
         }
     }
@@ -177,7 +199,7 @@ export async function POST(req: Request) {
       bookingData,
       userId,
       court,
-      couponId
+      validCoupon
     );
 
     const { accessToken, publicKey } = getMercadoPagoCredentials(complexData);
@@ -232,9 +254,12 @@ export async function POST(req: Request) {
     }
     if (
       error instanceof Error &&
-      error.message.includes("horario ya no está disponible")
+      (error.message.includes("horario ya no está disponible") || error.message.includes("cupón"))
     ) {
-      return new NextResponse(error.message, { status: 409 });
+      return NextResponse.json(
+        { error: error.message },
+        { status: 409 } 
+      );
     }
 
     console.error("Error en create-preference:", error);

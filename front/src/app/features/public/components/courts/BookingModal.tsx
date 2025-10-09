@@ -17,6 +17,9 @@ import { initMercadoPago, Wallet } from "@mercadopago/sdk-react";
 import { useSession } from "next-auth/react";
 import { Spinner } from "@/shared/components/ui/Spinner";
 import { Button } from "@/shared/components/ui/button";
+// --- IMPORTE AGREGADO ---
+import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter } from "@/shared/components/ui/alert-dialog";
+
 
 // --- TIPOS ---
 type Club = {
@@ -106,6 +109,10 @@ export default function BookingModal({
     id: string;
     publicKey: string;
   } | null>(null);
+  
+  // --- ESTADOS AGREGADOS PARA EL DIÁLOGO DE CONFLICTO ---
+  const [showConflictAlert, setShowConflictAlert] = useState(false);
+  const [conflictMessage, setConflictMessage] = useState("");
 
   // --- ESTADOS PARA CUPONES ---
   const [showCouponInput, setShowCouponInput] = useState(false);
@@ -125,14 +132,11 @@ export default function BookingModal({
   }, [preferenceData]);
 
   const priceRule = useMemo(() => getPriceForTime(court, time), [court, time]);
-
   const originalTotalPrice = priceRule.price;
   const originalDepositAmount = priceRule.depositAmount;
-
   const totalPrice = appliedCoupon
     ? appliedCoupon.newTotalPrice
     : originalTotalPrice;
-  // La seña se calcula sobre el precio original, no sobre el precio con descuento.
   const depositAmount = originalDepositAmount;
 
   const handleApplyCoupon = async () => {
@@ -220,15 +224,17 @@ export default function BookingModal({
         }),
       });
 
+      toast.dismiss();
+
       if (!response.ok) {
-        toast.dismiss();
-        
+        const errorData = await response.json().catch(() => ({ error: "No se pudo generar el link de pago." }));
+
+        // --- MANEJO DEL CONFLICTO 409 CON DIÁLOGO ---
         if (response.status === 409) {
-          toast.error("¡Ups! Alguien acaba de reservar este horario. Por favor, elige otro.", { duration: 5000 });
-          handleClose();
+          setConflictMessage(errorData.error || "Este horario ya no está disponible.");
+          setShowConflictAlert(true);
         } else {
-          const errorData = await response.json().catch(() => ({ message: "No se pudo generar el link de pago." }));
-          throw new Error(errorData.message);
+          throw new Error(errorData.error);
         }
         return;
       }
@@ -238,7 +244,7 @@ export default function BookingModal({
         id: responseData.preferenceId,
         publicKey: responseData.publicKey,
       });
-      toast.dismiss();
+
     } catch (error) {
       toast.dismiss();
       toast.error(error instanceof Error ? error.message : "Error desconocido.");
@@ -260,247 +266,271 @@ export default function BookingModal({
     }, 300);
   };
 
+  // --- MANEJADOR PARA CERRAR EL DIÁLOGO DE ALERTA ---
+  const handleAlertClose = () => {
+    setShowConflictAlert(false);
+    handleClose(); 
+    window.location.reload(); // Recarga para ver disponibilidad actualizada
+  }
+
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
-        >
+    <>
+      <AnimatePresence>
+        {isOpen && (
           <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.9, opacity: 0 }}
-            className="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-8 m-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
           >
-            <button
-              onClick={handleClose}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-8 m-4"
             >
-              <X size={24} />
-            </button>
+              <button
+                onClick={handleClose}
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+              >
+                <X size={24} />
+              </button>
 
-            {!preferenceData ? (
-              <div>
-                <h2 className="text-2xl font-bold text-foreground mb-6 text-center">
-                  Confirmá tu Reserva
-                </h2>
+              {!preferenceData ? (
+                <div>
+                  <h2 className="text-2xl font-bold text-foreground mb-6 text-center">
+                    Confirmá tu Reserva
+                  </h2>
 
-                {status === "unauthenticated" && (
-                  <div className="mb-4 space-y-3">
-                    <div>
-                      <label
-                        htmlFor="guestName"
-                        className="block text-sm font-semibold text-gray-700 mb-1"
-                      >
-                        <User className="inline-block w-4 h-4 mr-1" /> Nombre y
-                        Apellido
-                      </label>
-                      <input
-                        type="text"
-                        id="guestName"
-                        value={guestName}
-                        onChange={(e) => setGuestName(e.target.value)}
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
-                        placeholder="Juan Pérez"
-                      />
+                  {status === "unauthenticated" && (
+                    <div className="mb-4 space-y-3">
+                      <div>
+                        <label
+                          htmlFor="guestName"
+                          className="block text-sm font-semibold text-gray-700 mb-1"
+                        >
+                          <User className="inline-block w-4 h-4 mr-1" /> Nombre y
+                          Apellido
+                        </label>
+                        <input
+                          type="text"
+                          id="guestName"
+                          value={guestName}
+                          onChange={(e) => setGuestName(e.target.value)}
+                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                          placeholder="Juan Pérez"
+                        />
+                      </div>
+                      <div>
+                        <label
+                          htmlFor="guestPhone"
+                          className="block text-sm font-semibold text-gray-700 mb-1"
+                        >
+                          <Phone className="inline-block w-4 h-4 mr-1" /> Teléfono
+                          (WhatsApp)
+                        </label>
+                        <input
+                          type="tel"
+                          id="guestPhone"
+                          value={guestPhone}
+                          onChange={(e) => setGuestPhone(e.target.value)}
+                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                          placeholder="3491123456"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Lo usaremos para contactarte por tu reserva si es
+                          necesario.
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <label
-                        htmlFor="guestPhone"
-                        className="block text-sm font-semibold text-gray-700 mb-1"
-                      >
-                        <Phone className="inline-block w-4 h-4 mr-1" /> Teléfono
-                        (WhatsApp)
-                      </label>
-                      <input
-                        type="tel"
-                        id="guestPhone"
-                        value={guestPhone}
-                        onChange={(e) => setGuestPhone(e.target.value)}
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
-                        placeholder="3491123456"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">
-                        Lo usaremos para contactarte por tu reserva si es
-                        necesario.
+                  )}
+
+                  <div className="space-y-4 text-left border-t border-b py-4">
+                    <div className="flex items-center gap-3">
+                      <Shield className="w-5 h-5 text-brand-orange" />
+                      <p>
+                        <span className="font-semibold">{club?.name}</span> -{" "}
+                        {court?.name}
                       </p>
                     </div>
-                  </div>
-                )}
-
-                <div className="space-y-4 text-left border-t border-b py-4">
-                  <div className="flex items-center gap-3">
-                    <Shield className="w-5 h-5 text-brand-orange" />
-                    <p>
-                      <span className="font-semibold">{club?.name}</span> -{" "}
-                      {court?.name}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Calendar className="w-5 h-5 text-brand-orange" />
-                    <p>
-                      {date.toLocaleDateString("es-AR", {
-                        weekday: "long",
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                      })}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Clock className="w-5 h-5 text-brand-orange" />
-                    <p>
-                      <span className="font-semibold">
-                        {time} a{" "}
-                        {calculateEndTime(
-                          time,
-                          court?.slotDurationMinutes || 60
-                        )}{" "}
-                        hs
-                      </span>{" "}
-                      <span className="text-gray-500 text-sm ml-2">
-                        ({court?.slotDurationMinutes || 60} min)
-                      </span>
-                    </p>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <DollarSign className="w-5 h-5 text-brand-orange mt-1" />
-                    <div>
-                      {appliedCoupon ? (
-                        <>
-                          <p className="text-gray-500 line-through">
-                            {formatCurrency(originalTotalPrice)}
-                          </p>
-                          <p className="text-green-600 font-semibold">
-                            Descuento: -
-                            {formatCurrency(appliedCoupon.discountAmount)}
-                          </p>
+                    <div className="flex items-center gap-3">
+                      <Calendar className="w-5 h-5 text-brand-orange" />
+                      <p>
+                        {date.toLocaleDateString("es-AR", {
+                          weekday: "long",
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Clock className="w-5 h-5 text-brand-orange" />
+                      <p>
+                        <span className="font-semibold">
+                          {time} a{" "}
+                          {calculateEndTime(
+                            time,
+                            court?.slotDurationMinutes || 60
+                          )}{" "}
+                          hs
+                        </span>{" "}
+                        <span className="text-gray-500 text-sm ml-2">
+                          ({court?.slotDurationMinutes || 60} min)
+                        </span>
+                      </p>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <DollarSign className="w-5 h-5 text-brand-orange mt-1" />
+                      <div>
+                        {appliedCoupon ? (
+                          <>
+                            <p className="text-gray-500 line-through">
+                              {formatCurrency(originalTotalPrice)}
+                            </p>
+                            <p className="text-green-600 font-semibold">
+                              Descuento: -
+                              {formatCurrency(appliedCoupon.discountAmount)}
+                            </p>
+                            <p>
+                              Nuevo Total:{" "}
+                              <span className="font-bold">
+                                {formatCurrency(totalPrice)}
+                              </span>
+                            </p>
+                          </>
+                        ) : (
                           <p>
-                            Nuevo Total:{" "}
+                            Total a pagar:{" "}
                             <span className="font-bold">
                               {formatCurrency(totalPrice)}
                             </span>
                           </p>
-                        </>
-                      ) : (
-                        <p>
-                          Total a pagar:{" "}
-                          <span className="font-bold">
-                            {formatCurrency(totalPrice)}
-                          </span>
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* --- SECCIÓN DE CUPÓN --- */}
-                <div className="py-4 text-sm">
-                  {appliedCoupon ? (
-                    <div className="flex justify-between items-center text-green-700">
-                      <span>
-                        Cupón <strong>{appliedCoupon.code}</strong> aplicado.
-                      </span>
-                      <button
-                        onClick={handleRemoveCoupon}
-                        className="text-xs font-semibold underline hover:text-red-600"
-                      >
-                        Quitar
-                      </button>
-                    </div>
-                  ) : !showCouponInput ? (
-                    <button
-                      onClick={() => setShowCouponInput(true)}
-                      className="text-brand-orange font-semibold hover:underline"
-                    >
-                      ¿Tenés un cupón de descuento?
-                    </button>
-                  ) : (
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="text"
-                          value={couponCode}
-                          onChange={(e) => {
-                            setCouponCode(e.target.value);
-                            if (couponError) setCouponError(null);
-                          }}
-                          placeholder="Ingresá tu código"
-                          className="flex-grow block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm"
-                        />
-                        <Button
-                          onClick={handleApplyCoupon}
-                          disabled={isVerifyingCoupon}
-                          className="whitespace-nowrap"
-                        >
-                          {isVerifyingCoupon ? <Spinner /> : "Aplicar"}
-                        </Button>
-                        {couponError && (
-                          <p className="text-red-500 text-xs">{couponError}</p>
                         )}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setShowCouponInput(false);
-                            setCouponError(null);
-                            setCouponCode("");
-                          }}
-                          className="text-sm p-2 text-black hover:bg-red-100 rounded-md"
-                        >
-                          <X />
-                        </button>
                       </div>
                     </div>
-                  )}
-                </div>
+                  </div>
 
-                <p className="text-sm text-center text-gray-500">
-                  ⚠️{" "}
-                  {club.cancellationPolicyHours > 0 ? (
-                    <>
-                      Podrás cancelar sin costo hasta{" "}
-                      <strong>{club.cancellationPolicyHours} horas</strong>{" "}
-                      antes del turno.
-                    </>
-                  ) : (
-                    <strong>
-                      Una vez confirmada, esta reserva no permite reembolso.
-                    </strong>
-                  )}
-                </p>
+                  {/* --- SECCIÓN DE CUPÓN --- */}
+                  <div className="py-4 text-sm">
+                    {appliedCoupon ? (
+                      <div className="flex justify-between items-center text-green-700">
+                        <span>
+                          Cupón <strong>{appliedCoupon.code}</strong> aplicado.
+                        </span>
+                        <button
+                          onClick={handleRemoveCoupon}
+                          className="text-xs font-semibold underline hover:text-red-600"
+                        >
+                          Quitar
+                        </button>
+                      </div>
+                    ) : !showCouponInput ? (
+                      <button
+                        onClick={() => setShowCouponInput(true)}
+                        className="text-brand-orange font-semibold hover:underline"
+                      >
+                        ¿Tenés un cupón de descuento?
+                      </button>
+                    ) : (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={couponCode}
+                            onChange={(e) => {
+                              setCouponCode(e.target.value);
+                              if (couponError) setCouponError(null);
+                            }}
+                            placeholder="Ingresá tu código"
+                            className="flex-grow block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm"
+                          />
+                          <Button
+                            onClick={handleApplyCoupon}
+                            disabled={isVerifyingCoupon}
+                            className="whitespace-nowrap"
+                          >
+                            {isVerifyingCoupon ? <Spinner /> : "Aplicar"}
+                          </Button>
+                          {couponError && (
+                            <p className="text-red-500 text-xs">{couponError}</p>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowCouponInput(false);
+                              setCouponError(null);
+                              setCouponCode("");
+                            }}
+                            className="text-sm p-2 text-black hover:bg-red-100 rounded-md"
+                          >
+                            <X />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
 
-                <div className="mt-4">
-                  <p className="text-sm text-center text-paragraph mb-4">
-                    Para confirmar tu turno, es necesario abonar una seña.
+                  <p className="text-sm text-center text-gray-500">
+                    ⚠️{" "}
+                    {club.cancellationPolicyHours > 0 ? (
+                      <>
+                        Podrás cancelar sin costo hasta{" "}
+                        <strong>{club.cancellationPolicyHours} horas</strong>{" "}
+                        antes del turno.
+                      </>
+                    ) : (
+                      <strong>
+                        Una vez confirmada, esta reserva no permite reembolso.
+                      </strong>
+                    )}
                   </p>
-                  <ButtonPrimary
-                    onClick={handleCreatePreference}
-                    className="w-full"
-                    disabled={isProcessing || depositAmount <= 0}
-                  >
-                    {isProcessing
-                      ? "Procesando..."
-                      : `Ir a pagar seña de ${formatCurrency(depositAmount)}`}
-                  </ButtonPrimary>
+
+                  <div className="mt-4">
+                    <p className="text-sm text-center text-paragraph mb-4">
+                      Para confirmar tu turno, es necesario abonar una seña.
+                    </p>
+                    <ButtonPrimary
+                      onClick={handleCreatePreference}
+                      className="w-full"
+                      disabled={isProcessing || depositAmount <= 0}
+                    >
+                      {isProcessing
+                        ? "Procesando..."
+                        : `Ir a pagar seña de ${formatCurrency(depositAmount)}`}
+                    </ButtonPrimary>
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <div className="text-center">
-                <h2 className="text-2xl font-bold text-foreground mb-4">
-                  Completá el pago
-                </h2>
-                <p className="text-paragraph mb-6">
-                  Serás redirigido al finalizar la compra.
-                </p>
-                <Wallet initialization={{ preferenceId: preferenceData.id }} />
-              </div>
-            )}
+              ) : (
+                <div className="text-center">
+                  <h2 className="text-2xl font-bold text-foreground mb-4">
+                    Completá el pago
+                  </h2>
+                  <p className="text-paragraph mb-6">
+                    Serás redirigido al finalizar la compra.
+                  </p>
+                  <Wallet initialization={{ preferenceId: preferenceData.id }} />
+                </div>
+              )}
+            </motion.div>
           </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+        )}
+      </AnimatePresence>
+
+      {/* --- DIÁLOGO DE ALERTA PARA EL CONFLICTO --- */}
+      <AlertDialog open={showConflictAlert} onOpenChange={setShowConflictAlert}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¡Turno no disponible!</AlertDialogTitle>
+            <AlertDialogDescription>
+              {conflictMessage} Alguien más reservó este horario mientras confirmabas.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={handleAlertClose}>Ver otros horarios</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

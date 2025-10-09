@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/shared/lib/db";
-import { startOfDay, endOfDay } from "date-fns";
+import { startOfDay, endOfDay } from "date-fns"; 
 import { BookingStatus } from "@prisma/client";
 
 export async function GET(
@@ -78,8 +78,7 @@ export async function GET(
     for (const court of complex.courts) {
       const courtSlots = new Array(totalSlots).fill(true);
       for (const booking of court.bookings) {
-        const bookingDate = new Date(booking.date);
-        const startIdx = (bookingDate.getUTCHours() * 60 + bookingDate.getUTCMinutes() - openHour * 60) / timeGridInterval;
+        const startIdx = (booking.startTime * 60 + (booking.startMinute || 0) - openHour * 60) / timeGridInterval;
         const slotsToBook = court.slotDurationMinutes / timeGridInterval;
         for (let i = 0; i < slotsToBook; i++) {
           if (startIdx + i < totalSlots) {
@@ -133,4 +132,3 @@ export async function GET(
     );
   }
 }
-

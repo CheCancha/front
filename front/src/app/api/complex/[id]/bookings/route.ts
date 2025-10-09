@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { db } from "@/shared/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/authOptions";
-import { startOfDay, endOfDay, startOfToday, subMinutes } from "date-fns";
+import { startOfDay, endOfDay, startOfToday } from "date-fns";
 import { BookingStatus } from "@prisma/client";
 
 // --- GET ---
@@ -19,7 +19,7 @@ export async function GET(
     const { searchParams } = new URL(req.url);
     const complexId = (await context.params).id;
 
-    // --- LÓGICA PARA PRÓXIMAS RESERVAS  ---
+    // --- LÓGICA PARA PRÓXIMAS RESERVAS ---
     if (searchParams.get("upcoming") === "true") {
       const today = startOfToday();
       const upcomingBookings = await db.booking.findMany({
@@ -64,8 +64,7 @@ export async function GET(
     const startOfRequestedDay = startOfDay(requestedDate);
     const endOfRequestedDay = endOfDay(requestedDate);
 
-    const thirtyMinutesAgo = subMinutes(new Date(), 2);
-
+    
     const bookings = await db.booking.findMany({
       where: {
         court: { complexId: complexId },
@@ -73,15 +72,7 @@ export async function GET(
           gte: startOfRequestedDay,
           lt: endOfRequestedDay,
         },
-        AND: [
-          { status: { not: BookingStatus.CANCELADO } },
-          {
-            OR: [
-              { status: { not: BookingStatus.PENDIENTE } },
-              { createdAt: { gte: thirtyMinutesAgo } },
-            ],
-          },
-        ],
+        status: { not: BookingStatus.CANCELADO },
       },
       include: {
         court: { select: { id: true, name: true, slotDurationMinutes: true } },
@@ -144,8 +135,7 @@ export async function POST(
     const newBookingStartMinutes = hour * 60 + minute;
     const newBookingEndMinutes =
       newBookingStartMinutes + court.slotDurationMinutes;
-
-    // 2. Para buscar superposiciones, debemos buscar en TODO el día, no solo a medianoche.
+    
     const startOfBookingDay = startOfDay(bookingDate);
     const endOfBookingDay = endOfDay(bookingDate);
 

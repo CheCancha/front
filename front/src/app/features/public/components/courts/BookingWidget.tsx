@@ -30,6 +30,8 @@ export const BookingWidget: React.FC<BookingWidgetProps> = ({
     useState<CourtWithPriceRules | null>(club.courts[0] || null);
   const [validStartTimes, setValidStartTimes] = useState<ValidStartTime[]>([]);
   const [isAvailabilityLoading, setIsAvailabilityLoading] = useState(true);
+  const [temporarilyBookedSlot, setTemporarilyBookedSlot] = useState<string | null>(null);
+
 
   const isSelectedDateToday = isToday(selectedDate);
   const currentHour = new Date().getHours();
@@ -46,6 +48,7 @@ export const BookingWidget: React.FC<BookingWidgetProps> = ({
   useEffect(() => {
     const fetchAvailability = async () => {
       if (!club.slug || !selectedDate) return;
+      setTemporarilyBookedSlot(null);
       setIsAvailabilityLoading(true);
       try {
         const dateString = format(selectedDate, "yyyy-MM-dd");
@@ -139,19 +142,21 @@ export const BookingWidget: React.FC<BookingWidgetProps> = ({
               );
               const isAvailable = courtStatus?.available ?? false;
               const past = isPast(slot.time);
+              const isTemporarilyBooked = temporarilyBookedSlot === slot.time;
 
               return (
                 <button
                   key={slot.time}
-                  disabled={!isAvailable || past}
+                  disabled={!isAvailable || past || isTemporarilyBooked}
                   onClick={() => {
                     if (selectedCourt) {
+                      setTemporarilyBookedSlot(slot.time);
                       onSlotClick(selectedCourt, slot.time);
                     }
                   }}
                   className={cn(
                     "p-3 rounded-md text-center font-semibold transition-colors text-sm",
-                    !isAvailable || past
+                    !isAvailable || past || isTemporarilyBooked
                       ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                       : "bg-neutral-200 text-neutral-800 hover:bg-brand-orange hover:text-white cursor-pointer"
                   )}

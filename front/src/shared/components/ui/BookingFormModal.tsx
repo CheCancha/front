@@ -257,7 +257,7 @@ const FormView = memo(({
             </Select>
           </div>
           <div>
-            <label htmlFor="depositPaid" className="block text-sm font-semibold text-gray-700 mb-1"><DollarSign className="inline-block w-4 h-4 mr-1" /> Seña Pagada (ARS)</label>
+            <label htmlFor="depositPaid" className="block text-sm font-semibold text-gray-700 mb-1"><DollarSign className="inline-block w-4 h-4 mr-1" /> Seña Pagada</label>
             <Input type="number" id="depositPaid" name="depositPaid" value={depositPaidInput} onChange={(e) => setDepositPaidInput(e.target.value)} placeholder="0"/>
           </div>
         </div>

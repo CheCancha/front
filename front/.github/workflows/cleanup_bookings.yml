@@ -1,0 +1,21 @@
+# .github/workflows/cleanup_bookings.yml
+
+name: 'Clean Up Pending Bookings'
+
+# Disparador: se ejecuta en un horario programado
+on:
+  schedule:
+    # Ejecutar cada 5 minutos
+    - cron: '*/5 * * * *'
+  # También puedes añadir un disparador manual para probarlo desde la pestaña "Actions" de GitHub
+  workflow_dispatch:
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call the cleanup API endpoint
+        run: |
+          curl --request POST \
+          --url '${{ secrets.CLEANUP_URL }}' \
+          --header 'Authorization: Bearer ${{ secrets.CRON_SECRET }}'
