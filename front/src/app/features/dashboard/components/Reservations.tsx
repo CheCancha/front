@@ -15,7 +15,6 @@ type UpcomingBooking = {
   isPaid: boolean;
 };
 
-//  Este es el tipo de dato que viene DIRECTO de la API (con la fecha como string)
 type RawApiResponse = Omit<UpcomingBooking, "date"> & {
   date: string;
 };

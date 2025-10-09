@@ -32,7 +32,7 @@ import type {
   Coupon,
 } from "@prisma/client";
 import { toast } from "react-hot-toast";
-import { format } from "date-fns";
+import { format, isToday } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn } from "@/shared/lib/utils";
 import { Spinner } from "./Spinner";
@@ -69,8 +69,10 @@ export interface BookingModalProps {
   initialSlot?: { courtId: string; time: string } | null;
   existingBookings: BookingWithDetails[];
   isSubmitting?: boolean;
+  currentDate: Date;
 }
 
+// ... (InfoRow, formatCurrency, DetailsView no necesitan cambios)
 const InfoRow = ({
   icon: Icon,
   label,
@@ -92,8 +94,6 @@ const formatCurrency = (value: number) =>
   new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS" }).format(
     value
   );
-
-// --- SUB-COMPONENTE: VISTA DE DETALLES (EXTRAÍDO Y MEMOIZADO) ---
 const DetailsView = memo(({
   initialBooking,
   onClose,
@@ -186,7 +186,6 @@ const DetailsView = memo(({
 DetailsView.displayName = 'DetailsView';
 
 
-// --- Interface de Props para FormView ---
 interface FormViewProps {
   handleSubmit: (e: React.FormEvent) => void;
   formData: Omit<SubmitPayload, "depositPaid">;
@@ -202,7 +201,6 @@ interface FormViewProps {
   initialBooking?: BookingWithDetails | null;
 }
 
-// --- SUB-COMPONENTE: VISTA DE FORMULARIO (EXTRAÍDO Y MEMOIZADO) ---
 const FormView = memo(({
   handleSubmit,
   formData,
@@ -266,7 +264,7 @@ const FormView = memo(({
         )}
         <div className="flex justify-end gap-2 pt-4">
           <Button type="button" variant="ghost" onClick={onClose}>Cancelar</Button>
-          <Button type="submit" disabled={isSubmitting}>{isSubmitting ? (<Spinner className="mr-2 h-4 w-4" />) : initialBooking ? ("Actualizar Reserva") : ("Crear Reserva")}</Button>
+          <Button type="submit" disabled={isSubmitting || !!warning}>{isSubmitting ? (<Spinner className="mr-2 h-4 w-4" />) : initialBooking ? ("Actualizar Reserva") : ("Crear Reserva")}</Button>
         </div>
       </form>
     </>
@@ -274,6 +272,7 @@ const FormView = memo(({
 FormView.displayName = 'FormView';
 
 
+// --- COMPONENTE PRINCIPAL ---
 const BookingFormModal: React.FC<BookingModalProps> = ({
   isOpen,
   onClose,
@@ -285,54 +284,83 @@ const BookingFormModal: React.FC<BookingModalProps> = ({
   initialSlot,
   existingBookings,
   isSubmitting,
+  currentDate,
 }) => {
-  const [mode, setMode] = useState<"view" | "form">(
-    initialBooking ? "view" : "form"
-  );
+  const [mode, setMode] = useState<"view" | "form">("form");
   const [formData, setFormData] = useState<Omit<SubmitPayload, "depositPaid">>({
     guestName: "",
     guestPhone: "",
-    courtId: courts[0]?.id || "",
-    time: timeSlots[0] || "09:00",
+    courtId: "",
+    time: "",
     status: "CONFIRMADO",
   });
   const [depositPaidInput, setDepositPaidInput] = useState("0");
   const [warning, setWarning] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isOpen) {
-      if (initialBooking) {
-        setMode("view");
-        setFormData({
-          bookingId: initialBooking.id,
-          guestName: initialBooking.guestName || initialBooking.user?.name || "",
-          guestPhone: initialBooking.guestPhone || initialBooking.user?.phone || "",
-          courtId: initialBooking.courtId,
-          time: `${String(initialBooking.startTime).padStart(2, "0")}:${String(initialBooking.startMinute || 0).padStart(2, "0")}`,
-          status: initialBooking.status,
-        });
-        setDepositPaidInput(String(initialBooking.depositPaid));
-      } else if (initialSlot) {
-        setMode("form");
-        setFormData({
-          guestName: "",
-          guestPhone: "",
-          courtId: initialSlot.courtId,
-          time: initialSlot.time,
-          status: "CONFIRMADO",
-        });
-        setDepositPaidInput("0");
-      }
+    if (!isOpen) {
+      return;
     }
-  }, [isOpen, initialBooking, initialSlot]);
+
+    let bookingToLoad: BookingWithDetails | undefined;
+    if (initialBooking) {
+      setMode("view");
+      setFormData({
+        bookingId: initialBooking.id,
+        guestName: initialBooking.guestName || initialBooking.user?.name || "",
+        guestPhone: initialBooking.guestPhone || initialBooking.user?.phone || "",
+        courtId: initialBooking.courtId,
+        time: `${String(initialBooking.startTime).padStart(2, "0")}:${String(
+          initialBooking.startMinute || 0
+        ).padStart(2, "0")}`,
+        status: initialBooking.status,
+      });
+      setDepositPaidInput(String(initialBooking.depositPaid));
+    } else {
+      setMode("form");
+      setFormData({
+        guestName: "",
+        guestPhone: "",
+        courtId: initialSlot?.courtId || courts[0]?.id || "",
+        time: initialSlot?.time || timeSlots[0] || "",
+        status: "CONFIRMADO",
+      });
+      setDepositPaidInput("0");
+    }
+  }, [isOpen, initialBooking, initialSlot, courts, timeSlots]);
 
   useEffect(() => {
     if (!isOpen || mode !== "form") {
       setWarning(null);
       return;
     }
+
+    let timeIsPast = false;
+    if (isToday(currentDate) && formData.time) {
+      const [slotHour, slotMinute] = formData.time.split(":").map(Number);
+      const now = new Date();
+      const currentHour = now.getHours();
+      const currentMinute = now.getMinutes();
+
+      if (slotHour < currentHour || (slotHour === currentHour && slotMinute < currentMinute)) {
+        setWarning("No se puede seleccionar un horario que ya ha pasado.");
+        timeIsPast = true;
+      }
+    }
+
+    if (timeIsPast) return;
+
     const selectedCourt = courts.find((c) => c.id === formData.courtId);
-    if (!selectedCourt) return;
+    if (!selectedCourt) {
+        setWarning(null);
+        return;
+    };
+    
+    if (!formData.time) {
+        setWarning(null);
+        return;
+    }
+
     const [hour, minute] = formData.time.split(":").map(Number);
     const newStartMinutes = hour * 60 + minute;
     const newEndMinutes = newStartMinutes + selectedCourt.slotDurationMinutes;
@@ -344,7 +372,7 @@ const BookingFormModal: React.FC<BookingModalProps> = ({
       return (newStartMinutes < existingEndMinutes && newEndMinutes > existingStartMinutes);
     });
     setWarning(overlap ? "¡Atención! Este horario se superpone con otra reserva." : null);
-  }, [formData.courtId, formData.time, existingBookings, isOpen, mode, initialBooking, courts]);
+  }, [formData.courtId, formData.time, existingBookings, isOpen, mode, initialBooking, courts, currentDate]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;

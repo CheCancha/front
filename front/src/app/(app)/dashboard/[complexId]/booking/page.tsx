@@ -65,7 +65,6 @@ export default function BookingCalendarPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [sportFilter, setSportFilter] = useState<string>("Todos");
 
-  // --- ESTADOS SIMPLIFICADOS PARA UN SOLO MODAL ---
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalBooking, setModalBooking] = useState<BookingWithDetails | null>(
     null
@@ -97,22 +96,20 @@ export default function BookingCalendarPage() {
     return slots;
   }, [complex]);
 
-  const isPast = useCallback(
-    (time: string) => {
-      const today = startOfDay(new Date());
-      if (isBefore(currentDate, today)) return true;
-      if (!isToday(currentDate)) return false;
+  const isPast = (time: string) => {
+    const today = startOfDay(new Date());
+    if (isBefore(currentDate, today)) return true;
+    if (!isToday(currentDate)) return false;
 
-      const [slotHour, slotMinute] = time.split(":").map(Number);
-      const now = new Date();
-      const currentHour = now.getHours();
-      const currentMinute = now.getMinutes();
-      if (slotHour < currentHour) return true;
-      if (slotHour === currentHour && slotMinute < currentMinute) return true;
-      return false;
-    },
-    [currentDate]
-  );
+    const [slotHour, slotMinute] = time.split(":").map(Number);
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+    
+    if (slotHour < currentHour) return true;
+    if (slotHour === currentHour && slotMinute < currentMinute) return true;
+    return false;
+  };
 
   const fetchBookingsForDate = useCallback(
     async (date: Date) => {
@@ -184,10 +181,16 @@ export default function BookingCalendarPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
+      
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Ocurrió un error.");
+        try {
+          const errorData = await response.json();
+          throw new Error(errorData.message || "Ocurrió un error en el servidor.");
+        } catch (parseError) {
+          throw new Error("No se pudo procesar la respuesta del servidor.");
+        }
       }
+
       toast.success(successMessage);
       closeModal();
       await fetchBookingsForDate(currentDate);
@@ -471,6 +474,7 @@ export default function BookingCalendarPage() {
           initialSlot={modalSlot}
           existingBookings={bookings}
           isSubmitting={isSubmitting}
+          currentDate={currentDate}
         />
       )}
 

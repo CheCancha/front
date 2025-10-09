@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { db } from "@/shared/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/authOptions";
-import { startOfDay, endOfDay, startOfToday } from "date-fns";
+import { startOfDay, endOfDay, startOfToday, isSameDay, isBefore } from "date-fns";
 import { BookingStatus } from "@prisma/client";
 
 // --- GET ---
@@ -21,21 +21,47 @@ export async function GET(
 
     // --- LÓGICA PARA PRÓXIMAS RESERVAS ---
     if (searchParams.get("upcoming") === "true") {
+      const now = new Date();
+      const currentHour = now.getHours();
+      const currentMinute = now.getMinutes();
       const today = startOfToday();
-      const upcomingBookings = await db.booking.findMany({
+
+      const potentialBookings = await db.booking.findMany({
         where: {
           court: { complexId: complexId },
-          date: { gte: today },
+          date: { gte: today }, // Trae todo desde hoy en adelante
           status: BookingStatus.CONFIRMADO,
         },
         orderBy: [{ date: "asc" }, { startTime: "asc" }],
-        take: 10,
         include: {
           court: { select: { name: true } },
           user: { select: { name: true, phone: true } },
           coupon: { select: { code: true } },
         },
       });
+
+      // --- CORRECCIÓN: Filtrar en el servidor para excluir turnos pasados del día de hoy ---
+      const upcomingBookings = potentialBookings
+        .filter((booking) => {
+          const bookingDate = startOfDay(booking.date);
+          const isBookingToday = isSameDay(bookingDate, today);
+
+          // Si no es hoy, es un día futuro, siempre se incluye
+          if (!isBookingToday) {
+            return true;
+          }
+
+          // Si es hoy, se comprueba la hora
+          const bookingHour = booking.startTime;
+          const bookingMinute = booking.startMinute ?? 0;
+
+          if (bookingHour > currentHour) return true;
+          if (bookingHour === currentHour && bookingMinute >= currentMinute) return true;
+
+          // Si no cumple ninguna condición, es un turno pasado de hoy
+          return false;
+        })
+        .slice(0, 10); // Tomar los primeros 10 después de filtrar
 
       const formattedBookings = upcomingBookings.map((b) => ({
         id: b.id,
@@ -53,18 +79,17 @@ export async function GET(
       return NextResponse.json(formattedBookings);
     }
 
-    // --- LÓGICA PARA EL CALENDARIO DE RESERVAS ---
+    // --- LÓGICA PARA EL CALENDARIO DE RESERVAS (Simplificada) ---
     const dateString = searchParams.get("date");
     if (!dateString) {
       return new NextResponse("El parámetro 'date' es obligatorio", {
         status: 400,
       });
     }
-    const requestedDate = new Date(`${dateString}T00:00:00`); // T00:00:00.000Z
+    const requestedDate = new Date(`${dateString}T00:00:00`);
     const startOfRequestedDay = startOfDay(requestedDate);
     const endOfRequestedDay = endOfDay(requestedDate);
 
-    
     const bookings = await db.booking.findMany({
       where: {
         court: { complexId: complexId },
@@ -72,7 +97,7 @@ export async function GET(
           gte: startOfRequestedDay,
           lt: endOfRequestedDay,
         },
-        status: { not: BookingStatus.CANCELADO },
+        status: { in: [BookingStatus.CONFIRMADO, BookingStatus.PENDIENTE] },
       },
       include: {
         court: { select: { id: true, name: true, slotDurationMinutes: true } },
@@ -110,6 +135,16 @@ export async function POST(
       });
     }
 
+    // --- CORRECCIÓN: Prevenir reservas en horarios pasados ---
+    const bookingDate = new Date(`${date}T${time}`);
+    // Se añade un margen de 1 minuto hacia atrás para evitar falsos negativos por latencia de red
+    if (isBefore(bookingDate, new Date(new Date().getTime() - 60000))) {
+      return NextResponse.json({ message: "No se pueden crear reservas en horarios pasados." }, {
+        status: 400,
+      });
+    }
+
+
     const [hour, minute] = time.split(":").map(Number);
 
     const court = await db.court.findUnique({
@@ -124,18 +159,16 @@ export async function POST(
       (rule) => hour >= rule.startTime && hour < rule.endTime
     );
     if (!applicableRule) {
-      return new NextResponse(
-        `No hay un precio configurado para las ${time} hs.`,
+      return NextResponse.json(
+        { message: `No hay un precio configurado para las ${time} hs.` },
         { status: 400 }
       );
     }
 
-    const bookingDate = new Date(`${date}T${time}`);
-
     const newBookingStartMinutes = hour * 60 + minute;
     const newBookingEndMinutes =
       newBookingStartMinutes + court.slotDurationMinutes;
-    
+
     const startOfBookingDay = startOfDay(bookingDate);
     const endOfBookingDay = endOfDay(bookingDate);
 
@@ -163,7 +196,7 @@ export async function POST(
     });
 
     if (isOverlapping) {
-      return new NextResponse("El horario para esta cancha ya está ocupado.", {
+      return NextResponse.json({ message: "El horario para esta cancha ya está ocupado." }, {
         status: 409,
       });
     }
