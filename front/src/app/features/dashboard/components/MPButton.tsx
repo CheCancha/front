@@ -1,10 +1,21 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { toast } from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import type { Complex } from "@prisma/client";
 import { Img } from "@react-email/components";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/shared/components/ui/alert-dialog";
 
 interface MPButtonProps {
   complex: Complex;
@@ -28,12 +39,11 @@ const MercadoPagoConnectButton = ({ complexId }: { complexId: string }) => {
 
 export default function MPButton({ complex }: MPButtonProps) {
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
   const isConnected = !!complex.mp_connected_at;
 
   const handleDisconnect = async () => {
-    const confirmation = window.confirm("¿Estás seguro de que quieres desconectar tu cuenta de Mercado Pago? No podrás recibir pagos online.");
-    if (!confirmation) return;
-
+    setIsLoading(true);
     toast.loading("Desconectando...");
     try {
       const response = await fetch(`/api/mercadopago/disconnect`, {
@@ -52,6 +62,8 @@ export default function MPButton({ complex }: MPButtonProps) {
     } catch (error) {
       toast.dismiss();
       toast.error(error instanceof Error ? error.message : "Error desconocido.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -89,12 +101,30 @@ export default function MPButton({ complex }: MPButtonProps) {
         </div>
         
         {isConnected ? (
-          <button 
-            onClick={handleDisconnect} 
-            className="w-full rounded-lg bg-gray-200 py-2 px-4 font-semibold text-gray-800 transition-colors hover:bg-gray-300 sm:w-auto"
-          >
-            Desconectar
-          </button>
+           <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <button
+                disabled={isLoading}
+                className="w-full rounded-lg bg-gray-200 py-2 px-4 font-semibold text-gray-800 transition-colors hover:bg-gray-300 sm:w-auto disabled:opacity-50 cursor-pointer"
+              >
+                Desconectar
+              </button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Al desconectar tu cuenta, no podrás recibir pagos online a través de Che Cancha. Podrás volver a conectarla en cualquier momento.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDisconnect} className="bg-red-600 hover:bg-red-700">
+                  Sí, desconectar
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         ) : (
           <MercadoPagoConnectButton complexId={complex.id} />
         )}
