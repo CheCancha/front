@@ -1,27 +1,26 @@
-// front\src\app\api\bookings\cleanup\route.ts
-
-import { NextResponse } from "next/server";
 import { db } from "@/shared/lib/db";
 import { subMinutes } from "date-fns";
 import { BookingStatus } from "@prisma/client";
+import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   try {
-    // 1. Proteger la ruta con un "secret"
     const authHeader = req.headers.get("authorization");
     if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
       return new NextResponse("No autorizado", { status: 401 });
     }
 
-    // 2. Definir el límite de tiempo (reservas más viejas que esto serán canceladas)
     const fiveMinutesAgo = subMinutes(new Date(), 5);
 
-    // 3. Buscar y actualizar las reservas pendientes expiradas en un solo paso
+    console.log("--- INICIANDO TAREA DE LIMPIEZA ---");
+    console.log("Hora actual del servidor (new Date()):", new Date());
+    console.log("Buscando reservas PENDIENTES creadas antes de:", fiveMinutesAgo);
+
     const { count } = await db.booking.updateMany({
       where: {
         status: BookingStatus.PENDIENTE,
         createdAt: {
-          lt: fiveMinutesAgo, 
+          lt: fiveMinutesAgo,
         },
       },
       data: {
