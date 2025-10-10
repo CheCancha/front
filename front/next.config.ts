@@ -1,4 +1,12 @@
 /** @type {import('next').NextConfig} */
+
+const withPWA = require("next-pwa")({
+  dest: "public",
+  register: true,
+  skipWaiting: true,
+  disable: process.env.NODE_ENV === "development",
+});
+
 const nextConfig = {
   images: {
     remotePatterns: [
@@ -10,16 +18,16 @@ const nextConfig = {
       },
       {
         protocol: "https",
-        hostname: "*.supabase.co", 
+        hostname: "*.supabase.co",
         port: "",
         pathname: "/storage/v1/object/public/**",
       },
       {
-        protocol: 'https',
-        hostname: 'ui-avatars.com',
+        protocol: "https",
+        hostname: "ui-avatars.com",
       },
     ],
   },
 };
 
-export default nextConfig;
+module.exports = withPWA(nextConfig);

@@ -7,14 +7,15 @@ import { Suspense } from "react";
 import { SearchStateInitializer } from "@/shared/components/SearchStateInitializer";
 
 export const metadata: Metadata = {
+  // --- Metadatos existentes ---
   title: {
     template: "%s | checancha",
     default: "checancha",
   },
-  description: "Página Oficial del checancha.",
+  description: "Página Oficial de Che Cancha.",
   openGraph: {
     title: "checancha",
-    description: "Página Oficial del checancha.",
+    description: "Página Oficial de Che Cancha.",
     url: "https://www.checancha.com.ar",
     siteName: "checancha",
     images: [
@@ -30,8 +31,15 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "checancha",
-    description: "Página Oficial del checancha.",
+    description: "Página Oficial de Che Cancha.",
     images: ["https://checancha.com/logochecancha.png"],
+  },
+  manifest: "/manifest.json",
+  themeColor: "#ff4e02",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "che cancha",
   },
 };
 
