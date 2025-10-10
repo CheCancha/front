@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/shared/lib/db";
-import { startOfDay, endOfDay } from "date-fns"; 
+import { startOfDay, endOfDay, subMinutes } from "date-fns";
 import { BookingStatus } from "@prisma/client";
 
 export async function GET(
@@ -20,6 +20,7 @@ export async function GET(
     }
 
     const requestedDate = new Date(`${dateString}T00:00:00Z`);
+    const fiveMinutesAgo = subMinutes(new Date(), 5);
 
     const complex = await db.complex.findUnique({
       where: { slug: slug },
@@ -33,7 +34,15 @@ export async function GET(
                   gte: startOfDay(requestedDate),
                   lt: endOfDay(requestedDate),
                 },
-                status: { not: BookingStatus.CANCELADO },
+                AND: [
+                  { status: { not: BookingStatus.CANCELADO } },
+                  {
+                    OR: [
+                      { status: { not: BookingStatus.PENDIENTE } },
+                      { createdAt: { gte: fiveMinutesAgo } },
+                    ],
+                  },
+                ],
               },
             },
           },
@@ -49,9 +58,17 @@ export async function GET(
     }
 
     const timeGridInterval = complex.timeSlotInterval;
-    
+
     const dayOfWeek = requestedDate.getUTCDay();
-    const dayKeys = [ "sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday" ];
+    const dayKeys = [
+      "sunday",
+      "monday",
+      "tuesday",
+      "wednesday",
+      "thursday",
+      "friday",
+      "saturday",
+    ];
     const key = dayKeys[dayOfWeek];
 
     let openHour: number | null | undefined;
@@ -64,7 +81,7 @@ export async function GET(
       openHour = typeof rawOpenHour === "number" ? rawOpenHour : undefined;
       closeHour = typeof rawCloseHour === "number" ? rawCloseHour : undefined;
     }
-    
+
     if (openHour === undefined) openHour = complex.openHour;
     if (closeHour === undefined) closeHour = complex.closeHour;
 
@@ -78,7 +95,11 @@ export async function GET(
     for (const court of complex.courts) {
       const courtSlots = new Array(totalSlots).fill(true);
       for (const booking of court.bookings) {
-        const startIdx = (booking.startTime * 60 + (booking.startMinute || 0) - openHour * 60) / timeGridInterval;
+        const startIdx =
+          (booking.startTime * 60 +
+            (booking.startMinute || 0) -
+            openHour * 60) /
+          timeGridInterval;
         const slotsToBook = court.slotDurationMinutes / timeGridInterval;
         for (let i = 0; i < slotsToBook; i++) {
           if (startIdx + i < totalSlots) {
@@ -99,7 +120,9 @@ export async function GET(
     while (currentTime < closingTime) {
       const hour = Math.floor(currentTime / 60);
       const minute = currentTime % 60;
-      const timeString = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+      const timeString = `${String(hour).padStart(2, "0")}:${String(
+        minute
+      ).padStart(2, "0")}`;
 
       const courtStatuses = complex.courts.map((court) => {
         const slotsNeeded = court.slotDurationMinutes / timeGridInterval;
@@ -107,14 +130,14 @@ export async function GET(
 
         let canBook = true;
         if (currentTime + court.slotDurationMinutes > closingTime) {
-            canBook = false;
+          canBook = false;
         } else {
-            for (let i = 0; i < slotsNeeded; i++) {
-                if (!availabilityMap.get(court.id)?.[currentSlotIndex + i]) {
-                    canBook = false;
-                    break;
-                }
+          for (let i = 0; i < slotsNeeded; i++) {
+            if (!availabilityMap.get(court.id)?.[currentSlotIndex + i]) {
+              canBook = false;
+              break;
             }
+          }
         }
         return { courtId: court.id, available: canBook };
       });
@@ -132,3 +155,4 @@ export async function GET(
     );
   }
 }
+

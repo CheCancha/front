@@ -8,7 +8,10 @@ import {
   SubscriptionCycle,
   SubscriptionPlan,
   SubscriptionStatus,
+  Amenity,
+  Image as PrismaImage,
 } from "@prisma/client";
+
 
 export type CourtWithRelations = Court & {
   sport: Sport;

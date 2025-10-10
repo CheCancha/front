@@ -17,7 +17,6 @@ L.Icon.Default.mergeOptions({
   iconRetinaUrl: markerIcon2x.src,
   shadowUrl: markerShadow.src,
 });
-// --- FIN DEL ARREGLO ---
 
 interface ComplexesMapProps {
   complexes: Club[];

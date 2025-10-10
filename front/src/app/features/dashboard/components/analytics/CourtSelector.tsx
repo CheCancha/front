@@ -9,7 +9,6 @@ import {
   Command,
   CommandEmpty,
   CommandGroup,
-  CommandInput,
   CommandItem,
   CommandList,
 } from "@/shared/components/ui/command";
@@ -50,7 +49,7 @@ export function CourtSelector({
         <ButtonGhost
           role="combobox"
           aria-expanded={open}
-          className="w-[250px] justify-between"
+          className="justify-between"
         >
           {selectedCourtIds.length > 0
             ? `${selectedCourtIds.length} cancha(s) seleccionada(s)`
@@ -60,7 +59,7 @@ export function CourtSelector({
       </PopoverTrigger>
       <PopoverContent className="w-[250px] p-0">
         <Command>
-          <CommandInput placeholder="Buscar cancha..." />
+          {/* <CommandInput placeholder="Buscar cancha..." /> */}
           <CommandList>
             <CommandEmpty>No se encontraron canchas.</CommandEmpty>
             <CommandGroup>

@@ -9,12 +9,13 @@ import Footer from "@/shared/components/Footer";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/shared/lib/utils";
 import { SearchBar } from "@/shared/components/ui/Searchbar";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { toast } from "react-hot-toast";
 import { Spinner } from "@/shared/components/ui/Spinner";
 import BookingModal from "@/app/features/public/components/courts/BookingModal";
 import { routes } from "@/routes";
 import dynamic from "next/dynamic";
+import { format } from "date-fns";
 
 // --- TIPOS DE DATOS ---
 export type Club = {
@@ -102,7 +103,7 @@ const ClubCard = ({
   };
 
   return (
-    <div className="group bg-[#f8f9f9] rounded-xl shadow-md overflow-hidden transition-all duration-300 flex flex-col h-full">
+    <div className="group bg-[#f8f9f9] rounded-xl border overflow-hidden transition-all duration-300 flex flex-col h-full">
       <Link
         href={routes.public.complexProfile(club.slug)}
         className="block relative h-48"
@@ -118,7 +119,7 @@ const ClubCard = ({
       </Link>
       <div className="p-4 flex flex-col flex-grow">
         <Link href={routes.public.complexProfile(club.slug)}>
-          <h3 className="font-bold text-lg text-foreground">{club.name}</h3>
+          <h3 className="font-semibold text-lg text-foreground">{club.name}</h3>
         </Link>
         <p className="text-sm text-paragraph flex items-center gap-1.5 mt-1">
           <MapPin size={14} /> {club.address}
@@ -126,15 +127,12 @@ const ClubCard = ({
         <div className="mt-4 pt-4 border-t border-gray-200 flex-grow flex flex-col justify-end">
           {club.availableSlots.length > 0 ? (
             <>
-              <p className="text-xs font-semibold text-gray-500 mb-2">
-                Próximos turnos disponibles:
-              </p>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 justify-center">
                 {club.availableSlots.map((slot) => (
                   <button
                     key={`${slot.time}-${slot.court.id}`}
                     onClick={(e) => handleSlotClick(e, slot)}
-                    className="px-3 py-1 bg-green-100 text-green-800 font-bold rounded-md text-sm transition-colors hover:bg-green-200 hover:text-green-900 cursor-pointer"
+                    className="px-4 py-2 bg-green-100 text-green-800 font-bold rounded-md text-sm transition-colors hover:bg-green-200 hover:text-green-900 cursor-pointer"
                   >
                     {slot.time}
                   </button>
@@ -171,7 +169,6 @@ const SkeletonCard = () => (
   </div>
 );
 
-// --- Carga dinámica del componente de mapa ---
 const ComplexesMap = dynamic(
   () =>
     import("@/app/features/public/components/courts/MapView").then(
@@ -188,20 +185,40 @@ const ComplexesMap = dynamic(
 // --- COMPONENTE PRINCIPAL DE LA PÁGINA ---
 const SearchResultsComponent = () => {
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
   const [view, setView] = useState<"list" | "map">("list");
   const [isLoading, setIsLoading] = useState(true);
   const [complexes, setComplexes] = useState<Club[]>([]);
-
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedBooking, setSelectedBooking] =
     useState<BookingSelection | null>(null);
 
-  const city = searchParams.get("city");
-  const dateParam =
-    searchParams.get("date") || new Date().toISOString().split("T")[0];
-  const searchDate = new Date(`${dateParam}T00:00:00`);
+  useEffect(() => {
+    const currentParams = new URLSearchParams(Array.from(searchParams.entries()));
+    let needsRedirect = false;
+
+    if (!currentParams.has("date")) {
+      currentParams.set("date", format(new Date(), "yyyy-MM-dd"));
+      needsRedirect = true;
+    }
+    
+
+    if (needsRedirect) {
+      router.replace(`${pathname}?${currentParams.toString()}`);
+    }
+  }, [searchParams, router, pathname]);
+  
+  const dateParam = searchParams.get("date");
+  const searchDate = dateParam ? new Date(`${dateParam}T00:00:00`) : new Date();
 
   useEffect(() => {
+    if (!dateParam) {
+      setIsLoading(true);
+      return;
+    }
+
     const fetchComplexes = async () => {
       setIsLoading(true);
       try {
@@ -226,7 +243,7 @@ const SearchResultsComponent = () => {
       }
     };
     fetchComplexes();
-  }, [searchParams]);
+  }, [searchParams, dateParam]);
 
   const handleBookSlot = (club: Club, slot: AvailableSlot) => {
     setSelectedBooking({
@@ -241,7 +258,24 @@ const SearchResultsComponent = () => {
   const handleMarkerClick = (club: Club) => {
     router.push(routes.public.complexProfile(club.slug));
   };
-  const router = useRouter();
+
+  if (!dateParam) {
+     return (
+       <>
+         <Navbar />
+         <main className="container mx-auto px-6 py-24 flex-grow">
+           <div className="bg- border border-gray-200 rounded-xl p-6 mb-8">
+             <h2 className="text-xl font-bold text-foreground mb-4">
+               Buscá tu cancha
+             </h2>
+             <SearchBar />
+           </div>
+           
+         </main>
+         <Footer />
+       </>
+     );
+  }
 
   return (
     <>
@@ -250,19 +284,17 @@ const SearchResultsComponent = () => {
 
         <main className="container mx-auto px-6 py-24 flex-grow">
           <div className="bg-[#f8f9f9] border border-gray-200 rounded-xl p-6 mb-8">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">
+            <h2 className="text-xl font-bold text-foreground mb-4">
               Buscá tu cancha
             </h2>
             <SearchBar />
             <hr className="my-6 border-gray-200" />
             <div className="grid grid-cols-12 gap-4 items-center">
               <div className="col-span-8 md:col-span-10">
-                <h3 className="text-lg font-semibold text-gray-700">
+                <h3 className="text-lg font-medium text-paragraph">
                   {isLoading
                     ? "Buscando complejos..."
-                    : `${complexes.length} clubes encontrados ${
-                        city ? `en ${city}` : ""
-                      }`}
+                    : `${complexes.length} clubes encontrados`}
                 </h3>
               </div>
               <div className="col-span-4 md:col-span-2 flex justify-end">
@@ -345,3 +377,4 @@ export default function SearchResultsPage() {
     </Suspense>
   );
 }
+

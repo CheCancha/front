@@ -2,9 +2,9 @@
 
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { format, parseISO } from "date-fns";
-import { DateRangePicker } from "@/shared/components/ui/DateRangePicker";
 import { CourtSelector } from "./CourtSelector";
 import { DateRange } from "react-day-picker";
+import { DatePickerWithRange } from "@/shared/components/ui/DateRangePicker";
 
 type Court = {
   id: string;
@@ -52,6 +52,8 @@ export function AnalyticsFilters({
     if (range?.to) {
       params.set("to", format(range.to, "yyyy-MM-dd"));
     } else {
+      // Si no hay 'to', se puede borrar o poner el mismo que 'from'
+      // Por simplicidad, lo borramos.
       params.delete("to");
     }
     router.push(`${pathname}?${params.toString()}`);
@@ -64,7 +66,8 @@ export function AnalyticsFilters({
   return (
     <div className="flex flex-wrap items-center gap-4 p-4 bg-white rounded-lg border shadow-sm">
       <p className="font-medium text-sm text-gray-600">Filtrar por:</p>
-      <DateRangePicker date={dateRange} onDateChange={handleDateChange} />
+      {/* --- REEMPLAZO DEL COMPONENTE --- */}
+      <DatePickerWithRange date={dateRange} onDateChange={handleDateChange} />
       <CourtSelector
         courts={availableCourts}
         selectedCourtIds={currentCourtIds}

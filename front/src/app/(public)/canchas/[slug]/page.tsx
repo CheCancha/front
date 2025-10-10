@@ -1,361 +1,75 @@
-"use client";
-
-import "@/styles/day-picker.css";
-import React, { useState, useEffect } from "react";
-import Link from "next/link";
-import { routes } from "@/routes";
-import { getDay } from "date-fns";
-import { useParams } from "next/navigation";
-import { FaFacebook, FaInstagram } from "react-icons/fa";
-import { MapPin, AlertCircle, Phone, Mail } from "lucide-react";
-import { cn } from "@/shared/lib/utils";
-import Navbar from "@/shared/components/Navbar";
-import Footer from "@/shared/components/Footer";
-import { AmenityIcon } from "@/shared/components/ui/AmenityIcon";
-import BookingModal from "@/app/features/public/components/courts/BookingModal";
-import { ImageCarousel } from "@/app/features/public/components/courts/ImageCarousel";
-import { BookingWidget } from "@/app/features/public/components/courts/BookingWidget";
-import { PageSkeleton } from "@/app/features/public/components/courts/Skeleton";
-import dynamic from "next/dynamic";
-
-// --- Tipos ---
+import { db } from "@/shared/lib/db";
+import { notFound } from "next/navigation";
+import { ClientPage } from "@/app/features/public/components/courts/ClientPage";
 import type {
-  Amenity,
-  Complex,
   Court,
+  PriceRule,
+  Sport,
   Image as PrismaImage,
   Schedule,
+  Amenity,
+  Review,
+  User,
 } from "@prisma/client";
 
-
-export type PriceRule = {
-  id: string;
-  startTime: number;
-  endTime: number;
-  price: number;
-  depositAmount: number;
+// --- TIPOS EXPORTADOS ---
+export type { PrismaImage, Schedule, Amenity };
+export type ReviewWithUser = Review & { user: User };
+export type CourtWithPriceRules = Court & {
+  priceRules: PriceRule[];
+  sport: Sport;
 };
-export type CourtWithPriceRules = Court & { priceRules: PriceRule[] };
-
-export type ComplexProfileData = Complex & {
-  images: PrismaImage[];
-  courts: CourtWithPriceRules[];
-  schedule: Schedule | null;
-  amenities: Amenity[];
-};
+export type ComplexProfileData = NonNullable<
+  Awaited<ReturnType<typeof getComplex>>
+>;
 export type ValidStartTime = {
   time: string;
   courts: { courtId: string; available: boolean }[];
 };
 
-// --- Carga dinámica del Mapa ---
-const Map = dynamic(
-  () => import("@/app/features/public/components/courts/Map"),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="h-[400px] w-full bg-gray-200 rounded-2xl animate-pulse" />
-    ),
-  }
-);
-
-const generateWeeklySchedule = (complex: ComplexProfileData) => {
-  const schedule = [];
-  const dayOrder: {
-    name: string;
-    openKey: keyof Schedule;
-    closeKey: keyof Schedule;
-  }[] = [
-    { name: "Lunes", openKey: "mondayOpen", closeKey: "mondayClose" },
-    { name: "Martes", openKey: "tuesdayOpen", closeKey: "tuesdayClose" },
-    { name: "Miércoles", openKey: "wednesdayOpen", closeKey: "wednesdayClose" },
-    { name: "Jueves", openKey: "thursdayOpen", closeKey: "thursdayClose" },
-    { name: "Viernes", openKey: "fridayOpen", closeKey: "fridayClose" },
-    { name: "Sábado", openKey: "saturdayOpen", closeKey: "saturdayClose" },
-    { name: "Domingo", openKey: "sundayOpen", closeKey: "sundayClose" },
-  ];
-
-  for (const day of dayOrder) {
-    const specificOpenHour = complex.schedule?.[day.openKey] as number | null;
-    const specificCloseHour = complex.schedule?.[day.closeKey] as number | null;
-    const openHour = specificOpenHour ?? complex.openHour;
-    const closeHour = specificCloseHour ?? complex.closeHour;
-
-    let hoursString = "Cerrado";
-    if (typeof openHour === "number" && typeof closeHour === "number") {
-      hoursString = `${String(openHour).padStart(2, "0")}:00 - ${String(
-        closeHour
-      ).padStart(2, "0")}:00`;
-    }
-    schedule.push({ day: day.name, hours: hoursString });
-  }
-  return schedule;
-};
-
-// --- PÁGINA DE PERFIL DEL CLUB ---
-export default function ClubProfilePage() {
-  const params = useParams();
-  const clubSlug = params.slug as string;
-  const [club, setClub] = useState<ComplexProfileData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedBooking, setSelectedBooking] = useState<{
-    court: CourtWithPriceRules;
-    time: string;
-  } | null>(null);
-
-  useEffect(() => {
-    if (!clubSlug) return;
-    const fetchClubProfile = async () => {
-      try {
-        setIsLoading(true);
-        const response = await fetch(`/api/complexes/public/${clubSlug}`);
-        if (!response.ok)
-          throw new Error("Club no encontrado o no disponible.");
-        const data = await response.json();
-        setClub(data);
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Ocurrió un error inesperado."
-        );
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchClubProfile();
-  }, [clubSlug]);
-
-  const handleSlotClick = (court: CourtWithPriceRules, time: string) => {
-    setSelectedBooking({ court, time });
-    setIsModalOpen(true);
-  };
-
-  if (isLoading) {
-    return (
-      <div className="bg-background min-h-screen flex flex-col">
-        <Navbar />
-        <PageSkeleton />
-        <Footer />
-      </div>
-    );
-  }
-
-  if (error || !club) {
-    return (
-      <div className="bg-background min-h-screen flex flex-col">
-        <Navbar />
-        <div className="flex-grow flex items-center justify-center text-center px-4">
-          <div>
-            <AlertCircle className="mx-auto h-12 w-12 text-red-500" />
-            <h2 className="mt-4 text-xl font-semibold text-foreground">
-              {error || "Club no encontrado"}
-            </h2>
-            <p className="mt-2 text-paragraph">
-              El club que buscas no existe o no está disponible en este momento.
-            </p>
-            <Link
-              href={routes.public.canchas}
-              className="mt-6 inline-block bg-brand-orange text-white font-bold py-2 px-4 rounded-lg hover:opacity-90"
-            >
-              Volver al listado
-            </Link>
-          </div>
-        </div>
-        <Footer />
-      </div>
-    );
-  }
-
-  const weeklySchedule = generateWeeklySchedule(club);
-  const todayIndex = (getDay(new Date()) + 6) % 7;
-
-  const hasContactInfo =
-    club.contactPhone ||
-    club.contactEmail ||
-    club.instagramHandle ||
-    club.facebookUrl;
-
-  return (
-    <>
-      <div className="bg-background min-h-screen">
-        <Navbar />
-        <main className="container mx-auto px-4 sm:px-6 py-24">
-          <div className="max-w-7xl mx-auto">
-            <section className="relative mb-12 rounded-2xl overflow-hidden">
-              <ImageCarousel images={club.images} />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-              <div className="absolute bottom-6 left-6 z-10">
-                <h1
-                  className="text-4xl md:text-5xl font-bold text-white"
-                  style={{ textShadow: "2px 2px 4px rgba(0,0,0,0.7)" }}
-                >
-                  {club.name}
-                </h1>
-                <p
-                  className="text-lg text-gray-200 flex items-center gap-2 mt-1"
-                  style={{ textShadow: "1px 1px 2px rgba(0,0,0,0.8)" }}
-                >
-                  <MapPin size={18} /> {club.address}, {club.city}
-                </p>
-              </div>
-            </section>
-
-            {/* --- LAYOUT DE CONTENIDO PRINCIPAL --- */}
-            <div className="grid lg:grid-cols-3 gap-8 items-start">
-              <div className="lg:col-span-2 space-y-8">
-                <BookingWidget
-                  club={club}
-                  onSlotClick={handleSlotClick}
-                  selectedDate={selectedDate}
-                  setSelectedDate={setSelectedDate}
-                />
-
-                {/* --- MAPA APAISADO DEBAJO DEL BOOKING WIDGET --- */}
-                {club.latitude && club.longitude && (
-                  <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
-                    <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-                      <MapPin size={20} className="text-brand-orange" />
-                      Ubicación
-                    </h3>
-                    <div className="h-[400px] w-full rounded-lg overflow-hidden z-0">
-                      <Map
-                        lat={club.latitude}
-                        lng={club.longitude}
-                        complexName={club.name}
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Columna Lateral: Información del Club */}
-              <div className="lg:col-span-1 space-y-6">
-                {/* Card de Contacto y Redes */}
-                {hasContactInfo && (
-                  <div className="bg-white rounded-2xl p-6 border border-gray-200">
-                    <h3 className="text-lg font-bold text-foreground mb-4">
-                      Contacto y Redes
-                    </h3>
-                    <div className="space-y-3">
-                      {club.contactPhone && (
-                        <InfoItem
-                          icon={Phone}
-                          text={club.contactPhone}
-                          href={`tel:${club.contactPhone}`}
-                        />
-                      )}
-                      {club.contactEmail && (
-                        <InfoItem
-                          icon={Mail}
-                          text={club.contactEmail}
-                          href={`mailto:${club.contactEmail}`}
-                        />
-                      )}
-                      {club.instagramHandle && (
-                        <InfoItem
-                          icon={FaInstagram}
-                          text={`@${club.instagramHandle}`}
-                          href={`https://instagram.com/${club.instagramHandle}`}
-                        />
-                      )}
-                      {club.facebookUrl && (
-                        <InfoItem
-                          icon={FaFacebook}
-                          text="Facebook"
-                          href={club.facebookUrl}
-                        />
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Card de Horarios */}
-                <div className="bg-white rounded-2xl p-6 border border-gray-200">
-                  <h3 className="text-lg font-bold text-foreground mb-4">
-                    Horarios
-                  </h3>
-                  <ul className="space-y-2 text-paragraph">
-                    {weeklySchedule.map((item, index) => (
-                      <li
-                        key={item.day}
-                        className={cn(
-                          "flex justify-between",
-                          index === todayIndex && "font-bold text-brand-orange"
-                        )}
-                      >
-                        <span>{item.day}</span>
-                        <span className="font-medium">{item.hours}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                {/* Card de Servicios */}
-                {club.amenities.length > 0 && (
-                  <div className="bg-white rounded-2xl p-6 border border-gray-200">
-                    <h3 className="text-lg font-bold text-foreground mb-4">
-                      Servicios
-                    </h3>
-                    <ul className="grid grid-cols-2 gap-x-4 gap-y-3 text-paragraph">
-                      {club.amenities.map((amenity) => (
-                        <li
-                          key={amenity.id}
-                          className="flex items-center gap-2"
-                        >
-                          <AmenityIcon
-                            iconName={amenity.icon}
-                            className="h-4 w-4 text-brand-orange"
-                          />
-                          <span className="font-medium">{amenity.name}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </main>
-        <Footer />
-      </div>
-
-      {selectedBooking && club && (
-        <BookingModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          club={club}
-          court={selectedBooking.court}
-          time={selectedBooking.time}
-          date={selectedDate}
-        />
-      )}
-    </>
-  );
+// --- FUNCIÓN DE OBTENCIÓN DE DATOS (SERVER) ---
+async function getComplex(slug: string) {
+  const complex = await db.complex.findUnique({
+    where: { slug },
+    include: {
+      images: true,
+      courts: {
+        include: {
+          priceRules: true,
+          sport: true,
+        },
+        orderBy: {
+          name: "asc",
+        },
+      },
+      schedule: true,
+      amenities: true,
+      reviews: {
+        include: {
+          user: true,
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+      },
+    },
+  });
+  return complex;
 }
 
-// --- Componente de Ayuda para Items de Contacto ---
-const InfoItem = ({
-  icon: Icon,
-  text,
-  href,
+// --- COMPONENTE DE PÁGINA (SERVER) ---
+export default async function ComplexProfilePage({
+  params,
 }: {
-  icon: React.ElementType;
-  text: string;
-  href: string;
-}) => (
-  <a
-    href={href}
-    target="_blank"
-    rel="noopener noreferrer"
-    className="flex items-center gap-3 text-paragraph hover:text-brand-orange transition-colors group"
-  >
-    <Icon
-      size={18}
-      className="text-gray-400 group-hover:text-brand-orange transition-colors"
-    />
-    <span className="font-medium">{text}</span>
-  </a>
-);
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+
+  const complex = await getComplex(slug);
+
+  if (!complex) {
+    notFound();
+  }
+
+  return <ClientPage complex={complex} />;
+}

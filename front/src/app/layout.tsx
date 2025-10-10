@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { SmoothScroller } from "@/shared/components/ui/SmoothScroller";
 import Providers from "@/app/provider";
@@ -7,7 +7,6 @@ import { Suspense } from "react";
 import { SearchStateInitializer } from "@/shared/components/SearchStateInitializer";
 
 export const metadata: Metadata = {
-  // --- Metadatos existentes ---
   title: {
     template: "%s | checancha",
     default: "checancha",
@@ -35,13 +34,17 @@ export const metadata: Metadata = {
     images: ["https://checancha.com/logochecancha.png"],
   },
   manifest: "/manifest.json",
-  themeColor: "#ff4e02",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
     title: "che cancha",
   },
 };
+
+export const viewport: Viewport = {
+  themeColor: "#ff4e02",
+};
+
 
 export default function RootLayout({
   children,
@@ -56,7 +59,7 @@ export default function RootLayout({
     logo: "https://checancha.com/logochecancha.png",
     address: {
       "@type": "PostalAddress",
-      streetAddress: "9 de Julio y San Martín",
+      streetAddress: "Independencia 3737",
       addressLocality: "Tostado",
       addressRegion: "Santa Fe",
       postalCode: "3060",
@@ -94,3 +97,4 @@ export default function RootLayout({
     </html>
   );
 }
+

@@ -7,30 +7,32 @@ import { Calendar as CalendarIcon } from "lucide-react";
 import { DateRange } from "react-day-picker";
 
 import { cn } from "@/shared/lib/utils";
-import { ButtonGhost } from "@/shared/components/ui/Buttons";
-import { Calendar } from "@/shared/components/ui/calendar"; 
+import { Button } from "@/shared/components/ui/button";
+import { Calendar } from "@/shared/components/ui/calendar";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/shared/components/ui/popover"; 
+} from "@/shared/components/ui/popover";
 
-interface DateRangePickerProps extends React.ComponentProps<"div"> {
+interface DatePickerWithRangeProps
+  extends React.HTMLAttributes<HTMLDivElement> {
   date: DateRange | undefined;
-  onDateChange: (date: DateRange | undefined) => void;
+  onDateChange: (range: DateRange | undefined) => void;
 }
 
-export function DateRangePicker({
+export function DatePickerWithRange({
   className,
   date,
   onDateChange,
-}: DateRangePickerProps) {
+}: DatePickerWithRangeProps) {
   return (
     <div className={cn("grid gap-2", className)}>
       <Popover>
         <PopoverTrigger asChild>
-          <ButtonGhost
+          <Button
             id="date"
+            variant={"outline"}
             className={cn(
               "w-[300px] justify-start text-left font-normal",
               !date && "text-muted-foreground"
@@ -47,9 +49,9 @@ export function DateRangePicker({
                 format(date.from, "LLL dd, y", { locale: es })
               )
             ) : (
-              <span>Seleccionar rango de fechas</span>
+              <span>Seleccionar fecha</span>
             )}
-          </ButtonGhost>
+          </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
           <Calendar
