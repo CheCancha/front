@@ -151,7 +151,7 @@ export const InscriptionReviewModal: React.FC<InscriptionReviewModalProps> = ({
                 Revisar Solicitud
               </h2>
               <p className="text-sm text-paragraph mb-6">
-                Complejo:{" "}
+                Complejo:
                 <span className="font-semibold">{formData.complexName}</span>
               </p>
 

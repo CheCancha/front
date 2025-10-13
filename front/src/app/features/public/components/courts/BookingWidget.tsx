@@ -220,7 +220,6 @@ const MobileBookingWidget: React.FC<BookingWidgetProps> = ({
 
   return (
     <div className="lg:hidden">
-      {" "}
       {/* Se oculta en pantallas grandes */}
       <div className="p-4 space-y-6">
         <DateSlider
@@ -465,7 +464,7 @@ const DesktopBookingWidget: React.FC<BookingWidgetProps> = ({
         </Button>
         {selectedTime && (
           <p className="text-center text-sm text-gray-600 mt-4">
-            Turno seleccionado: <strong>{selectedCourt.name}</strong> a las{" "}
+            Turno seleccionado: <strong>{selectedCourt.name}</strong> a las
             <strong>{selectedTime} hs</strong>.
           </p>
         )}

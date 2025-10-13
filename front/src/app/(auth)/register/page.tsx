@@ -15,8 +15,8 @@ export default function RegisterPage() {
               <Image
                 src="/logochecancha.png"
                 alt="Logo del CheCancha"
-                height={80}
-                width={80}
+                height={60}
+                width={60}
                 className="rounded-md object-cover"
               />
             </Link>

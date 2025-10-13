@@ -42,7 +42,7 @@ export function DatePickerWithRange({
             {date?.from ? (
               date.to ? (
                 <>
-                  {format(date.from, "LLL dd, y", { locale: es })} -{" "}
+                  {format(date.from, "LLL dd, y", { locale: es })} -
                   {format(date.to, "LLL dd, y", { locale: es })}
                 </>
               ) : (

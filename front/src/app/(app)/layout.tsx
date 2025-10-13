@@ -6,11 +6,10 @@ export default async function AppLayout({
 }: {
   children: React.ReactNode;
 }) {
-
   return (
     <div className="min-h-screen bg-[#f9fafb]">
       <Navbar />
-      <main className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+      <main className="max-w-7xl mx-auto pt-24 px-4 lg:px-8">
         {children}
       </main>
       <Footer />

@@ -317,7 +317,7 @@ export default function ProfilePage() {
   return (
     <>
       <Toaster position="bottom-center" />
-      <div className="min-h-screen p-4 sm:p-6 lg:py-24">
+      <div className="min-h-screen p-4 sm:p-6">
         <main className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Columna Izquierda: Perfil y Seguridad */}
           <div className="lg:col-span-1 space-y-8">
@@ -468,7 +468,7 @@ export default function ProfilePage() {
                             parseISO(booking.date),
                             "eeee dd 'de' MMMM, yyyy",
                             { locale: es }
-                          )}{" "}
+                          )}
                           a las {booking.startTime} hs
                         </p>
                       </div>
@@ -487,7 +487,6 @@ export default function ProfilePage() {
                           {booking.status}
                         </span>
                         {/* Botón de Cancelar para reservas próximas */}       
-                                       {" "}
                         {bookingFilter === "Próximas" && (
                           <Button
                             variant="destructive"

@@ -349,7 +349,7 @@ export default function BookingModal({
                     <div className="flex items-center gap-3">
                       <Shield className="w-5 h-5 text-brand-orange" />
                       <p>
-                        <span className="font-semibold">{club?.name}</span> -{" "}
+                        <span className="font-semibold">{club?.name}</span> -
                         {court?.name}
                       </p>
                     </div>
@@ -368,13 +368,13 @@ export default function BookingModal({
                       <Clock className="w-5 h-5 text-brand-orange" />
                       <p>
                         <span className="font-semibold">
-                          {time} a{" "}
+                          {time} a
                           {calculateEndTime(
                             time,
                             court?.slotDurationMinutes || 60
-                          )}{" "}
+                          )}
                           hs
-                        </span>{" "}
+                        </span>
                         <span className="text-gray-500 text-sm ml-2">
                           ({court?.slotDurationMinutes || 60} min)
                         </span>
@@ -393,7 +393,7 @@ export default function BookingModal({
                               {formatCurrency(appliedCoupon.discountAmount)}
                             </p>
                             <p>
-                              Nuevo Total:{" "}
+                              Nuevo Total:
                               <span className="font-bold">
                                 {formatCurrency(totalPrice)}
                               </span>
@@ -401,7 +401,7 @@ export default function BookingModal({
                           </>
                         ) : (
                           <p>
-                            Total a pagar:{" "}
+                            Total a pagar:
                             <span className="font-bold">
                               {formatCurrency(totalPrice)}
                             </span>
@@ -472,11 +472,11 @@ export default function BookingModal({
                   </div>
 
                   <p className="text-sm text-center text-gray-500">
-                    ⚠️{" "}
+                    ⚠️
                     {club.cancellationPolicyHours > 0 ? (
                       <>
-                        Podrás cancelar sin costo hasta{" "}
-                        <strong>{club.cancellationPolicyHours} horas</strong>{" "}
+                        Podrás cancelar sin costo hasta
+                        <strong>{club.cancellationPolicyHours} horas</strong>
                         antes del turno.
                       </>
                     ) : (

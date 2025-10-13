@@ -122,20 +122,21 @@ const ClubCard = ({
       <div className="p-4 flex flex-col flex-grow">
         <Link href={routes.public.complexProfile(club.slug)}>
           <div className="flex items-center justify-between gap-2">
-            <h3 className="font-semibold text-lg text-foreground truncate" title={club.name}>{club.name}</h3>
-            {club.reviewCount > 0 && (
+          <h3 className="font-semibold text-lg text-foreground truncate" title={club.name}>
+              {club.name.trim()}
+          </h3>
+              {club.reviewCount > 0 && (
               <div className="flex items-center gap-1 flex-shrink-0">
                 <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
                 <span className="font-bold text-sm text-gray-800">{club.averageRating.toFixed(1)}</span>
                 <span className="text-xs text-gray-500">({club.reviewCount})</span>
               </div>
             )}
-          </div>
-        </Link>
-        <p className="text-sm text-paragraph flex items-center gap-1.5 mt-1">
-          <MapPin size={14} /> {club.address}
-        </p>
-        <div className="mt-4 pt-4 border-t border-gray-200 flex-grow flex flex-col justify-end">
+          </div></Link>
+          <p className="text-sm text-paragraph flex items-center gap-1.5 my-1">
+          <MapPin size={14}/>{club.address.trim()}
+          </p>
+          <div className="pt-4 border-t border-gray-200 flex-grow flex flex-col justify-end">
           {club.availableSlots.length > 0 ? (
             <>
               <div className="flex flex-wrap gap-2 justify-center">

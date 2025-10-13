@@ -66,7 +66,7 @@ export default function BookingStatusContent() {
   const currentStatus = statusConfig[status];
 
   return (
-    <div className="flex flex-col items-center justify-center text-center">
+    <div className="flex flex-col items-center justify-center text-center pt-24 pb-12">
       {currentStatus.icon}
       <h1 className="mt-6 text-2xl font-bold tracking-tight text-foreground">
         {currentStatus.title}

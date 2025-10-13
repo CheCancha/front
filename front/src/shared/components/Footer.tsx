@@ -80,7 +80,7 @@ const Footer = () => {
         <hr className="my-6 border-paragraph sm:mx-auto lg:my-8" />
         <div className="sm:flex sm:items-center sm:justify-between">
           <span className="text-sm text-paragraph sm:text-center">
-            © {new Date().getFullYear()}{" "}
+            © {new Date().getFullYear()}
             <Link href="/" className="hover:underline">
               CheCancha™
             </Link>

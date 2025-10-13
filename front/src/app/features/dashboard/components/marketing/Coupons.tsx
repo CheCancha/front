@@ -102,7 +102,7 @@ const CouponRow = ({
           </span>
           {coupon.validUntil && (
             <span>
-              • Vence{" "}
+              • Vence
               {format(new Date(coupon.validUntil), "dd MMM yyyy", {
                 locale: es,
               })}

@@ -39,7 +39,7 @@ const RequestCard: React.FC<RequestItemProps> = ({ request, onReview }) => (
         <Briefcase size={14} /> {request.selectedPlan}
       </span>
       <span className="flex items-center gap-1.5 text-xs">
-        <Calendar size={14} />{" "}
+        <Calendar size={14} />
         {format(new Date(request.createdAt), "dd MMM yyyy", { locale: es })}
       </span>
     </div>
