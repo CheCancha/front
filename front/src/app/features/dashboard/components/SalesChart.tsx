@@ -50,7 +50,7 @@ const WeekSelector = ({
             className={cn(
             "px-3 py-2 text-sm font-medium transition-colors shrink-0",
             selectedWeek === index
-                ? "border-b-2 border-indigo-500 text-indigo-600"
+                ? "border-b-2 border-#ff4e02 text-#ff0000"
                 : "text-gray-500 hover:text-gray-700"
             )}
         >
@@ -157,7 +157,7 @@ export function SalesChart({ complexId }: { complexId: string }) {
           <select
             value={dateRange}
             onChange={(e) => setDateRange(e.target.value)}
-            className="appearance-none cursor-pointer bg-white border border-gray-300 rounded-lg py-2 pl-3 pr-8 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="appearance-none cursor-pointer bg-white border border-gray-300 rounded-lg py-2 pl-3 pr-8 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-brand-olive"
           >
             <option>Este Mes</option>
             <option>Último Trimestre</option>
@@ -210,7 +210,7 @@ export function SalesChart({ complexId }: { complexId: string }) {
                 }).format(value)
               }
             />
-            <Bar dataKey="total" fill="#4f46e5" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="total" fill="#ff4e02" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       ) : (

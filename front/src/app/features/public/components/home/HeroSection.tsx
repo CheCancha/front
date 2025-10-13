@@ -62,15 +62,15 @@ const HeroSection: FC = () => {
           </motion.div>
         </div>
 
-        {/* --- SOLUCIÓN: Contenedor de la Barra de Búsqueda con clases responsivas --- */}
+        {/* --- Contenedor de la Barra de Búsqueda con clases responsivas --- */}
         <motion.div
           variants={itemVariants}
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, amount: 0.5 }}
-          className="relative w-[90%] max-w-5xl mx-auto -mt-20 z-30 sm:absolute sm:-mt-0 sm:-bottom-10 sm:left-1/2 sm:-translate-x-1/2"
+          className="relative w-[90%] max-w-4xl mx-auto -mt-20 z-30 sm:absolute sm:-mt-0 sm:-bottom-10 sm:left-1/2 sm:-translate-x-1/2"
         >
-          <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-2xl border border-gray-100">
+          <div className="bg-white p-4 rounded-2xl shadow-2xl border border-gray-100">
             <SearchBar variant="hero" />
           </div>
         </motion.div>

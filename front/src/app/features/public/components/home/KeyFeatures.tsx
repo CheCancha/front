@@ -129,7 +129,7 @@ export const KeyFeatures = () => {
                   ease: "easeInOut",
                   delay: index * 0.5,
                 }}
-                className="relative w-24 h-24 mb-6 flex items-center justify-center text-foreground"
+                className="relative w-24 h-24 mb-6 flex items-center justify-center"
               >
                 {feature.icon}
               </motion.div>

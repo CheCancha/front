@@ -3,7 +3,7 @@
 import React, { useState, useEffect, Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { MapPin, List, Map, Clock } from "lucide-react";
+import { MapPin, List, Map, Clock, Star } from "lucide-react";
 import Navbar from "@/shared/components/Navbar";
 import Footer from "@/shared/components/Footer";
 import { motion, AnimatePresence } from "framer-motion";
@@ -19,15 +19,17 @@ import { format } from "date-fns";
 
 // --- TIPOS DE DATOS ---
 export type Club = {
-  id: string;
-  slug: string;
-  name: string;
-  address: string;
-  imageUrl: string;
-  availableSlots: AvailableSlot[];
-  cancellationPolicyHours: number;
-  latitude: number | null;
-  longitude: number | null;
+  id: string;
+  slug: string;
+  name: string;
+  address: string;
+  imageUrl: string;
+  availableSlots: AvailableSlot[];
+  cancellationPolicyHours: number;
+  latitude: number | null;
+  longitude: number | null;
+  averageRating: number;
+  reviewCount: number;  
 };
 
 type PriceRule = {
@@ -119,8 +121,17 @@ const ClubCard = ({
       </Link>
       <div className="p-4 flex flex-col flex-grow">
         <Link href={routes.public.complexProfile(club.slug)}>
-          <h3 className="font-semibold text-lg text-foreground">{club.name}</h3>
-        </Link>
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="font-semibold text-lg text-foreground truncate" title={club.name}>{club.name}</h3>
+            {club.reviewCount > 0 && (
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                <span className="font-bold text-sm text-gray-800">{club.averageRating.toFixed(1)}</span>
+                <span className="text-xs text-gray-500">({club.reviewCount})</span>
+              </div>
+            )}
+          </div>
+        </Link>
         <p className="text-sm text-paragraph flex items-center gap-1.5 mt-1">
           <MapPin size={14} /> {club.address}
         </p>

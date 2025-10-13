@@ -272,7 +272,8 @@ model Booking {
 
   paymentId          String?
   review             Review?
-
+  hasReview          Boolean       @default(false)
+  
   couponId  String?
   coupon    Coupon?  @relation(fields: [couponId], references: [id], onDelete: SetNull)
 

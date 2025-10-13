@@ -34,7 +34,7 @@ export const ModalProfile: React.FC<ModalProfileProps> = ({
             exit={{ scale: 0.9, y: 20, opacity: 0 }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
             onClick={(e) => e.stopPropagation()}
-            className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg"
+            className="relative bg-white rounded-2xl shadow-xl w-full max-w-md"
           >
             <header className="flex items-center justify-between p-4 sm:p-6 border-b">
               <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
@@ -46,11 +46,8 @@ export const ModalProfile: React.FC<ModalProfileProps> = ({
                 <X size={24} />
               </button>
             </header>
-            
-            <div className="max-h-[70vh] overflow-y-auto">
-                {children}
-            </div>
 
+            <div className="max-h-[70vh] overflow-y-auto">{children}</div>
           </motion.div>
         </motion.div>
       )}

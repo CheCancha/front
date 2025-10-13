@@ -4,6 +4,7 @@ import Navbar from "@/shared/components/Navbar";
 import { BookingSection } from "../features/public/components/home/BookingSection";
 import { KeyFeatures } from "../features/public/components/home/KeyFeatures";
 import { FaqSection } from "../features/public/components/home/FaqSection";
+import { CTAManagerSection } from "../features/public/components/home/CTAManagerSection";
 import { CTASection } from "../features/public/components/home/CTASection";
 
 export default function Home() {
@@ -13,6 +14,7 @@ export default function Home() {
       <HeroSection />
       <KeyFeatures />
       <BookingSection />
+      <CTAManagerSection />
       <FaqSection />
       <CTASection />
       <Footer />

@@ -105,7 +105,7 @@ export default function BookingCalendarPage() {
     const now = new Date();
     const currentHour = now.getHours();
     const currentMinute = now.getMinutes();
-    
+
     if (slotHour < currentHour) return true;
     if (slotHour === currentHour && slotMinute < currentMinute) return true;
     return false;
@@ -181,11 +181,13 @@ export default function BookingCalendarPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      
+
       if (!response.ok) {
         try {
           const errorData = await response.json();
-          throw new Error(errorData.message || "Ocurrió un error en el servidor.");
+          throw new Error(
+            errorData.message || "Ocurrió un error en el servidor."
+          );
         } catch (parseError) {
           throw new Error("No se pudo procesar la respuesta del servidor.");
         }
@@ -205,36 +207,59 @@ export default function BookingCalendarPage() {
     }
   };
 
-  const executeStatusUpdate = async (bookingId: string, status: "COMPLETADO" | "CANCELADO") => {
+  const executeStatusUpdate = async (
+    bookingId: string,
+    status: "COMPLETADO" | "CANCELADO"
+  ) => {
     toast.loading("Actualizando reserva...");
     try {
-        const response = await fetch(`/api/complex/${complexId}/bookings`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ bookingId, status }),
-        });
-        if (!response.ok) throw new Error("No se pudo actualizar la reserva.");
-        toast.dismiss();
-        toast.success("Reserva actualizada.");
-        closeModal();
-        await fetchBookingsForDate(currentDate);
+      const body: { bookingId: string; status: "COMPLETADO" | "CANCELADO"; depositPaid?: number } = { bookingId, status };
+      
+      if (status === "COMPLETADO") {
+        const bookingToComplete = bookings.find((b) => b.id === bookingId);
+        if (bookingToComplete) {
+          body.depositPaid = bookingToComplete.totalPrice;
+        }
+      }
+
+      const response = await fetch(`/api/complex/${complexId}/bookings`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!response.ok) throw new Error("No se pudo actualizar la reserva.");
+      toast.dismiss();
+      toast.success("Reserva actualizada.");
+      closeModal();
+      await fetchBookingsForDate(currentDate);
     } catch (error) {
-        toast.dismiss();
-        toast.error(error instanceof Error ? error.message : "Error desconocido.");
+      toast.dismiss();
+      toast.error(
+        error instanceof Error ? error.message : "Error desconocido."
+      );
     }
   };
 
-  const handleUpdateBookingStatus = (bookingId: string, status: "COMPLETADO" | "CANCELADO") => {
-    if (status === 'CANCELADO') {
-        setActionToConfirm({ bookingId, status });
+  const handleUpdateBookingStatus = (
+    bookingId: string,
+    status: "COMPLETADO" | "CANCELADO"
+  ) => {
+    if (status === "CANCELADO") {
+      setActionToConfirm({ bookingId, status });
     } else {
-        executeStatusUpdate(bookingId, status);
+      executeStatusUpdate(bookingId, status);
     }
+  };
+
+  const handleOpenNewBookingModal = () => {
+    setModalBooking(null);
+    setModalSlot(null);
+    setIsModalOpen(true);
   };
 
   const openModalForNew = (courtId: string, time: string) => {
-    setModalBooking(null);
     setModalSlot({ courtId, time });
+    setModalBooking(null);
     setIsModalOpen(true);
   };
 
@@ -337,26 +362,17 @@ export default function BookingCalendarPage() {
           <div
             className="grid"
             style={{
-              gridTemplateColumns: `minmax(80px, auto) repeat(${filteredCourts.length}, minmax(180px, 1fr))`,
+              gridTemplateColumns: `minmax(80px, auto) repeat(${filteredCourts.length}, minmax(120px, 1fr))`,
               gridAutoRows: "4.5rem",
             }}
           >
             <div className="sticky top-0 left-0 bg-white z-20 flex items-center justify-center p-2 border-b border-r">
               <button
-                onClick={() => {
-                  if (filteredCourts.length > 0 && timeSlots.length > 0) {
-                    openModalForNew(filteredCourts[0].id, timeSlots[0]);
-                  } else {
-                    toast.error(
-                      "No hay canchas o horarios disponibles para crear una reserva."
-                    );
-                  }
-                }}
+                onClick={handleOpenNewBookingModal}
                 disabled={filteredCourts.length === 0}
                 className="flex items-center justify-center w-full h-full text-sm font-semibold text-white bg-black hover:bg-gray-800 rounded-md cursor-pointer disabled:bg-gray-400 disabled:cursor-not-allowed"
                 title="Añadir nueva reserva"
-              >
-                <PlusCircle size={16} />
+              ><PlusCircle size={16} />
               </button>
             </div>
             {filteredCourts.map((court) => (
@@ -377,11 +393,11 @@ export default function BookingCalendarPage() {
                   const slotStartMinutes =
                     parseInt(time.split(":")[0]) * 60 +
                     parseInt(time.split(":")[1]);
-                  const bookingStartingNow = courtBookings.find(
-                    (b) =>
-                      b.startTime * 60 + (b.startMinute || 0) ===
-                      slotStartMinutes
-                  );
+                  const bookingStartingNow = courtBookings.find((b) => {
+                    const bookingStart =
+                      b.startTime * 60 + (b.startMinute || 0);
+                    return slotStartMinutes === bookingStart;
+                  });
 
                   if (bookingStartingNow) {
                     const interval = complex.timeSlotInterval || 30;
@@ -423,36 +439,53 @@ export default function BookingCalendarPage() {
                     );
                   }
 
-                  const isSlotCovered = courtBookings.some(
-                    (b) =>
-                      slotStartMinutes >
-                        b.startTime * 60 + (b.startMinute || 0) &&
-                      slotStartMinutes <
-                        b.startTime * 60 +
-                          (b.startMinute || 0) +
-                          b.court.slotDurationMinutes
-                  );
+                  const isSlotCovered = courtBookings.some((b) => {
+                    const bookingStart =
+                      b.startTime * 60 + (b.startMinute || 0);
+                    const bookingEnd =
+                      bookingStart + b.court.slotDurationMinutes;
+                    return (
+                      slotStartMinutes >= bookingStart &&
+                      slotStartMinutes < bookingEnd
+                    );
+                  });
+
                   if (isSlotCovered) {
                     return null;
                   }
 
                   const past = isPast(time);
+                  const isEnabled = !past && !isSlotCovered;
+
                   return (
                     <div
                       key={`${court.id}-${time}`}
                       className="relative border-b border-l p-1"
                     >
                       <button
-                        onClick={() => openModalForNew(court.id, time)}
-                        disabled={past}
+                        onClick={() =>
+                          isEnabled && openModalForNew(court.id, time)
+                        }
+                        disabled={!isEnabled}
                         className={cn(
                           "h-full w-full rounded-md flex items-center justify-center transition-colors",
-                          past
-                            ? "text-gray-200 cursor-not-allowed"
-                            : "text-gray-400 hover:bg-gray-100 hover:text-gray-600 cursor-pointer"
+                          isEnabled
+                            ? "text-gray-400 hover:bg-gray-100 hover:text-gray-600 cursor-pointer group"
+                            : "bg-gray-50 text-gray-300 cursor-not-allowed"
                         )}
                       >
-                        <PlusCircle size={18} />
+                        <PlusCircle
+                          size={18}
+                          className={cn(
+                            "transition-opacity",
+                            isEnabled ? "group-hover:opacity-0" : "opacity-50"
+                          )}
+                        />
+                        {isEnabled && (
+                          <span className="absolute text-sm font-bold text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity">
+                            {time}
+                          </span>
+                        )}
                       </button>
                     </div>
                   );
@@ -478,12 +511,18 @@ export default function BookingCalendarPage() {
         />
       )}
 
-      <AlertDialog open={!!actionToConfirm} onOpenChange={(open) => !open && setActionToConfirm(null)}>
+      <AlertDialog
+        open={!!actionToConfirm}
+        onOpenChange={(open) => !open && setActionToConfirm(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Estás seguro de que querés cancelar?</AlertDialogTitle>
+            <AlertDialogTitle>
+              ¿Estás seguro de que querés cancelar?
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción marcará la reserva como cancelada y no se puede deshacer. No se realizará ningún reembolso automático de la seña.
+              Esta acción marcará la reserva como cancelada y no se puede
+              deshacer. No se realizará ningún reembolso automático de la seña.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -491,7 +530,10 @@ export default function BookingCalendarPage() {
             <AlertDialogAction
               onClick={async () => {
                 if (actionToConfirm) {
-                  await executeStatusUpdate(actionToConfirm.bookingId, actionToConfirm.status);
+                  await executeStatusUpdate(
+                    actionToConfirm.bookingId,
+                    actionToConfirm.status
+                  );
                 }
               }}
               className="bg-red-600 hover:bg-red-700"

@@ -170,3 +170,8 @@ body {
 .animate-rippling {
   animation: rippling 600ms ease-out;
 }
+
+
+html {
+  overflow-y: scroll;
+}

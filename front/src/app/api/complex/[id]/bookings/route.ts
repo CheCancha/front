@@ -2,7 +2,13 @@ import { NextResponse, type NextRequest } from "next/server";
 import { db } from "@/shared/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/authOptions";
-import { startOfDay, endOfDay, startOfToday, isSameDay, isBefore } from "date-fns";
+import {
+  startOfDay,
+  endOfDay,
+  startOfToday,
+  isSameDay,
+  isBefore,
+} from "date-fns";
 import { BookingStatus } from "@prisma/client";
 
 // --- GET ---
@@ -53,7 +59,8 @@ export async function GET(
           const bookingMinute = booking.startMinute ?? 0;
 
           if (bookingHour > currentHour) return true;
-          if (bookingHour === currentHour && bookingMinute >= currentMinute) return true;
+          if (bookingHour === currentHour && bookingMinute >= currentMinute)
+            return true;
 
           return false;
         })
@@ -93,8 +100,13 @@ export async function GET(
           gte: startOfRequestedDay,
           lt: endOfRequestedDay,
         },
-        // Ahora se incluyen las reservas completadas para que no desaparezcan de la vista.
-        status: { in: [BookingStatus.CONFIRMADO, BookingStatus.PENDIENTE, BookingStatus.COMPLETADO] },
+        status: {
+          in: [
+            BookingStatus.CONFIRMADO,
+            BookingStatus.PENDIENTE,
+            BookingStatus.COMPLETADO,
+          ],
+        },
       },
       include: {
         court: { select: { id: true, name: true, slotDurationMinutes: true } },
@@ -112,138 +124,147 @@ export async function GET(
 
 // --- POST ---
 export async function POST(
- req: NextRequest,
- { params }: { params: Promise<{ id: string }> }
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
- try {
-   const { id: complexId } = await params;
-   const session = await getServerSession(authOptions);
-   if (!session?.user?.id || session.user.role !== "MANAGER") {
-     return new NextResponse("No autorizado", { status: 401 });
-   }
+  try {
+    const { id: complexId } = await params;
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id || session.user.role !== "MANAGER") {
+      return new NextResponse("No autorizado", { status: 401 });
+    }
 
-   const body = await req.json();
-   const { courtId, guestName, guestPhone, date, time, status, depositPaid } =
-     body;
+    const body = await req.json();
+    const { courtId, guestName, guestPhone, date, time, status, depositPaid } =
+      body;
 
-   if (!courtId || !guestName || !date || !time) {
-     return NextResponse.json({ message: "Faltan datos para crear la reserva" }, {
-       status: 400,
-     });
-   }
+    if (!courtId || !guestName || !date || !time) {
+      return NextResponse.json(
+        { message: "Faltan datos para crear la reserva" },
+        {
+          status: 400,
+        }
+      );
+    }
 
-   const bookingDate = new Date(`${date}T${time}`);
-   if (isBefore(bookingDate, new Date(new Date().getTime() - 60000))) {
-     return NextResponse.json({ message: "No se pueden crear reservas en horarios pasados." }, {
-       status: 400,
-     });
-   }
+    const bookingDate = new Date(`${date}T${time}`);
+    
+    if (isBefore(bookingDate, new Date(new Date().getTime() - 60000))) {
+      return NextResponse.json({ message: "No se pueden crear reservas en horarios pasados." }, {
+        status: 400,
+      });
+    }
 
-   const [hour, minute] = time.split(":").map(Number);
+    const [hour, minute] = time.split(":").map(Number);
 
-   const court = await db.court.findUnique({
-     where: { id: courtId },
-     include: { priceRules: true },
-   });
-   if (!court) {
-     return NextResponse.json({ message: "Cancha no encontrada" }, { status: 404 });
-   }
+    const court = await db.court.findUnique({
+      where: { id: courtId },
+      include: { priceRules: true },
+    });
+    if (!court) {
+      return NextResponse.json(
+        { message: "Cancha no encontrada" },
+        { status: 404 }
+      );
+    }
 
-   const applicableRule = court.priceRules.find(
-     (rule) => hour >= rule.startTime && hour < rule.endTime
-   );
-   if (!applicableRule) {
-     return NextResponse.json(
-       { message: `No hay un precio configurado para las ${time} hs.` },
-       { status: 400 }
-     );
-   }
+    const applicableRule = court.priceRules.find(
+      (rule) => hour >= rule.startTime && hour < rule.endTime
+    );
+    if (!applicableRule) {
+      return NextResponse.json(
+        { message: `No hay un precio configurado para las ${time} hs.` },
+        { status: 400 }
+      );
+    }
 
-   const newBookingStartMinutes = hour * 60 + minute;
-   const newBookingEndMinutes =
-     newBookingStartMinutes + court.slotDurationMinutes;
+    const newBookingStartMinutes = hour * 60 + minute;
+    const newBookingEndMinutes =
+      newBookingStartMinutes + court.slotDurationMinutes;
 
-   const startOfBookingDay = startOfDay(bookingDate);
-   const endOfBookingDay = endOfDay(bookingDate);
+    const startOfBookingDay = startOfDay(bookingDate);
+    const endOfBookingDay = endOfDay(bookingDate);
 
-   const existingBookings = await db.booking.findMany({
-     where: {
-       courtId,
-       date: {
-         gte: startOfBookingDay,
-         lt: endOfBookingDay,
-       },
-       status: { not: "CANCELADO" },
-     },
-     include: { court: { select: { slotDurationMinutes: true } } },
-   });
+    const existingBookings = await db.booking.findMany({
+      where: {
+        courtId,
+        date: {
+          gte: startOfBookingDay,
+          lt: endOfBookingDay,
+        },
+        status: { not: "CANCELADO" },
+      },
+      include: { court: { select: { slotDurationMinutes: true } } },
+    });
 
-   const isOverlapping = existingBookings.some((existingBooking) => {
-     const existingStartMinutes =
-       existingBooking.startTime * 60 + (existingBooking.startMinute || 0);
-     const existingEndMinutes =
-       existingStartMinutes + existingBooking.court.slotDurationMinutes;
-     return (
-       newBookingStartMinutes < existingEndMinutes &&
-       newBookingEndMinutes > existingStartMinutes
-     );
-   });
+    const isOverlapping = existingBookings.some((existingBooking) => {
+      const existingStartMinutes =
+        existingBooking.startTime * 60 + (existingBooking.startMinute || 0);
+      const existingEndMinutes =
+        existingStartMinutes + existingBooking.court.slotDurationMinutes;
+      return (
+        newBookingStartMinutes < existingEndMinutes &&
+        newBookingEndMinutes > existingStartMinutes
+      );
+    });
 
-   if (isOverlapping) {
-     return NextResponse.json({ message: "El horario para esta cancha ya está ocupado." }, {
-       status: 409,
-     });
-   }
+    if (isOverlapping) {
+      return NextResponse.json(
+        { message: "El horario para esta cancha ya está ocupado." },
+        {
+          status: 409,
+        }
+      );
+    }
 
-   const totalPrice = applicableRule.price;
-   const depositAmount = depositPaid || 0;
+    const totalPrice = applicableRule.price;
+    const amountPaid = depositPaid || 0;
 
-   const newBooking = await db.booking.create({
-     data: {
-       courtId,
-       guestName,
-       guestPhone,
-       date: bookingDate,
-       startTime: hour,
-       startMinute: minute,
-       totalPrice,
-       depositAmount,
-       depositPaid,
-       remainingBalance: totalPrice - depositAmount,
-       status: (status || "PENDIENTE") as BookingStatus,
-     },
-   });
+    const newBooking = await db.booking.create({
+      data: {
+        courtId,
+        guestName,
+        guestPhone,
+        date: bookingDate,
+        startTime: hour,
+        startMinute: minute,
+        totalPrice,
+        depositAmount: 0, // depositAmount se podría usar para "seña requerida", lo dejamos en 0 por ahora.
+        depositPaid: amountPaid,
+        remainingBalance: totalPrice - amountPaid,
+        status: (status || "PENDIENTE") as BookingStatus,
+      },
+    });
 
-   const bookingWithCourt = await db.booking.findUnique({
-     where: { id: newBooking.id },
-     include: {
-       court: {
-         select: { id: true, name: true, slotDurationMinutes: true },
-       },
-     },
-   });
+    const bookingWithCourt = await db.booking.findUnique({
+      where: { id: newBooking.id },
+      include: {
+        court: {
+          select: { id: true, name: true, slotDurationMinutes: true },
+        },
+      },
+    });
 
-   return NextResponse.json(bookingWithCourt, { status: 201 });
- } catch (error) {
-  console.error("💥 ERROR en POST de bookings:", error);
+    return NextResponse.json(bookingWithCourt, { status: 201 });
+  } catch (error) {
+    console.error("💥 ERROR en POST de bookings:", error);
 
-  if (
-    error instanceof Error &&
-    'code' in error &&
-    error.code === 'P2002'
-  ) {
+    if (
+      error instanceof Error &&
+      "code" in error &&
+      (error).code === "P2002"
+    ) {
+      return NextResponse.json(
+        { message: "Error: Ya existe una reserva en este horario." },
+        { status: 409 }
+      );
+    }
+
     return NextResponse.json(
-      { message: "Error: Ya existe una reserva en este horario." },
-      { status: 409 }
+      { message: "Error interno del servidor." },
+      { status: 500 }
     );
   }
-  
-  // Devuelve un error genérico en formato JSON
-  return NextResponse.json(
-    { message: "Error interno del servidor." },
-    { status: 500 }
-  );
-}
 }
 
 // --- PATCH ---
@@ -262,6 +283,19 @@ export async function PATCH(
 
     if (!bookingId) {
       return new NextResponse("Falta el ID de la reserva", { status: 400 });
+    }
+    
+    const existingBooking = await db.booking.findUnique({
+      where: { id: bookingId },
+      select: { totalPrice: true },
+    });
+
+    if (!existingBooking) {
+      return new NextResponse("Reserva no encontrada", { status: 404 });
+    }
+    
+    if (typeof updateData.depositPaid === 'number') {
+        updateData.remainingBalance = existingBooking.totalPrice - updateData.depositPaid;
     }
 
     delete updateData.courtId;
@@ -286,4 +320,3 @@ export async function PATCH(
     return new NextResponse("Error interno del servidor", { status: 500 });
   }
 }
-

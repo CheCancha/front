@@ -15,10 +15,14 @@ import {
   X,
   ChevronDown,
 } from "lucide-react";
-import { motion, AnimatePresence, useScroll, useMotionValueEvent } from "framer-motion";
+import {
+  motion,
+  AnimatePresence,
+  useScroll,
+  useMotionValueEvent,
+} from "framer-motion";
 import { Button } from "./ui/button";
 import { cn } from "@/shared/lib/utils";
-
 
 const NavbarSkeleton: React.FC = () => (
   <nav className="bg-background border-b sticky top-0 z-50 animate-pulse">
@@ -33,7 +37,7 @@ const NavbarSkeleton: React.FC = () => (
           <div className="h-9 w-28 bg-gray-200 rounded-md" />
         </div>
         <div className="flex md:hidden">
-            <div className="h-8 w-8 bg-gray-200 rounded-md" />
+          <div className="h-8 w-8 bg-gray-200 rounded-md" />
         </div>
       </div>
     </div>
@@ -54,13 +58,22 @@ const Navbar: React.FC = () => {
   const [hidden, setHidden] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
   useMotionValueEvent(scrollY, "change", (latest) => {
     const previous = scrollY.getPrevious() || 0;
     if (latest > previous && latest > 150) {
       setHidden(true);
       setIsDesktopMenuOpen(false);
       setIsMobileMenuOpen(false);
-    } else { 
+    } else {
       setHidden(false);
     }
     setScrolled(latest > 50);
@@ -71,15 +84,21 @@ const Navbar: React.FC = () => {
   const isAuthLoading = status === "loading";
 
   // Determinar si la barra debe ser transparente
-  const isTransparent = isHomePage && !scrolled;
+const isTransparent = isHomePage && !scrolled && !isMobile;
 
   const getDashboardUrl = () => {
     if (!user) return routes.public.home;
     switch (user.role) {
-      case "ADMIN": return "/admin";
-      case "MANAGER": return user.complexId ? routes.app.dashboard(user.complexId) : "/dashboard/create-complex";
-      case "USER": return routes.app.perfil;
-      default: return routes.public.home;
+      case "ADMIN":
+        return "/admin";
+      case "MANAGER":
+        return user.complexId
+          ? routes.app.dashboard(user.complexId)
+          : "/dashboard/create-complex";
+      case "USER":
+        return routes.app.perfil;
+      default:
+        return routes.public.home;
     }
   };
 
@@ -114,11 +133,19 @@ const Navbar: React.FC = () => {
         <div className="flex items-center justify-between h-16">
           <div className="flex-shrink-0">
             <Link href={routes.public.home} className="flex items-center gap-2">
-              <Image src="/logochecancha.png" alt="Logo de Che Cancha" height={40} width={40} className="rounded-md" />
-              <span className={cn(
-                "text-xl font-bold transition-colors",
-                isTransparent ? "text-white" : "text-foreground"
-              )}>
+              <Image
+                src="/logochecancha.png"
+                alt="Logo de Che Cancha"
+                height={40}
+                width={40}
+                className="rounded-md"
+              />
+              <span
+                className={cn(
+                  "text-xl font-bold transition-colors",
+                  isTransparent ? "text-white" : "text-foreground"
+                )}
+              >
                 Che Cancha
               </span>
             </Link>
@@ -131,8 +158,10 @@ const Navbar: React.FC = () => {
                   <Link
                     href={routes.public.canchas}
                     className={cn(
-                        "flex items-center gap-2 font-medium py-2 px-4 rounded-md transition duration-300",
-                        isTransparent ? "text-white hover:bg-white/10" : "text-gray-800 hover:bg-gray-100"
+                      "flex items-center gap-2 font-medium py-2 px-4 rounded-md transition duration-300",
+                      isTransparent
+                        ? "text-white hover:bg-white/10"
+                        : "text-gray-800 hover:bg-gray-100"
                     )}
                   >
                     <Search size={16} />
@@ -144,27 +173,63 @@ const Navbar: React.FC = () => {
                       onClick={() => setIsDesktopMenuOpen(!isDesktopMenuOpen)}
                       className={cn(
                         "flex items-center gap-1.5 cursor-pointer rounded-md p-2 transition-colors",
-                        isTransparent ? "hover:bg-white/10" : "hover:bg-gray-100"
+                        isTransparent
+                          ? "hover:bg-white/10"
+                          : "hover:bg-gray-100"
                       )}
                     >
-                      <span className={cn("font-medium transition-colors", isTransparent ? "text-white" : "text-gray-800")}>
+                      <span
+                        className={cn(
+                          "font-medium transition-colors",
+                          isTransparent ? "text-white" : "text-gray-800"
+                        )}
+                      >
                         {user?.name || "Usuario"}
                       </span>
                       <ChevronDown
                         size={16}
-                        className={cn("transition-transform duration-200", isDesktopMenuOpen && "rotate-180", isTransparent ? "text-gray-300" : "text-gray-500")}
+                        className={cn(
+                          "transition-transform duration-200",
+                          isDesktopMenuOpen && "rotate-180",
+                          isTransparent ? "text-gray-300" : "text-gray-500"
+                        )}
                       />
                     </button>
 
                     <AnimatePresence>
                       {isDesktopMenuOpen && (
                         <motion.div
-                          initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
                           className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-30 border"
                         >
-                          <Link href={routes.app.perfil} onClick={() => setIsDesktopMenuOpen(false)} className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"><UserCircle size={16} />Mi Perfil</Link>
-                          <Link href={getDashboardUrl()} onClick={() => setIsDesktopMenuOpen(false)} className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"><LayoutDashboard size={16} />Mi Panel</Link>
-                          <button onClick={() => { signOut({ callbackUrl: routes.public.home }); setIsDesktopMenuOpen(false);}} className="w-full text-left flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 cursor-pointer"><LogOut size={16} />Cerrar Sesión</button>
+                          <Link
+                            href={routes.app.perfil}
+                            onClick={() => setIsDesktopMenuOpen(false)}
+                            className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          >
+                            <UserCircle size={16} />
+                            Mi Perfil
+                          </Link>
+                          <Link
+                            href={getDashboardUrl()}
+                            onClick={() => setIsDesktopMenuOpen(false)}
+                            className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          >
+                            <LayoutDashboard size={16} />
+                            Mi Panel
+                          </Link>
+                          <button
+                            onClick={() => {
+                              signOut({ callbackUrl: routes.public.home });
+                              setIsDesktopMenuOpen(false);
+                            }}
+                            className="w-full text-left flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 cursor-pointer"
+                          >
+                            <LogOut size={16} />
+                            Cerrar Sesión
+                          </button>
                         </motion.div>
                       )}
                     </AnimatePresence>
@@ -174,12 +239,19 @@ const Navbar: React.FC = () => {
                 <>
                   <Link
                     href={routes.public.clubs}
-                    className={cn("font-medium transition duration-300", isTransparent ? "text-white hover:text-gray-200" : "text-foreground hover:text-brand-orange")}
+                    className={cn(
+                      "font-medium transition duration-300",
+                      isTransparent
+                        ? "text-white hover:text-gray-200"
+                        : "text-foreground hover:text-brand-orange"
+                    )}
                   >
                     Software para canchas
                   </Link>
                   <Link href={routes.auth.ingreso}>
-                    <Button variant={isTransparent ? 'secondary' : 'default'}>Iniciar Sesión</Button>
+                    <Button variant={isTransparent ? "secondary" : "default"}>
+                      Iniciar Sesión
+                    </Button>
                   </Link>
                 </>
               )}
@@ -190,10 +262,19 @@ const Navbar: React.FC = () => {
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               type="button"
-              className={cn("inline-flex items-center justify-center p-2 rounded-md focus:outline-none transition-colors", isTransparent ? "bg-white/10 text-white hover:bg-white/20" : "bg-white text-gray-400 hover:bg-gray-100")}
+              className={cn(
+                "inline-flex items-center justify-center p-2 rounded-md focus:outline-none transition-colors",
+                isTransparent
+                  ? "bg-white/10 text-white hover:bg-white/20"
+                  : "bg-white text-gray-400 hover:bg-gray-100"
+              )}
             >
               <span className="sr-only">Abrir menú</span>
-              {isMobileMenuOpen ? <X className="block h-6 w-6" /> : <Menu className="block h-6 w-6" />}
+              {isMobileMenuOpen ? (
+                <X className="block h-6 w-6" />
+              ) : (
+                <Menu className="block h-6 w-6" />
+              )}
             </button>
           </div>
         </div>
@@ -202,26 +283,72 @@ const Navbar: React.FC = () => {
       <AnimatePresence>
         {isMobileMenuOpen && (
           <motion.div
-            initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
-            className="absolute top-full left-0 w-full bg-background border-t md:hidden" id="mobile-menu"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="absolute top-full left-0 w-full bg-background border-t md:hidden"
+            id="mobile-menu"
           >
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
               {isLoggedIn ? (
                 <>
                   <div className="px-3 py-2 flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center"><UserCircle size={24} className="text-gray-500" /></div>
-                    <span className="font-semibold text-gray-800">{user?.name || "Usuario"}</span>
+                    <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
+                      <UserCircle size={24} className="text-gray-500" />
+                    </div>
+                    <span className="font-semibold text-gray-800">
+                      {user?.name || "Usuario"}
+                    </span>
                   </div>
                   <hr />
-                  <Link href={routes.public.canchas} onClick={() => setIsMobileMenuOpen(false)} className="w-full text-left flex items-center gap-3 px-3 py-2 text-base font-medium rounded-md text-gray-700 hover:bg-gray-100"><Search size={18} /> Buscar Cancha</Link>
-                  <Link href={routes.app.perfil} onClick={() => setIsMobileMenuOpen(false)} className="w-full text-left flex items-center gap-3 px-3 py-2 text-base font-medium rounded-md text-gray-700 hover:bg-gray-100"><UserCircle size={18} /> Mi Perfil</Link>
-                  <Link href={getDashboardUrl()} onClick={() => setIsMobileMenuOpen(false)} className="w-full text-left flex items-center gap-3 px-3 py-2 text-base font-medium rounded-md text-gray-700 hover:bg-gray-100"><LayoutDashboard size={18} /> Mi Panel</Link>
-                  <button onClick={() => { signOut({ callbackUrl: routes.public.home }); setIsMobileMenuOpen(false);}} className="w-full text-left flex items-center gap-3 px-3 py-2 text-base font-medium rounded-md text-red-600 hover:bg-red-50 "><LogOut size={18} />Cerrar Sesión</button>
+                  <Link
+                    href={routes.public.canchas}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="w-full text-left flex items-center gap-3 px-3 py-2 text-base font-medium rounded-md text-gray-700 hover:bg-gray-100"
+                  >
+                    <Search size={18} /> Buscar Cancha
+                  </Link>
+                  <Link
+                    href={routes.app.perfil}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="w-full text-left flex items-center gap-3 px-3 py-2 text-base font-medium rounded-md text-gray-700 hover:bg-gray-100"
+                  >
+                    <UserCircle size={18} /> Mi Perfil
+                  </Link>
+                  <Link
+                    href={getDashboardUrl()}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="w-full text-left flex items-center gap-3 px-3 py-2 text-base font-medium rounded-md text-gray-700 hover:bg-gray-100"
+                  >
+                    <LayoutDashboard size={18} /> Mi Panel
+                  </Link>
+                  <button
+                    onClick={() => {
+                      signOut({ callbackUrl: routes.public.home });
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="w-full text-left flex items-center gap-3 px-3 py-2 text-base font-medium rounded-md text-red-600 hover:bg-red-50 "
+                  >
+                    <LogOut size={18} />
+                    Cerrar Sesión
+                  </button>
                 </>
               ) : (
                 <>
-                  <Link href={routes.public.clubs} onClick={() => setIsMobileMenuOpen(false)} className="text-gray-700 hover:bg-gray-100 block px-3 py-2 rounded-md text-base font-medium">Software para canchas</Link>
-                  <Link href={routes.auth.ingreso} onClick={() => setIsMobileMenuOpen(false)} className="text-gray-700 hover:bg-gray-100 block px-3 py-2 rounded-md text-base font-medium">Iniciar Sesión</Link>
+                  <Link
+                    href={routes.public.clubs}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="text-gray-700 hover:bg-gray-100 block px-3 py-2 rounded-md text-base font-medium"
+                  >
+                    Software para canchas
+                  </Link>
+                  <Link
+                    href={routes.auth.ingreso}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="text-gray-700 hover:bg-gray-100 block px-3 py-2 rounded-md text-base font-medium"
+                  >
+                    Iniciar Sesión
+                  </Link>
                 </>
               )}
             </div>
