@@ -18,8 +18,15 @@ import { useSession } from "next-auth/react";
 import { Spinner } from "@/shared/components/ui/Spinner";
 import { Button } from "@/shared/components/ui/button";
 // --- IMPORTE AGREGADO ---
-import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter } from "@/shared/components/ui/alert-dialog";
-
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+} from "@/shared/components/ui/alert-dialog";
 
 // --- TIPOS ---
 type Club = {
@@ -109,7 +116,7 @@ export default function BookingModal({
     id: string;
     publicKey: string;
   } | null>(null);
-  
+
   // --- ESTADOS AGREGADOS PARA EL DIÁLOGO DE CONFLICTO ---
   const [showConflictAlert, setShowConflictAlert] = useState(false);
   const [conflictMessage, setConflictMessage] = useState("");
@@ -197,7 +204,7 @@ export default function BookingModal({
         return;
       }
     }
-    
+
     if (depositAmount <= 0) {
       toast.error("No se puede generar un link de pago para una seña de $0.");
       return;
@@ -227,27 +234,32 @@ export default function BookingModal({
       toast.dismiss();
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: "No se pudo generar el link de pago." }));
+        const errorData = await response
+          .json()
+          .catch(() => ({ error: "No se pudo generar el link de pago." }));
 
         // --- MANEJO DEL CONFLICTO 409 CON DIÁLOGO ---
         if (response.status === 409) {
-          setConflictMessage(errorData.error || "Este horario ya no está disponible.");
+          setConflictMessage(
+            errorData.error || "Este horario ya no está disponible."
+          );
           setShowConflictAlert(true);
         } else {
           throw new Error(errorData.error);
         }
         return;
       }
-      
+
       const responseData = await response.json();
       setPreferenceData({
         id: responseData.preferenceId,
         publicKey: responseData.publicKey,
       });
-
     } catch (error) {
       toast.dismiss();
-      toast.error(error instanceof Error ? error.message : "Error desconocido.");
+      toast.error(
+        error instanceof Error ? error.message : "Error desconocido."
+      );
     } finally {
       setIsProcessing(false);
     }
@@ -269,9 +281,9 @@ export default function BookingModal({
   // --- MANEJADOR PARA CERRAR EL DIÁLOGO DE ALERTA ---
   const handleAlertClose = () => {
     setShowConflictAlert(false);
-    handleClose(); 
+    handleClose();
     window.location.reload(); // Recarga para ver disponibilidad actualizada
-  }
+  };
 
   return (
     <>
@@ -309,8 +321,8 @@ export default function BookingModal({
                           htmlFor="guestName"
                           className="block text-sm font-semibold text-gray-700 mb-1"
                         >
-                          <User className="inline-block w-4 h-4 mr-1" /> Nombre y
-                          Apellido
+                          <User className="inline-block w-4 h-4 mr-1" /> Nombre
+                          y Apellido
                         </label>
                         <input
                           type="text"
@@ -326,8 +338,8 @@ export default function BookingModal({
                           htmlFor="guestPhone"
                           className="block text-sm font-semibold text-gray-700 mb-1"
                         >
-                          <Phone className="inline-block w-4 h-4 mr-1" /> Teléfono
-                          (WhatsApp)
+                          <Phone className="inline-block w-4 h-4 mr-1" />{" "}
+                          Teléfono (WhatsApp)
                         </label>
                         <input
                           type="tel"
@@ -349,7 +361,7 @@ export default function BookingModal({
                     <div className="flex items-center gap-3">
                       <Shield className="w-5 h-5 text-brand-orange" />
                       <p>
-                        <span className="font-semibold">{club?.name}</span> -
+                        <span className="font-semibold">{club?.name}</span> -{" "}
                         {court?.name}
                       </p>
                     </div>
@@ -368,7 +380,7 @@ export default function BookingModal({
                       <Clock className="w-5 h-5 text-brand-orange" />
                       <p>
                         <span className="font-semibold">
-                          {time} a
+                          {time} a {" "}
                           {calculateEndTime(
                             time,
                             court?.slotDurationMinutes || 60
@@ -389,7 +401,7 @@ export default function BookingModal({
                               {formatCurrency(originalTotalPrice)}
                             </p>
                             <p className="text-green-600 font-semibold">
-                              Descuento: -
+                              Descuento: - {" "}
                               {formatCurrency(appliedCoupon.discountAmount)}
                             </p>
                             <p>
@@ -401,7 +413,7 @@ export default function BookingModal({
                           </>
                         ) : (
                           <p>
-                            Total a pagar:
+                            Total a pagar:{" "}
                             <span className="font-bold">
                               {formatCurrency(totalPrice)}
                             </span>
@@ -453,7 +465,9 @@ export default function BookingModal({
                             {isVerifyingCoupon ? <Spinner /> : "Aplicar"}
                           </Button>
                           {couponError && (
-                            <p className="text-red-500 text-xs">{couponError}</p>
+                            <p className="text-red-500 text-xs">
+                              {couponError}
+                            </p>
                           )}
                           <button
                             type="button"
@@ -472,12 +486,12 @@ export default function BookingModal({
                   </div>
 
                   <p className="text-sm text-center text-gray-500">
-                    ⚠️
+                    ⚠️{" "}
                     {club.cancellationPolicyHours > 0 ? (
                       <>
-                        Podrás cancelar sin costo hasta
+                        Podrás cancelar sin costo hasta{" "}
                         <strong>{club.cancellationPolicyHours} horas</strong>
-                        antes del turno.
+                        {" "}antes del turno.
                       </>
                     ) : (
                       <strong>
@@ -509,7 +523,9 @@ export default function BookingModal({
                   <p className="text-paragraph mb-6">
                     Serás redirigido al finalizar la compra.
                   </p>
-                  <Wallet initialization={{ preferenceId: preferenceData.id }} />
+                  <Wallet
+                    initialization={{ preferenceId: preferenceData.id }}
+                  />
                 </div>
               )}
             </motion.div>
@@ -523,11 +539,14 @@ export default function BookingModal({
           <AlertDialogHeader>
             <AlertDialogTitle>¡Turno no disponible!</AlertDialogTitle>
             <AlertDialogDescription>
-              {conflictMessage} Alguien más reservó este horario mientras confirmabas.
+              {conflictMessage} Alguien más reservó este horario mientras
+              confirmabas.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogAction onClick={handleAlertClose}>Ver otros horarios</AlertDialogAction>
+            <AlertDialogAction onClick={handleAlertClose}>
+              Ver otros horarios
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
