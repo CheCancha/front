@@ -127,7 +127,7 @@ const DetailsView = memo(
       <>
         <div className="p-6 border-b flex justify-between items-center">
           <div>
-            <h2 className="text-xl font-bold text-gray-900">
+            <h2 className="text-xl font-bold text-brand-dark">
               Detalles de la Reserva
             </h2>
             <p className="text-sm text-gray-500">
@@ -300,7 +300,7 @@ const FormView = memo(
     return (
       <>
         <div className="p-4 border-b">
-          <h2 className="text-xl font-bold text-gray-900">
+          <h2 className="text-xl font-bold text-brand-dark">
             {initialBooking ? "Editar Reserva" : "Nueva Reserva"}
           </h2>
         </div>

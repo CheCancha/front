@@ -6,26 +6,26 @@ import { routes } from "@/routes";
 
 const Footer = () => {
   return (
-    <footer className="bg-foreground text-background">
+    <footer className="bg-brand-dark text-background">
       <div className="mx-auto w-full max-w-screen-xl p-4 py-6 lg:py-8">
         <div className="md:flex md:justify-between">
           <div className="mb-6 md:mb-0">
             <Link href="/" className="flex items-center">
               <Image
-                src="/logochecancha.png"
-                width={32}
-                height={32}
-                className="mr-3"
-                alt="CheCancha Logo"
+                src="/checanchalogo.png"
+                alt="Logo de Che Cancha"
+                height={40}
+                width={40}
+                className="mr-3 rounded-md"
               />
-              <span className="self-center text-2xl font-semibold whitespace-nowrap text-background">
+              <span className="self-center text-xl font-lora font-semibold whitespace-nowrap text-background">
                 CheCancha
               </span>
             </Link>
           </div>
           <div className="grid grid-cols-2 gap-8 sm:gap-6 sm:grid-cols-3">
             <div>
-              <h2 className="mb-6 text-sm font-semibold uppercase text-background">
+              <h2 className="mb-5 text-md font-lora font-semibold text-background">
                 Navegación
               </h2>
               <ul className="text-paragraph font-medium">
@@ -42,7 +42,7 @@ const Footer = () => {
               </ul>
             </div>
             <div>
-              <h2 className="mb-6 text-sm font-semibold uppercase text-background">
+              <h2 className="mb-5 text-md font-lora font-semibold text-background">
                 Seguinos
               </h2>
               <ul className="text-paragraph font-medium">
@@ -59,7 +59,7 @@ const Footer = () => {
               </ul>
             </div>
             <div>
-              <h2 className="mb-6 text-sm font-semibold uppercase text-background">
+              <h2 className="mb-5 text-md font-lora font-semibold text-background">
                 Legal
               </h2>
               <ul className="text-paragraph font-medium">
@@ -95,10 +95,7 @@ const Footer = () => {
               <FaInstagram className="w-4 h-4" />
               <span className="sr-only">Página de Instagram</span>
             </a>
-            <a href="#" className="text-paragraph hover:text-white">
-              <FaGithub className="w-4 h-4" />
-              <span className="sr-only">Cuenta de GitHub</span>
-            </a>
+            
           </div>
         </div>
       </div>

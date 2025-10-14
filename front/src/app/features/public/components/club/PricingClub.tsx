@@ -4,15 +4,23 @@ import { motion } from "framer-motion";
 import { Check } from "lucide-react";
 
 const cn = (...classes: (string | boolean | undefined)[]) => {
-  return classes.filter(Boolean).join(' ');
+  return classes.filter(Boolean).join(" ");
 };
 
-const ButtonPrimary = ({ href, className, children }: { href: string; className?: string; children: React.ReactNode }) => (
+const ButtonPrimary = ({
+  href,
+  className,
+  children,
+}: {
+  href: string;
+  className?: string;
+  children: React.ReactNode;
+}) => (
   <a
     href={href}
     className={cn(
+      "text-white bg-gradient-to-r from-brand-secondary to-red-600 hover:brightness-110 transition-all duration-300 cursor-pointer",
       "inline-block text-center w-full px-6 py-3 font-semibold text-white rounded-lg transition-colors duration-300",
-      "text-white bg-gradient-to-r from-orange-500 to-red-600 hover:brightness-110 transition-all duration-300 cursor-pointer",
       className
     )}
   >
@@ -20,7 +28,15 @@ const ButtonPrimary = ({ href, className, children }: { href: string; className?
   </a>
 );
 
-const ButtonSecondary = ({ href, className, children }: { href: string; className?: string; children: React.ReactNode }) => (
+const ButtonSecondary = ({
+  href,
+  className,
+  children,
+}: {
+  href: string;
+  className?: string;
+  children: React.ReactNode;
+}) => (
   <a
     href={href}
     className={cn(
@@ -80,7 +96,7 @@ export const PricingSection = () => {
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">(
     "yearly"
   );
-  
+
   return (
     <motion.section
       className="py-20 bg-white"
@@ -98,17 +114,28 @@ export const PricingSection = () => {
             Una solución para cada complejo
           </h2>
           <p className="text-lg text-paragraph mt-4">
-            Todos nuestros planes incluyen una <span className="font-semibold text-brand-orange">prueba gratuita de 90 días</span>. Sin compromisos ni tarjeta de crédito.
+            Todos nuestros planes incluyen una{" "}
+            <span className="font-semibold text-brand-secondary">
+              prueba gratuita de 90 días
+            </span>
+            . Sin compromisos ni tarjeta de crédito.
           </p>
         </div>
 
         {/* Toggle de Pago */}
         <div className="flex justify-center items-center gap-4 mb-16">
-          <span className={cn("font-semibold", billingCycle === "monthly" ? "text-foreground" : "text-paragraph")}>
+          <span
+            className={cn(
+              "font-semibold",
+              billingCycle === "monthly" ? "text-foreground" : "text-paragraph"
+            )}
+          >
             Pago Mensual
           </span>
           <button
-            onClick={() => setBillingCycle(billingCycle === "monthly" ? "yearly" : "monthly")}
+            onClick={() =>
+              setBillingCycle(billingCycle === "monthly" ? "yearly" : "monthly")
+            }
             className={cn(
               "relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-brand-orange focus:ring-offset-2",
               billingCycle === "yearly" ? "bg-brand-orange" : "bg-gray-200"
@@ -122,8 +149,16 @@ export const PricingSection = () => {
               )}
             />
           </button>
-          <span className={cn("font-semibold", billingCycle === "yearly" ? "text-foreground" : "text-paragraph")}>
-            Pago Anual <span className="text-brand-green font-bold">(¡Ahorrá 2 meses!)</span>
+          <span
+            className={cn(
+              "font-semibold",
+              billingCycle === "yearly" ? "text-foreground" : "text-paragraph"
+            )}
+          >
+            Pago Anual{" "}
+            <span className="text-brand-green font-bold">
+              (¡Ahorrá 2 meses!)
+            </span>
           </span>
         </div>
 
@@ -134,7 +169,7 @@ export const PricingSection = () => {
               key={plan.name}
               className={cn(
                 "rounded-2xl p-8 flex flex-col border transition-all duration-300",
-                plan.isPopular 
+                plan.isPopular
                   ? "bg-foreground text-background border-foreground shadow-2xl lg:scale-105"
                   : "bg-background text-foreground border-gray-200"
               )}
@@ -147,21 +182,38 @@ export const PricingSection = () => {
                 </div>
               )}
               <h3 className="text-2xl font-lora font-semibold">{plan.name}</h3>
-              <p className={cn("mt-1 min-h-[40px]", plan.isPopular ? "text-background/80" : "text-paragraph")}>
+              <p
+                className={cn(
+                  "mt-1 min-h-[40px]",
+                  plan.isPopular ? "text-background/80" : "text-paragraph"
+                )}
+              >
                 {plan.description}
               </p>
 
               <div className="my-8">
                 {billingCycle === "yearly" ? (
                   <div className="flex flex-col items-start">
-                    <span className={cn("text-xl font-bold opacity-50 line-through", plan.isPopular ? "text-background/70" : "text-paragraph")}>
+                    <span
+                      className={cn(
+                        "text-xl font-bold opacity-50 line-through",
+                        plan.isPopular ? "text-background/70" : "text-paragraph"
+                      )}
+                    >
                       {formatPrice(plan.priceMonthly)}
                     </span>
                     <div className="flex items-end gap-2">
                       <span className="text-5xl font-black">
                         {formatPrice(plan.priceYearly / 12)}
                       </span>
-                      <span className={cn("text-lg", plan.isPopular ? "text-background/80" : "text-paragraph")}>
+                      <span
+                        className={cn(
+                          "text-lg",
+                          plan.isPopular
+                            ? "text-background/80"
+                            : "text-paragraph"
+                        )}
+                      >
                         /mes
                       </span>
                     </div>
@@ -171,15 +223,28 @@ export const PricingSection = () => {
                     <span className="text-5xl font-black">
                       {formatPrice(plan.priceMonthly)}
                     </span>
-                    <span className={cn("text-lg", plan.isPopular ? "text-background/80" : "text-paragraph")}>
+                    <span
+                      className={cn(
+                        "text-lg",
+                        plan.isPopular ? "text-background/80" : "text-paragraph"
+                      )}
+                    >
                       /mes
                     </span>
                   </div>
                 )}
               </div>
-              
-              <p className={cn("text-sm mb-8 h-5 font-semibold", plan.isPopular ? "text-brand-orange" : "text-brand-green")}>
-                {billingCycle === "yearly" && `Pagás ${formatPrice(plan.priceYearly)} en vez de ${formatPrice(plan.priceMonthly * 12)}`}
+
+              <p
+                className={cn(
+                  "text-sm mb-8 h-5 font-semibold",
+                  plan.isPopular ? "text-brand-orange" : "text-brand-green"
+                )}
+              >
+                {billingCycle === "yearly" &&
+                  `Pagás ${formatPrice(
+                    plan.priceYearly
+                  )} en vez de ${formatPrice(plan.priceMonthly * 12)}`}
               </p>
 
               {/* Botones */}
@@ -203,10 +268,16 @@ export const PricingSection = () => {
                     <Check
                       className={cn(
                         "w-5 h-5 flex-shrink-0 mr-2 mt-1",
-                        plan.isPopular ? "text-background/70" : "text-brand-green"
+                        plan.isPopular
+                          ? "text-background/70"
+                          : "text-brand-green"
                       )}
                     />
-                    <span className={cn(plan.isPopular ? "text-background/90" : "text-paragraph")}>
+                    <span
+                      className={cn(
+                        plan.isPopular ? "text-background/90" : "text-paragraph"
+                      )}
+                    >
                       {feature}
                     </span>
                   </li>

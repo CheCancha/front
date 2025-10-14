@@ -23,6 +23,7 @@ import {
 } from "framer-motion";
 import { Button } from "./ui/button";
 import { cn } from "@/shared/lib/utils";
+import { NotificationBell } from "./NotificationBell";
 
 const NavbarSkeleton: React.FC = () => (
   <nav className="bg-background border-b sticky top-0 z-50 animate-pulse">
@@ -84,7 +85,7 @@ const Navbar: React.FC = () => {
   const isAuthLoading = status === "loading";
 
   // Determinar si la barra debe ser transparente
-const isTransparent = isHomePage && !scrolled && !isMobile;
+  const isTransparent = isHomePage && !scrolled && !isMobile;
 
   const getDashboardUrl = () => {
     if (!user) return routes.public.home;
@@ -134,20 +135,12 @@ const isTransparent = isHomePage && !scrolled && !isMobile;
           <div className="flex-shrink-0">
             <Link href={routes.public.home} className="flex items-center gap-2">
               <Image
-                src="/logochecancha.png"
+                src="/checanchalogo.png"
                 alt="Logo de Che Cancha"
                 height={40}
                 width={40}
-                className="rounded-md"
+                className="rounded-md overflow-hidden"
               />
-              <span
-                className={cn(
-                  "text-xl font-bold transition-colors",
-                  isTransparent ? "text-white" : "text-foreground"
-                )}
-              >
-                Che Cancha
-              </span>
             </Link>
           </div>
 
@@ -160,22 +153,25 @@ const isTransparent = isHomePage && !scrolled && !isMobile;
                     className={cn(
                       "flex items-center gap-2 font-medium py-2 px-4 rounded-md transition duration-300",
                       isTransparent
-                        ? "text-white hover:bg-white/10"
-                        : "text-gray-800 hover:bg-gray-100"
+                      ? "text-white hover:bg-white/10"
+                      : "text-brand-dark hover:bg-gray-100"
                     )}
                   >
                     <Search size={16} />
                     Buscar Cancha
                   </Link>
 
+
+                  <div className="flex items-center gap-2">
+                  <NotificationBell isTransparent={isTransparent} />
                   <div className="relative" ref={menuRef}>
                     <button
                       onClick={() => setIsDesktopMenuOpen(!isDesktopMenuOpen)}
                       className={cn(
-                        "flex items-center gap-1.5 cursor-pointer rounded-md p-2 transition-colors",
+                        "flex items-center gap-1.5 rounded-md p-2 transition-colors cursor-pointer",
                         isTransparent
-                          ? "hover:bg-white/10"
-                          : "hover:bg-gray-100"
+                          ? "text-white hover:bg-white/10"
+                          : "text-brand-dark hover:bg-gray-100"
                       )}
                     >
                       <span
@@ -234,6 +230,8 @@ const isTransparent = isHomePage && !scrolled && !isMobile;
                       )}
                     </AnimatePresence>
                   </div>
+                  </div>
+
                 </>
               ) : (
                 <>
@@ -243,7 +241,7 @@ const isTransparent = isHomePage && !scrolled && !isMobile;
                       "font-medium transition duration-300",
                       isTransparent
                         ? "text-white hover:text-gray-200"
-                        : "text-foreground hover:text-brand-orange"
+                        : "text-foreground hover:text-brand-secondary"
                     )}
                   >
                     Software para canchas
@@ -258,15 +256,16 @@ const isTransparent = isHomePage && !scrolled && !isMobile;
             </div>
           </div>
 
-          <div className="-mr-2 flex md:hidden">
+          <div className="-mr-2 flex items-center md:hidden">
+            {isLoggedIn && <NotificationBell isTransparent={isTransparent} />} 
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               type="button"
               className={cn(
-                "inline-flex items-center justify-center p-2 rounded-md focus:outline-none transition-colors",
+                "inline-flex items-center justify-center p-2 rounded-md focus:outline-none transition-colors cursor-pointer",
                 isTransparent
                   ? "bg-white/10 text-white hover:bg-white/20"
-                  : "bg-white text-gray-400 hover:bg-gray-100"
+                  : "bg-white text-brand-dark hover:bg-gray-100"
               )}
             >
               <span className="sr-only">Abrir menú</span>

@@ -116,7 +116,7 @@ export default function ChoosePlanPage() {
   return (
     <div className="container mx-auto py-12">
       <div className="text-center max-w-3xl mx-auto mb-10">
-        <h1 className="text-3xl md:text-4xl font-bold text-gray-900">
+        <h1 className="text-3xl md:text-4xl font-bold text-brand-dark">
           Activá tu Cuenta
         </h1>
         <p className="text-lg text-gray-600 mt-3">
@@ -126,7 +126,7 @@ export default function ChoosePlanPage() {
 
       {/* Toggle de Pago */}
       <div className="flex justify-center items-center gap-4 mb-12">
-        <span className={cn("font-semibold", billingCycle === "MENSUAL" ? "text-gray-900" : "text-gray-500")}>
+        <span className={cn("font-semibold", billingCycle === "MENSUAL" ? "text-brand-dark" : "text-gray-500")}>
           Pago Mensual
         </span>
         <button
@@ -143,7 +143,7 @@ export default function ChoosePlanPage() {
             )}
           />
         </button>
-        <span className={cn("font-semibold", billingCycle === "ANUAL" ? "text-gray-900" : "text-gray-500")}>
+        <span className={cn("font-semibold", billingCycle === "ANUAL" ? "text-brand-dark" : "text-gray-500")}>
           Pago Anual
         </span>
       </div>
@@ -162,7 +162,7 @@ export default function ChoosePlanPage() {
               key={monthlyPlan.id}
               className={cn(
                 "rounded-xl p-8 flex flex-col border",
-                isPro ? "bg-gray-900 text-white border-gray-900" : "bg-white text-gray-900 border-gray-200"
+                isPro ? "bg-brand-dark text-white border-brand-dark" : "bg-white text-brand-dark border-gray-200"
               )}
             >
               <h3 className="text-2xl font-semibold">{planMap[monthlyPlan.plan]}</h3>
@@ -186,7 +186,7 @@ export default function ChoosePlanPage() {
                 disabled={!!isSubmitting}
                 className={cn(
                   "w-full text-base py-6",
-                  isPro ? "bg-orange-500 hover:bg-orange-600 text-white" : "bg-gray-900 hover:bg-gray-800 text-white"
+                  isPro ? "bg-orange-500 hover:bg-orange-600 text-white" : "bg-brand-dark hover:bg-gray-800 text-white"
                 )}
               >
                 {isSubmitting === currentPlan.id ? (

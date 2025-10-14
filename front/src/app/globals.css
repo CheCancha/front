@@ -4,11 +4,19 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
-  --color-foreground: #030203;
+  --color-foreground: #0d1216;
+  /* 
+  black #090906
+  lime #e1fe01
+  aqua #d2fea5
+   */
   --color-background: #fff;
+  --color-brand-orange: #d2fea5; /* naranja:ff4e02  aqua:#d5fe44 #d2fea5*/
+  --color-brand-lime: #e1fe01;
+  --color-brand-dark: #0d1216;
+  --color-brand-secondary: #ff4e02;
 
   --color-brand-blue: #54c3fe;
-  --color-brand-orange: #ff4e02;
   --color-brand-green: #01c780;
   --color-brand-olive: #565500;
   --color-brand-purple: #d0b7fe;
@@ -28,7 +36,8 @@
   --color-background: #030203;
 
   --color-paragraph: #9c9c9c;
-
+  --darkblue: #19274b;
+  --lime: rgb(210, 254, 165);
   --background: oklch(0.141 0.005 285.823);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.21 0.006 285.885);
@@ -36,7 +45,7 @@
   --popover: oklch(0.21 0.006 285.885);
   --popover-foreground: oklch(0.985 0 0);
   --primary: oklch(0.92 0.004 286.32);
-  --primary-foreground: oklch(0.21 0.006 285.885);
+  --primary-foreground: oklch(21.033% 0.00588 285.832);
   --secondary: oklch(0.274 0.006 286.033);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.274 0.006 286.033);

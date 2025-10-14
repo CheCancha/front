@@ -12,7 +12,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 // --- Constantes y Tipos Comunes ---
 const fromEmail = "CheCancha <contacto@checancha.com>";
 const baseURL = process.env.NEXTAUTH_URL || "http://localhost:3000";
-const logoUrl = `${baseURL}/logochecancha.png`;
+const logoUrl = `${baseURL}/checanchalogo.png`;
 
 type BookingWithDetailsForEmail = Booking & {
   user: User | null;

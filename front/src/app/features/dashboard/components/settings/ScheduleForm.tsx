@@ -38,7 +38,7 @@ export const ScheduleForm = ({
     <div className="mt-6 border-t pt-6">
       <label
         htmlFor="timeSlotInterval"
-        className="block text-sm font-medium text-gray-900"
+        className="block text-sm font-medium text-brand-dark"
       >
         Intervalo de turnos en el calendario
       </label>
@@ -84,7 +84,7 @@ export const ScheduleForm = ({
                     isOpen ? "bg-green-500" : "bg-gray-300"
                   }`}
                 ></div>
-                <span className="font-medium text-gray-900">{dayName}</span>
+                <span className="font-medium text-brand-dark">{dayName}</span>
               </div>
 
               {/* Select de Apertura */}

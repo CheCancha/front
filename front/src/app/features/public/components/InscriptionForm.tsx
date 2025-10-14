@@ -143,7 +143,7 @@ export const InscriptionsForm = () => {
                   <div className={`flex items-center justify-center w-8 h-8 rounded-full transition-all duration-300 ${currentStep > index ? 'bg-brand-orange text-white' : currentStep === index ? 'border-2 border-brand-orange text-brand-orange' : 'border-2 border-gray-300 text-gray-500'}`}>
                     {currentStep > index ? <Check size={18}/> : step.id}
                   </div>
-                  <span className={`ml-3 text-sm font-medium hidden sm:block transition-colors duration-300 ${currentStep >= index ? 'text-gray-900' : 'text-gray-500'}`}>{step.name}</span>
+                  <span className={`ml-3 text-sm font-medium hidden sm:block transition-colors duration-300 ${currentStep >= index ? 'text-brand-dark' : 'text-gray-500'}`}>{step.name}</span>
                 </li>
                 {index < steps.length - 1 && <div className="flex-1 mx-4 h-0.5 bg-gray-200"></div>}
               </React.Fragment>

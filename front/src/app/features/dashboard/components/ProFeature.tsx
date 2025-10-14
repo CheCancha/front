@@ -20,7 +20,8 @@ export const ProFeaturePaywall: React.FC<ProFeaturePaywallProps> = ({ complexId,
       <p className="mt-2 max-w-lg text-gray-600">
         {description}
       </p>
-      <Button asChild className="mt-8 bg-gradient-to-r from-orange-500 to-red-600 text-white hover:brightness-110">
+      {/* <Button asChild className="mt-8 bg-gradient-to-r from-brand-orange to-brand-secondary text-white hover:brightness-110"> */}
+      <Button asChild className="mt-8 bg-brand-orange hover:brightness-110">
         <Link href={`/dashboard/${complexId}/billing`}>
           <Zap className="mr-2 h-4 w-4" />
           Ver Planes Pro

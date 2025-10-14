@@ -42,7 +42,7 @@ export const WelcomeEmail = ({
             Bienvenido/a, {managerPhone}!
           </Heading>
           <Text style={paragraph}>
-            Tu solicitud para unirte a Che Cancha ha sido aprobada. ¡Ya podés
+            Tu solicitud para unirte a CheCancha ha sido aprobada. ¡Ya podés
             empezar a gestionar tu complejo y recibir reservas online!
           </Text>
 
@@ -105,7 +105,7 @@ const container = {
   overflow: "hidden" as const,
 };
 const header = {
-  backgroundColor: "#ff4e02",
+  backgroundColor: "#ff4e02", //brand-orange
   padding: "20px",
   textAlign: "center" as const,
 };
@@ -118,13 +118,13 @@ const credentialsBox = {
   padding: "20px",
   borderRadius: "8px",
   margin: "25px 0",
-  borderLeft: "4px solid #ff4e02",
+  borderLeft: "4px solid #ff4e02", //brand-orange
 };
 const credentialText = { margin: "10px 0" };
 const password = {
   fontSize: "24px",
   fontWeight: "bold" as const,
-  color: "#ff4e02",
+  color: "#ff4e02", //brand-orange
   backgroundColor: "#f9fafb",
   padding: "4px 10px",
   borderRadius: "6px",
@@ -136,7 +136,7 @@ const ctaButton = {
   padding: "14px 28px",
   fontSize: "16px",
   color: "#ffffff",
-  backgroundColor: "#ff4e02",
+  backgroundColor: "#ff4e02", //brand-orange
   textDecoration: "none",
   borderRadius: "8px",
   fontWeight: "bold" as const,

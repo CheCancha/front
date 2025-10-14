@@ -52,7 +52,7 @@ export const GeneralInfoForm: React.FC<GeneralInfoFormProps> = ({ data, onChange
     <div className="space-y-10">
       {/* --- Sección de Información Básica --- */}
       <div>
-        <h3 className="text-lg font-semibold leading-6 text-gray-900">Información Básica</h3>
+        <h3 className="text-lg font-semibold leading-6 text-brand-dark">Información Básica</h3>
         <p className="mt-1 text-sm text-gray-500">Datos principales que identifican a tu complejo.</p>
         <div className="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
           <div className="sm:col-span-6">
@@ -72,7 +72,7 @@ export const GeneralInfoForm: React.FC<GeneralInfoFormProps> = ({ data, onChange
 
       {/* --- Sección de Contacto Público y Redes --- */}
       <div className="border-t border-gray-200 pt-8">
-        <h3 className="text-lg font-semibold leading-6 text-gray-900">Contacto y Redes Sociales</h3>
+        <h3 className="text-lg font-semibold leading-6 text-brand-dark">Contacto y Redes Sociales</h3>
         <p className="mt-1 text-sm text-gray-500">Esta información será visible en tu perfil público para que los jugadores puedan contactarte.</p>
         <div className="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
           <div className="sm:col-span-3">
@@ -92,7 +92,7 @@ export const GeneralInfoForm: React.FC<GeneralInfoFormProps> = ({ data, onChange
 
       {/* --- Sección de Ubicación en el Mapa --- */}
       <div className="border-t border-gray-200 pt-8">
-        <h3 className="text-lg font-semibold leading-6 text-gray-900">Ubicación en el Mapa</h3>
+        <h3 className="text-lg font-semibold leading-6 text-brand-dark">Ubicación en el Mapa</h3>
         <p className="mt-1 text-sm text-gray-500">Coordenadas para mostrar tu complejo en el mapa del perfil. Podés obtenerlas fácilmente desde Google Maps.</p>
         <div className="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
           <div className="sm:col-span-3">

@@ -8,7 +8,7 @@ export function CTAManagerSection() {
   return (
     <>
       <div className="mx-auto max-w-7xl md:py-24 sm:px-6 sm:py-32 lg:px-8">
-        <div className="relative isolate overflow-hidden bg-foreground px-6 pt-16 shadow-2xl sm:rounded-3xl sm:px-16 md:pt-24 lg:flex lg:gap-x-20 lg:px-24 lg:pt-0">
+        <div className="relative isolate overflow-hidden bg-brand-dark px-6 pt-16 shadow-2xl sm:rounded-3xl sm:px-16 md:pt-24 lg:flex lg:gap-x-20 lg:px-24 lg:pt-0">
           <svg
             viewBox="0 0 1024 1024"
             aria-hidden="true"
@@ -17,8 +17,9 @@ export function CTAManagerSection() {
             <circle r={512} cx={512} cy={512} fill="url(#759c1415-0410-454c-8f7c-9a820de03641)" fillOpacity="0.7" />
             <defs>
               <radialGradient id="759c1415-0410-454c-8f7c-9a820de03641">
-                <stop stopColor="#ff4e02" />
-                <stop offset={1} stopColor="#ff4e02" />
+                {/* brand-orange */}
+                <stop stopColor="#d2fea5" /> 
+                <stop offset={1} stopColor="#d2fea5" />
               </radialGradient>
             </defs>
           </svg>
@@ -32,7 +33,7 @@ export function CTAManagerSection() {
             <div className="mt-10 flex items-center justify-center gap-x-6 lg:justify-start">
               <Link
                 href={routes.public.inscripciones}
-                className="rounded-md bg-white px-3.5 py-2.5 text-sm font-semibold text-gray-900 shadow-xs hover:bg-gray-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                className="rounded-md bg-white px-3.5 py-2.5 text-sm font-semibold text-brand-dark shadow-xs hover:bg-gray-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
               >
                 {' '}
                 Comenzar Ahora{' '}

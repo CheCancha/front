@@ -273,7 +273,7 @@ const MobileBookingWidget: React.FC<BookingWidgetProps> = ({
             <div className="container mx-auto px-4 py-3 flex items-center justify-between gap-4 ">
               <div>
                 <p className="text-gray-600 text-sm">Precio del turno</p>
-                <p className="font-bold text-xl text-gray-900">
+                <p className="font-bold text-xl text-brand-dark">
                   {new Intl.NumberFormat("es-AR", {
                     style: "currency",
                     currency: "ARS",

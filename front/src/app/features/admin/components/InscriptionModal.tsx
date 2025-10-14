@@ -147,7 +147,7 @@ export const InscriptionReviewModal: React.FC<InscriptionReviewModalProps> = ({
             </button>
 
             <div>
-              <h2 className="text-2xl font-bold text-foreground mb-2">
+              <h2 className="text-2xl font-bold text-brand-dark mb-2">
                 Revisar Solicitud
               </h2>
               <p className="text-sm text-paragraph mb-6">

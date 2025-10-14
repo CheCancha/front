@@ -86,7 +86,7 @@ export const LoginForm = () => {
   return (
     <div className="w-full">
       <div className="text-center mb-8">
-        <h2 className="font-lora text-3xl font-semibold text-gray-900">
+        <h2 className="font-lora text-3xl font-semibold text-bg-brand-dark">
           Iniciá sesión
         </h2>
         <p className="mt-2 text-sm text-paragraph">
@@ -128,13 +128,9 @@ export const LoginForm = () => {
 
         {/* Se elimina el Link que estaba suelto aquí */}
 
-          <ButtonPrimary
-            type="submit"
-            className="w-full"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? "Ingresando..." : "Ingresar"}
-          </ButtonPrimary>
+        <ButtonPrimary type="submit" className="w-full" disabled={isSubmitting}>
+          {isSubmitting ? "Ingresando..." : "Ingresar"}
+        </ButtonPrimary>
       </form>
 
       <div className="relative my-8">
@@ -204,10 +200,10 @@ export const RegisterForm = () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-            name: data.name,
-            email: data.email,
-            phone: data.phone,
-            password: data.password,
+          name: data.name,
+          email: data.email,
+          phone: data.phone,
+          password: data.password,
         }),
       });
 
@@ -243,10 +239,10 @@ export const RegisterForm = () => {
           Creá tu cuenta
         </h2>
         <p className="mt-2 text-sm text-paragraph">
-          ¿Ya tenés una?
+          ¿Ya tenés una?{" "}
           <Link
             href="/login"
-            className="font-medium text-sm text-brand-orange hover:underline"
+            className="font-medium text-sm text-brand-secondary hover:underline"
           >
             Iniciá sesión
           </Link>
@@ -283,7 +279,7 @@ export const RegisterForm = () => {
         />
          {error && <p className="text-sm text-red-600">{error}</p>}   
         <ButtonPrimary type="submit" className="w-full" disabled={isSubmitting}>
-                    {isSubmitting ? "Creando cuenta..." : "Crear Cuenta"}
+         {isSubmitting ? "Creando cuenta..." : "Crear Cuenta"}
         </ButtonPrimary>
       </form>
     </div>

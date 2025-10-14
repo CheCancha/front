@@ -69,7 +69,7 @@ export default function MPButton({ complex }: MPButtonProps) {
 
   return (
     <div className="space-y-6">
-      <h3 className="text-lg font-semibold leading-6 text-gray-900">
+      <h3 className="text-lg font-semibold leading-6 text-bg-brand-dark">
         Pagos y Cobranzas
       </h3>
       <p className="mt-1 text-sm text-gray-500">
@@ -114,7 +114,7 @@ export default function MPButton({ complex }: MPButtonProps) {
               <AlertDialogHeader>
                 <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Al desconectar tu cuenta, no podrás recibir pagos online a través de Che Cancha. Podrás volver a conectarla en cualquier momento.
+                  Al desconectar tu cuenta, no podrás recibir pagos online a través de CheCancha. Podrás volver a conectarla en cualquier momento.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>

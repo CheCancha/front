@@ -28,7 +28,7 @@ export const CancellationForm: React.FC<CancellationFormProps> = ({
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold text-gray-900">
+        <h3 className="text-lg font-semibold text-brand-dark">
           Política de Cancelaciones
         </h3>
         <p className="mt-1 text-sm text-gray-600">

@@ -144,7 +144,7 @@ const ClubCard = ({
                   <button
                     key={`${slot.time}-${slot.court.id}`}
                     onClick={(e) => handleSlotClick(e, slot)}
-                    className="px-4 py-2 bg-green-100 text-green-800 font-bold rounded-md text-sm transition-colors hover:bg-green-200 hover:text-green-900 cursor-pointer"
+                    className="px-4 py-2 bg-brand-orange/40 text-brand-dark font-bold rounded-md text-sm transition-colors hover:bg-brand-orange cursor-pointer"
                   >
                     {slot.time}
                   </button>

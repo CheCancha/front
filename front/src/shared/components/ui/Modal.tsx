@@ -32,7 +32,7 @@ export const SuccessModal: React.FC<SuccessModalProps> = ({
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
             onClick={(e) => e.stopPropagation()} 
-            className="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-8 m-4"
+            className="relative bg-white rounded-2xl shadow-xl w-full max-w-md py-6 px-8 m-4"
           >
             <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
               <X size={24} />

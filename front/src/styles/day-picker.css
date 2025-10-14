@@ -1,5 +1,5 @@
 .rdp-root {
-  --rdp-accent-color: #ff4e02 !important;
+  --rdp-accent-color: #ff4e02 !important; 
 }
 .react-select__control {
   border-radius: 0.5rem !important; /* 8px, igual que los otros inputs */

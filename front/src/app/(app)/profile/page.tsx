@@ -12,6 +12,7 @@ import {
   ShieldCheck,
   X,
   AlertTriangle,
+  BellRing,
 } from "lucide-react";
 import { toast, Toaster } from "react-hot-toast";
 import { PasswordInput } from "@/shared/components/ui/Input";
@@ -21,6 +22,7 @@ import { Award, Clock, Star, Trophy } from "lucide-react";
 import { Spinner } from "@/shared/components/ui/Spinner";
 import { ModalProfile } from "@/shared/components/ui/ModalProfile";
 import { Button } from "@/shared/components/ui/button";
+import { NotificationToggle } from "@/shared/components/ui/NotificationToggle";
 import { cn } from "@/lib/utils";
 
 // --- TIPOS  ---
@@ -48,6 +50,7 @@ type ProfileResponse = {
   image?: string;
   bookings?: Booking[];
   stats?: ProfileStats;
+  isNotificationsEnabled?: boolean;
 };
 
 // --- COMPONENTES AUXILIARES ---
@@ -66,7 +69,7 @@ const StatCard = ({
     </div>
     <div>
       <p className="text-sm font-medium text-gray-500">{label}</p>
-      <p className="text-2xl font-semibold text-gray-900">{value}</p>
+      <p className="text-2xl font-semibold text-brand-dark">{value}</p>
     </div>
   </div>
 );
@@ -96,7 +99,8 @@ export default function ProfilePage() {
   const [isEditingPhone, setIsEditingPhone] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isUpdatingInfo, setIsUpdatingInfo] = useState(false);
-
+  const [isNotificationsEnabled, setIsNotificationsEnabled] = useState(false);
+  
   // --- ESTADOS PARA CANCELACIÓN ---
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [bookingToCancel, setBookingToCancel] = useState<Booking | null>(null);
@@ -128,6 +132,7 @@ export default function ProfilePage() {
       setPhone(data.phone || "");
       setUserBookings(data.bookings || []);
       setStats(data.stats || null);
+      setIsNotificationsEnabled(data.isNotificationsEnabled || false);
     } catch (err) {
       toast.error("No se pudo cargar tu información.");
     } finally {
@@ -360,12 +365,21 @@ export default function ProfilePage() {
                 <button
                   type="submit"
                   disabled={isUpdatingInfo}
-                  className="w-full bg-brand-orange text-white font-semibold py-2 px-4 rounded-lg hover:bg-brand-orange/90 transition-colors disabled:bg-brand-orange/50 flex items-center justify-center cursor-pointer"
+                  className="w-full bg-brand-dark text-white font-semibold py-2 px-4 rounded-lg hover:bg-brand-orange hover:text-brand-dark transition-colors disabled:bg-gray-400 flex items-center justify-center cursor-pointer"
                 >
                   {isUpdatingInfo ? <Spinner /> : "Guardar Información"}
                 </button>
               </form>
             </div>
+
+            {/* Tarjeta de Información Personal */}
+            <div className="bg-white p-6 rounded-2xl border">
+              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                <BellRing size={20} /> Notificaciones
+              </h3>
+              <NotificationToggle initialState={isNotificationsEnabled} />
+            </div>
+
 
             {/* Tarjeta de Seguridad */}
             <div className="bg-white p-6 rounded-2xl border">
@@ -397,7 +411,7 @@ export default function ProfilePage() {
                 <button
                   type="submit"
                   disabled={isUpdatingPassword}
-                  className="w-full bg-gray-800 text-white font-semibold py-2 px-4 rounded-lg hover:bg-gray-900 transition-colors disabled:bg-gray-400 flex items-center justify-center cursor-pointer"
+                  className="w-full bg-brand-dark text-white font-semibold py-2 px-4 rounded-lg hover:bg-brand-orange hover:text-brand-dark transition-colors disabled:bg-gray-400 flex items-center justify-center cursor-pointer"
                 >
                   {isUpdatingPassword ? <Spinner /> : "Cambiar Contraseña"}
                 </button>
@@ -441,7 +455,7 @@ export default function ProfilePage() {
                       onClick={() => setBookingFilter(tab)}
                       className={`${
                         bookingFilter === tab
-                          ? "border-brand-orange text-brand-orange"
+                          ? "border-brand-secondary text-brand-secondary"
                           : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                       } whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm`}
                     >
@@ -458,7 +472,7 @@ export default function ProfilePage() {
                       className="py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
                     >
                       <div>
-                        <p className="font-semibold text-gray-900">
+                        <p className="font-semibold text-brand-dark">
                           {booking.complex}
                         </p>
                         <p className="text-gray-700">{booking.court}</p>
@@ -538,7 +552,7 @@ export default function ProfilePage() {
               />
             </div>
             <div className="mt-0 text-left">
-              <h3 className="text-lg leading-6 font-medium text-gray-900">
+              <h3 className="text-lg leading-6 font-medium text-brand-dark">
                 ¿Estás seguro de que querés cancelar esta reserva?
               </h3>
               <div className="mt-2">

@@ -15,7 +15,7 @@ type ChartData = {
 };
 
 const COLORS = [
-  "#ff4e02",
+  "#ff4e02", //brand-orange
   "#54c3fe",
   "#565500",
   "#01c780",

@@ -51,7 +51,7 @@ export default async function DashboardComplexLayout({
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+        <h1 className="text-3xl font-bold tracking-tight text-brand-dark">
           Panel de {complex.name}
         </h1>
         <p className="text-gray-600 mt-1">

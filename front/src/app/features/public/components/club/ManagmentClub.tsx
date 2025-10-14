@@ -14,19 +14,19 @@ import {
 // Datos para la lista de funcionalidades
 const features = [
   {
-    icon: <CalendarDays className="w-5 h-5 text-brand-orange" />,
+    icon: <CalendarDays className="w-5 h-5 text-brand-secondary" />,
     text: "Gestión de Calendario Centralizada",
   },
   {
-    icon: <CreditCard className="w-5 h-5 text-brand-orange" />,
+    icon: <CreditCard className="w-5 h-5 text-brand-secondary" />,
     text: "Control de Pagos y Señas Online",
   },
   {
-    icon: <Users className="w-5 h-5 text-brand-orange" />,
+    icon: <Users className="w-5 h-5 text-brand-secondary" />,
     text: "Base de Datos de Clientes",
   },
   {
-    icon: <BarChart3 className="w-5 h-5 text-brand-orange" />,
+    icon: <BarChart3 className="w-5 h-5 text-brand-secondary" />,
     text: "Reportes de Ingresos y Ocupación",
   },
 ];

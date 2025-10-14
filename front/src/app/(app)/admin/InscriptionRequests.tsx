@@ -118,7 +118,7 @@ export default function InscriptionRequests({
     <>
       <div className="bg-[#f8f9f9] p-4 sm:p-6 rounded-lg border">
         <div className="flex items-center justify-between mb-4 gap-4">
-          <h2 className="text-base sm:text-lg font-semibold text-gray-900">
+          <h2 className="text-base sm:text-lg font-semibold text-brand-dark">
             Solicitudes Pendientes
           </h2>
           <button

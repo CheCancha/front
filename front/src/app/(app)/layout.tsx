@@ -9,7 +9,7 @@ export default async function AppLayout({
   return (
     <div className="min-h-screen bg-[#f9fafb]">
       <Navbar />
-      <main className="max-w-7xl mx-auto pt-24 px-4 lg:px-8">
+      <main className="max-w-7xl mx-auto pt-24 pb-16 px-4 lg:px-8">
         {children}
       </main>
       <Footer />

@@ -13,7 +13,7 @@ export default function RegisterPage() {
           <div className="flex justify-center mb-2">
             <Link href="/">
               <Image
-                src="/logochecancha.png"
+                src="/checanchalogo.png"
                 alt="Logo del CheCancha"
                 height={60}
                 width={60}

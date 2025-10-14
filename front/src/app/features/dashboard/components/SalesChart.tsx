@@ -50,7 +50,7 @@ const WeekSelector = ({
             className={cn(
             "px-3 py-2 text-sm font-medium transition-colors shrink-0",
             selectedWeek === index
-                ? "border-b-2 border-#ff4e02 text-#ff0000"
+                ? "border-b-2 border-#ff4e02 text-#ff0000" //brand-orange
                 : "text-gray-500 hover:text-gray-700"
             )}
         >
@@ -210,7 +210,7 @@ export function SalesChart({ complexId }: { complexId: string }) {
                 }).format(value)
               }
             />
-            <Bar dataKey="total" fill="#ff4e02" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="total" fill="#ff4e02" radius={[4, 4, 0, 0]} /> {/* //brand-orange */}
           </BarChart>
         </ResponsiveContainer>
       ) : (

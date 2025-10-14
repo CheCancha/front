@@ -299,7 +299,7 @@ export default function BookingModal({
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-8 m-4"
+              className="relative bg-white rounded-2xl shadow-xl w-full max-w-md py-6 px-8 m-4"
             >
               <button
                 onClick={handleClose}
@@ -310,7 +310,7 @@ export default function BookingModal({
 
               {!preferenceData ? (
                 <div>
-                  <h2 className="text-2xl font-bold text-foreground mb-6 text-center">
+                  <h2 className="text-2xl font-bold text-foreground mb-4 text-center">
                     Confirmá tu Reserva
                   </h2>
 
@@ -359,14 +359,14 @@ export default function BookingModal({
 
                   <div className="space-y-4 text-left border-t border-b py-4">
                     <div className="flex items-center gap-3">
-                      <Shield className="w-5 h-5 text-brand-orange" />
+                      <Shield className="w-5 h-5 text-brand-secondary" />
                       <p>
                         <span className="font-semibold">{club?.name}</span> -{" "}
                         {court?.name}
                       </p>
                     </div>
                     <div className="flex items-center gap-3">
-                      <Calendar className="w-5 h-5 text-brand-orange" />
+                      <Calendar className="w-5 h-5 text-brand-secondary" />
                       <p>
                         {date.toLocaleDateString("es-AR", {
                           weekday: "long",
@@ -377,7 +377,7 @@ export default function BookingModal({
                       </p>
                     </div>
                     <div className="flex items-center gap-3">
-                      <Clock className="w-5 h-5 text-brand-orange" />
+                      <Clock className="w-5 h-5 text-brand-secondary" />
                       <p>
                         <span className="font-semibold">
                           {time} a {" "}
@@ -393,7 +393,7 @@ export default function BookingModal({
                       </p>
                     </div>
                     <div className="flex items-start gap-3">
-                      <DollarSign className="w-5 h-5 text-brand-orange mt-1" />
+                      <DollarSign className="w-5 h-5 text-brand-secondary mt-1" />
                       <div>
                         {appliedCoupon ? (
                           <>
@@ -424,7 +424,7 @@ export default function BookingModal({
                   </div>
 
                   {/* --- SECCIÓN DE CUPÓN --- */}
-                  <div className="py-4 text-sm">
+                  <div className="py-2 text-sm">
                     {appliedCoupon ? (
                       <div className="flex justify-between items-center text-green-700">
                         <span>
@@ -440,7 +440,7 @@ export default function BookingModal({
                     ) : !showCouponInput ? (
                       <button
                         onClick={() => setShowCouponInput(true)}
-                        className="text-brand-orange font-semibold hover:underline"
+                        className="text-brand-secondary font-semibold hover:underline"
                       >
                         ¿Tenés un cupón de descuento?
                       </button>
@@ -485,7 +485,7 @@ export default function BookingModal({
                     )}
                   </div>
 
-                  <p className="text-sm text-center text-gray-500">
+                  <p className="text-sm text-center text-paragraph py-2">
                     ⚠️{" "}
                     {club.cancellationPolicyHours > 0 ? (
                       <>
@@ -500,10 +500,7 @@ export default function BookingModal({
                     )}
                   </p>
 
-                  <div className="mt-4">
-                    <p className="text-sm text-center text-paragraph mb-4">
-                      Para confirmar tu turno, es necesario abonar una seña.
-                    </p>
+                  <div className="mt-2">
                     <ButtonPrimary
                       onClick={handleCreatePreference}
                       className="w-full"

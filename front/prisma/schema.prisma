@@ -42,6 +42,20 @@ model SubscriptionPlanDetails {
   createdAt         DateTime  @default(now())
 }
 
+model Notification {
+  id        String   @id @default(cuid())
+  title     String
+  message   String
+  url       String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
 model User {
   id               String              @id @default(cuid())
   name             String
@@ -52,6 +66,8 @@ model User {
   updatedAt        DateTime            @updatedAt
   email            String              @unique
   image            String?
+  oneSignalPlayerId String?   @unique
+  notifications    Notification[]
   accounts         Account[]
   bookings         Booking[]
   managedComplex   Complex?            @relation("ManagedBy")
@@ -277,7 +293,7 @@ model Booking {
   couponId  String?
   coupon    Coupon?  @relation(fields: [couponId], references: [id], onDelete: SetNull)
 
-
+  reminderSent Boolean @default(false)
   @@unique([courtId, date, startTime])
   @@index([courtId])
   @@index([userId])

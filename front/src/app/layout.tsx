@@ -5,21 +5,22 @@ import Providers from "@/app/provider";
 import GoogleAnalytics from "@/shared/components/GoogleAnalytics";
 import { Suspense } from "react";
 import { SearchStateInitializer } from "@/shared/components/SearchStateInitializer";
+import Script from "next/script";
 
 export const metadata: Metadata = {
   title: {
     template: "%s | checancha",
     default: "checancha",
   },
-  description: "Página Oficial de Che Cancha.",
+  description: "Página Oficial de CheCancha.",
   openGraph: {
     title: "checancha",
-    description: "Página Oficial de Che Cancha.",
+    description: "Página Oficial de CheCancha.",
     url: "https://www.checancha.com.ar",
     siteName: "checancha",
     images: [
       {
-        url: "https://checancha.com/logochecancha.png",
+        url: "https://checancha.com/checanchalogo.png",
         width: 1200,
         height: 630,
       },
@@ -30,19 +31,19 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "checancha",
-    description: "Página Oficial de Che Cancha.",
-    images: ["https://checancha.com/logochecancha.png"],
+    description: "Página Oficial de CheCancha.",
+    images: ["https://checancha.com/checanchalogo.png"],
   },
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "che cancha",
+    title: "CheCancha",
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#ff4e02",
+  themeColor: "#ff4e02", //brand-orange
 };
 
 
@@ -56,7 +57,7 @@ export default function RootLayout({
     "@type": "SportsClub",
     name: "checancha",
     url: "https://checancha.com",
-    logo: "https://checancha.com/logochecancha.png",
+    logo: "https://checancha.com/checanchalogo.png",
     address: {
       "@type": "PostalAddress",
       streetAddress: "Independencia 3737",
@@ -74,6 +75,22 @@ export default function RootLayout({
 
   return (
     <html lang="es">
+      <head> 
+        <Script
+          src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js"
+          defer
+        />
+        <Script id="onesignal-init" strategy="afterInteractive">
+          {`
+            window.OneSignalDeferred = window.OneSignalDeferred || [];
+            OneSignalDeferred.push(async function(OneSignal) {
+              await OneSignal.init({
+                appId: "ddf57deb-9806-44b8-9b76-61c18e57d29b",
+              });
+            });
+          `}
+        </Script>
+      </head>
       <body className={`antialiased`}>
         <link
           href="https://api.fontshare.com/v2/css?f[]=lora@400,401,500,600,601,700,701,1,2&f[]=satoshi@300,301,400,401,500,501,700,701,900,901,1,2&display=swap"

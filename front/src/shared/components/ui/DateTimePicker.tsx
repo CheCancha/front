@@ -84,12 +84,12 @@ export const DatePicker: React.FC<DatePickerProps> = ({
             onSelect={handleSelect}
             className="p-2"
             classNames={{
-              day: "text-gray-900",
+              day: "text-brand-dark",
               day_today: "text-brand-orange font-bold",
               day_selected:
                 "bg-brand-orange text-white hover:bg-brand-orange hover:text-white focus:bg-brand-orange focus:text-white",
               day_disabled: "text-gray-300",
-              caption_label: "text-gray-900 font-medium",
+              caption_label: "text-brand-dark font-medium",
               nav_button: "text-gray-600",
               head_cell: "text-gray-500 font-normal text-sm",
             }}

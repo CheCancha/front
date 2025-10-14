@@ -50,7 +50,7 @@ export function RevenueLineChart({ data }: { data: ChartData[] }) {
           type="monotone"
           dataKey="total"
           name="Ingresos"
-          stroke="#ff4e02"
+          stroke="#ff4e02" //brand-orange
           strokeWidth={2}
           dot={{ r: 4 }}
           activeDot={{ r: 6 }}

@@ -21,7 +21,7 @@ export const AmenitiesForm = ({
 }: Props) => {
   return (
     <div className="space-y-6">
-      <h3 className="text-lg font-semibold leading-6 text-gray-900">
+      <h3 className="text-lg font-semibold leading-6 text-brand-dark">
         Comodidades y Servicios
       </h3>
       <p className="text-sm text-gray-500">
@@ -47,7 +47,7 @@ export const AmenitiesForm = ({
               />
               <label
                 htmlFor={`amenity-${amenity.id}`}
-                className="block text-sm text-gray-900"
+                className="block text-sm text-brand-dark"
               >
                 {amenity.name}
               </label>

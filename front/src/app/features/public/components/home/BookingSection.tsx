@@ -5,17 +5,17 @@ import { CalendarCheck, Smartphone, CreditCard } from "lucide-react";
 
 const steps = [
   {
-    icon: <CalendarCheck size={28} />,
+    icon: <CalendarCheck size={28} className='text-brand-dark' />,
     title: "Buscá y Compará",
     text: "Filtrá por deporte, zona y horario. Encontrá la cancha perfecta y el mejor precio en segundos.",
   },
   {
-    icon: <Smartphone size={28} />,
+    icon: <Smartphone size={28} className='text-brand-dark' />,
     title: "Reservá al Instante",
     text: "Mirá la disponibilidad en tiempo real y asegurá tu lugar con un clic. Tu partido se agenda automáticamente.",
   },
   {
-    icon: <CreditCard size={28} />,
+    icon: <CreditCard size={28} className='text-brand-dark'/>,
     title: "Pagá Como Quieras",
     text: "Aboná online con Mercado Pago para confirmar o elegí pagar directamente en el club cuando llegues.",
   },
@@ -44,7 +44,7 @@ const Step = ({
     >
       {/* Contenedor del ícono y la línea */}
       <div className="relative z-10">
-        <div className="flex-shrink-0 bg-brand-orange text-white rounded-full w-14 h-14 flex items-center justify-center shadow-[0_0_20px_rgba(255,78,2,0.7)]">
+        <div className="flex-shrink-0 bg-brand-orange text-white rounded-full w-14 h-14 flex items-center justify-center shadow-[0_0_20px_rgba(210,254,165,0.7)]">{/* 210, 254, 165 */}
           {icon}
         </div>
         {/* Línea que conecta los íconos */}
@@ -53,7 +53,7 @@ const Step = ({
         )}
       </div>
       <div>
-        <h3 className="text-2xl font-bold mb-2">{title}</h3>
+        <h3 className="text-2xl font-semibold mb-2">{title}</h3>
         <p className="text-background/70 text-lg leading-relaxed">{text}</p>
       </div>
     </motion.div>
@@ -71,14 +71,14 @@ export const BookingSection = () => {
   const scaleY = useTransform(scrollYProgress, [0, 1], [0, 1]);
 
   return (
-    <section ref={targetRef} className="py-20 bg-foreground text-white">
+    <section ref={targetRef} className="py-20 bg-brand-dark text-white">
       <div className="container mx-auto px-6">
         <div className="max-w-3xl mx-auto grid md:grid-cols-[auto,1fr] gap-x-12">
           {/* Columna de la Línea de Tiempo (oculta en móvil) */}
           <div className="relative hidden md:block">
             <div className="absolute top-0 left-1/2 -translate-x-1/2 h-full w-1 bg-gray-200 rounded-full"></div>
             <motion.div
-              className="absolute top-0 left-1/2 -translate-x-1/2 h-full w-1 bg-brand-green rounded-full origin-top shadow-[0_0_20px_rgba(1,199,128,0.7)]"
+              className="absolute top-0 left-1/2 -translate-x-1/2 h-full w-1 bg-brand-orange rounded-full origin-top shadow-[0_0_20px_rgba(1,199,128,0.7)]"
               style={{ scaleY }}
             />
           </div>

@@ -46,7 +46,7 @@ const itemVariants = {
 export const WhyUsClub = () => {
   return (
     <motion.section
-      className="py-20 bg-foreground -mt-1"
+      className="py-20 bg-brand-dark -mt-1"
       initial="hidden"
       whileInView="visible"
       viewport={{ once: true, amount: 0.2 }}
@@ -67,7 +67,7 @@ export const WhyUsClub = () => {
           {benefits.map((benefit) => (
             <motion.div
               key={benefit.title}
-              className="bg-neutral-900 p-6 rounded-lg text-left transition"
+              className="bg-black/20 p-6 rounded-lg text-left transition"
               variants={itemVariants}
             >
               <div className={`mb-4 ${benefit.color}`}>{benefit.icon}</div>

@@ -91,14 +91,14 @@ export const FaqSection = () => {
         <div className="grid md:grid-cols-3 gap-12 items-start">
           {/* Columna Izquierda: Título y CTA */}
           <div className="md:col-span-1">
-            <h2 className="font-lora text-3xl md:text-5xl font-semibold text-foreground mt-2 mb-6">
+            <h2 className="font-lora text-3xl md:text-5xl font-semibold text-brand-dark mt-2 mb-6">
               Preguntas Frecuentes
             </h2>
-            <div className="bg-[#56f7a2] to-[#56f776] p-3 md:p-6 rounded-xl">
-              <h4 className="font-bold text-lg text-foreground">
+            <div className="bg-brand-secondary p-3 md:p-6 rounded-xl">
+              <h4 className="font-bold text-lg text-brand-dark">
                 ¿No encontraste lo que buscabas?
               </h4>
-              <p className="text-foreground/80 mt-2 mb-4">
+              <p className="text-pragraph mt-2 mb-4">
                 Nuestro equipo está aquí para ayudarte. Contactanos y resolvé
                 todas tus dudas.
               </p>
@@ -106,7 +106,7 @@ export const FaqSection = () => {
                 href="https://api.whatsapp.com/send?phone=5491154702118"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-block bg-primary text-primary-foreground hover:bg-primary/90 font-medium py-3 px-4 rounded-full transition-transform"
+                className="inline-block bg-brand-dark text-background font-medium py-3 px-4 rounded-full transition-transform"
               >
                 Contáctanos 
               </Link>

@@ -7,9 +7,9 @@ import { normalizePhoneNumber } from "@/shared/lib/utils";
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 const createConfirmationEmailHtml = (ownerName: string) => {
-  const brandColor = "#ff4e02";
+  const brandColor = "#ff4e02"; //brand-orange
   const baseURL = process.env.NEXTAUTH_URL || "http://localhost:3000";
-  const logoUrl = `${baseURL}/logochecancha.png`;
+  const logoUrl = `${baseURL}/checanchalogo.png`;
 
   return `
     <!DOCTYPE html>
@@ -31,7 +31,7 @@ const createConfirmationEmailHtml = (ownerName: string) => {
           <td align="center">
             <div class="container">
               <div class="header">
-                <img src="${logoUrl}" alt="Che Cancha Logo" width="150">
+                <img src="${logoUrl}" alt="CheCancha Logo" width="150">
               </div>
               <div class="content">
                 <h1 style="font-size: 24px; font-weight: 600; margin-bottom: 24px; color: #0f172a;">¡Hemos recibido tu solicitud!</h1>

@@ -22,7 +22,7 @@ export const CustomInput: React.FC<InputProps> = ({ label, register, error, type
         {...register}
         {...props}
         className={cn(
-          "mt-1 block w-full px-3 py-2 bg-background border rounded-md shadow-xs focus:outline-none focus:ring-brand-orange focus:border-brand-orange sm:text-sm",
+          "mt-1 block w-full px-3 py-2 bg-background border rounded-md shadow-xs focus:outline-none focus:ring-brand-dark focus:border-brand-dark sm:text-sm",
           error ? "border-red-500" : "border-gray-300"
         )}
       />
@@ -44,7 +44,7 @@ export const PasswordInput: React.FC<InputProps> = ({ label, register, error, ..
           {...register}
           {...props}
           className={cn(
-            "block w-full px-3 py-2 border bg-background rounded-md shadow-sm focus:outline-none focus:ring-brand-orange focus:border-brand-orange sm:text-sm",
+            "block w-full px-3 py-2 border bg-background rounded-md shadow-sm focus:outline-none focus:ring-brand-dark focus:border-brand-dark sm:text-sm",
             error ? "border-red-500" : "border-gray-300"
           )}
         />

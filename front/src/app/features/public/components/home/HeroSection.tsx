@@ -49,7 +49,7 @@ const HeroSection: FC = () => {
           >
             <motion.h1
               variants={itemVariants}
-              className="text-4xl sm:text-5xl md:text-6xl font-extrabold uppercase tracking-tight leading-tight mb-4"
+              className="font-satoshi text-4xl sm:text-5xl md:text-6xl font-bold uppercase tracking-tight leading-tight mb-4"
             >
               JUGÁ. COMPETÍ. DISFRUTÁ.
             </motion.h1>

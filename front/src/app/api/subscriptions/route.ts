@@ -38,7 +38,7 @@ export async function POST(request: Request) {
     const response = await preapprovalClient.create({
       body: {
         preapproval_plan_id: planDetails.mp_plan_id,
-        reason: `Suscripción Che Cancha - ${planDetails.plan} ${planDetails.cycle}`,
+        reason: `Suscripción CheCancha - ${planDetails.plan} ${planDetails.cycle}`,
         payer_email: session.user.email,
         back_url: `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/${complexId}/billing/success`,
         auto_recurring: {

@@ -37,7 +37,7 @@ export const ModalProfile: React.FC<ModalProfileProps> = ({
             className="relative bg-white rounded-2xl shadow-xl w-full max-w-md"
           >
             <header className="flex items-center justify-between p-4 sm:p-6 border-b">
-              <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
+              <h2 className="text-lg font-semibold text-brand-dark">{title}</h2>
               <button
                 onClick={onClose}
                 className="p-1 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"

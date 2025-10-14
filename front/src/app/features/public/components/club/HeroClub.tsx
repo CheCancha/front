@@ -17,14 +17,14 @@ export const HeroClub = () => {
         <div className="h-320 -translate-y-87.5 absolute left-0 top-0 w-60 -rotate-45 bg-[radial-gradient(50%_50%_at_50%_50%,hsla(0,0%,85%,.04)_0,hsla(0,0%,45%,.02)_80%,transparent_100%)]" />
       </div>
 
-      <section className="overflow-hidden bg-muted/50 dark:bg-background">
+      <section className="overflow-hidden bg-muted/50 dark:bg-brand-dark">
         <div className="relative mx-auto max-w-5xl px-6 pt-28 lg:pt-32">
           <div className="relative z-10 mx-auto max-w-3xl text-center">
-            <h1 className="text-balance text-4xl font-semibold md:text-5xl lg:text-6xl font-lora">
+            <h1 className="text-balance text-brand-dark text-4xl font-semibold md:text-5xl lg:text-6xl font-lora">
               Automatiza tus reservas y maximiza tus ingresos.
             </h1>
             <p className="text-muted-foreground mx-auto my-8 max-w-2xl text-xl font-satoshi">
-              Che Cancha es la plataforma todo en uno que simplifica la gestión
+              CheCancha es la plataforma todo en uno que simplifica la gestión
               de tu complejo deportivo. Menos administración, más crecimiento.
             </p>
 

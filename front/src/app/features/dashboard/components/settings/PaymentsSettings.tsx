@@ -56,7 +56,7 @@ const MercadoPagoConnect = ({ complex }: { complex: Complex }) => {
 
   return (
     <div className="space-y-6">
-      <h3 className="text-lg font-semibold leading-6 text-gray-900">Pagos de Clientes (Señas)</h3>
+      <h3 className="text-lg font-semibold leading-6 text-brand-dark">Pagos de Clientes (Señas)</h3>
       <p className="mt-1 text-sm text-gray-500">Conectá tu propia cuenta de Mercado Pago para aceptar señas y pagos online de tus clientes.</p>
       <div className="mt-6 flex flex-col items-start gap-4 rounded-lg border p-4 sm:flex-row sm:items-center">
         <img src="https://logospng.org/download/mercado-pago/logo-mercado-pago-256.png" alt="Mercado Pago Logo" width={40} height={40} className="h-10 w-10 flex-shrink-0" />
@@ -104,7 +104,7 @@ const SubscriptionManagement = ({ data: complex }: { data: FullComplexData }) =>
 
   return (
     <div className="space-y-6">
-        <h3 className="text-lg font-semibold leading-6 text-gray-900">Tu Suscripción a Che Cancha</h3>
+        <h3 className="text-lg font-semibold leading-6 text-brand-dark">Tu Suscripción a CheCancha</h3>
         <p className="mt-1 text-sm text-gray-500">Gestioná tu plan de suscripción para acceder a todas las funcionalidades.</p>
         <Card>
             <CardHeader>

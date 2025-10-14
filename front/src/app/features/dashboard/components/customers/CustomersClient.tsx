@@ -14,6 +14,7 @@ import { CustomInput } from "@/shared/components/ui/Input";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { User, Phone, Calendar, Hash, DollarSign, Search } from "lucide-react";
+import { Input } from "@/shared/components/ui/inputshadcn";
 
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS" }).format(
@@ -37,16 +38,16 @@ export function CustomersClient({ customers }: { customers: CustomerData[] }) {
   return (
     <div className="bg-white p-6 rounded-lg border shadow-sm">
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">
+        <h3 className="text-lg font-semibold text-brand-dark">
           Listado de Clientes ({customers.length})
         </h3>
         <div className="relative w-full sm:max-w-xs">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <CustomInput
+          <Input
             placeholder="Buscar por nombre, teléfono o email..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
+            className="pl-9" 
           />
         </div>
       </div>

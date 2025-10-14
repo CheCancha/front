@@ -30,12 +30,12 @@ export default function QRCodeGenerator({ complexSlug }: { complexSlug: string }
     if (!publicUrl) return null;
 
     return (
-        <div className="flex flex-col items-center gap-6">
+        <div className="flex flex-col items-center gap-6 rounded-md">
             <QRCode 
                 id="react-qrcode-logo"
                 value={publicUrl}
                 size={200}
-                logoImage="/logochecancha.png"
+                logoImage="/checanchalogo.png"
                 logoWidth={60}
                 logoHeight={60}
                 qrStyle="dots"
