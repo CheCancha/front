@@ -1,24 +1,58 @@
-// in types/onesignal.d.ts (or your chosen path)
+export interface OneSignalPushSubscription {
+  id?: string;
+  addEventListener(
+    event: "change",
+    callback: (event: { current?: { id?: string } }) => void
+  ): void;
+}
 
-// 1. Define an interface for the OneSignal object itself.
-// We only need to define the parts of the SDK we actually use.
+export interface OneSignalUser {
+  PushSubscription: OneSignalPushSubscription;
+}
+
+export interface OneSignalNotifications {
+  requestPermission(): Promise<NotificationPermission>;
+  addEventListener(
+    event:
+      | "click"
+      | "foregroundWillDisplay"
+      | "permissionChange"
+      | "dismiss"
+      | "dismissclick",
+    callback: (event: unknown) => void
+  ): void;
+}
+
 export interface OneSignal {
-  init(options: object): Promise<void>;
+  init(options: {
+    appId: string;
+    safari_web_id?: string;
+    notifyButton?: { enable: boolean };
+    serviceWorkerParam?: { scope: string };
+    serviceWorkerPath?: string;
+    allowLocalhostAsSecureOrigin?: boolean;
+  }): Promise<void>;
+
   isInitialized(): boolean;
+
   Slidedown: {
     promptPush(options?: object): Promise<void>;
   };
+
   on(event: string, listener: (isSubscribed: boolean) => void): void;
   getUserId(): Promise<string | null>;
+
+  // OneSignal v16 additions:
+  User: OneSignalUser;
+  Notifications: OneSignalNotifications;
 }
 
-// 2. Use "declaration merging" to add properties to the global Window interface.
 declare global {
   interface Window {
-    // We make it optional with '?' because it might not exist immediately on page load.
-    OneSignal?: OneSignal; 
-    
-    // Also declare OneSignalDeferred, which you use in your layout.
+    OneSignal?: OneSignal;
     OneSignalDeferred?: Array<(OneSignal: OneSignal) => void>;
+    oneSignalInitialized?: boolean;
   }
 }
+
+export {};

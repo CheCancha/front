@@ -75,7 +75,6 @@ export default function RootLayout({
   return (
     <html lang="es">
       <head>
-        {/* ✅ Cargamos solo el SDK, sin inicializarlo */}
         <Script
           src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js"
           strategy="afterInteractive"
