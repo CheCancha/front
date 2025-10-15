@@ -8,6 +8,20 @@ declare global {
   }
 }
 
+interface OneSignalType {
+  Notifications: {
+    permission: Promise<"default" | "granted" | "denied">;
+  };
+  User: {
+    PushSubscription: {
+      addEventListener: (
+        event: "change",
+        listener: (event: { current?: { id?: string | null } }) => void
+      ) => void;
+    };
+  };
+}
+
 export default function OneSignalProvider({
   children,
 }: {
@@ -21,7 +35,7 @@ useEffect(() => {
   console.log("🟢 Esperando a que OneSignal esté disponible...");
 
   window.OneSignalDeferred = window.OneSignalDeferred || [];
-  window.OneSignalDeferred.push(async (OneSignal: any) => {
+  window.OneSignalDeferred.push(async (OneSignal: OneSignalType) => {
     console.log("✅ OneSignal listo y auto-inicializado");
 
     // Consultar permiso actual
@@ -29,8 +43,8 @@ useEffect(() => {
     console.log("🔔 Permiso actual:", permission);
 
     // Escuchar cambios
-    OneSignal.User.PushSubscription.addEventListener("change", async (event: any) => {
-      const playerId = event?.current?.id ?? null;
+    OneSignal.User.PushSubscription.addEventListener("change", async (event) => {
+      const playerId = event.current?.id ?? null;
       console.log("🔔 Player ID actualizado:", playerId);
 
       await fetch("/api/user/save-player-id", {
@@ -41,8 +55,6 @@ useEffect(() => {
     });
   });
 }, []);
-
-
 
   return <>{children}</>;
 }
