@@ -1,10 +1,10 @@
-// src/app/(app)/profile/components/NotificationToggle.tsx
+// src/shared/components/ui/NotificationToggle.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Toggle } from "@/shared/components/ui/toggle";
-import { Bell, BellOff, ShieldAlert } from "lucide-react";
+import { Bell, BellOff } from "lucide-react";
 import type { OneSignal } from "@/shared/entities/types/onesignal";
 
 interface NotificationToggleProps {
@@ -14,58 +14,43 @@ interface NotificationToggleProps {
 export function NotificationToggle({ initialState }: NotificationToggleProps) {
   const router = useRouter();
   const [isPending, setIsPending] = useState(false);
-  const [isSdkBlocked, setIsSdkBlocked] = useState(false);
 
-  // Efecto para detectar si el SDK de OneSignal fue bloqueado
-  useEffect(() => {
-    // Damos un tiempo prudencial (2 segundos) para que el script de OneSignal cargue.
-    const timer = setTimeout(() => {
-      // Si después de 2 segundos el objeto OneSignal no se ha inicializado en la ventana,
-      // asumimos que fue bloqueado por un ad-blocker.
-      if (!window.OneSignal) {
-        console.warn("OneSignal SDK no se cargó. Probablemente fue bloqueado.");
-        setIsSdkBlocked(true);
+  const handleToggleNotifications = () => {
+    // 1. Log inicial al presionar el botón
+    console.log("🔔 Toggle de notificaciones presionado.");
+
+    if (initialState || isPending) {
+      console.log("🛑 Acción detenida: ya está activo o en proceso.");
+      return;
+    }
+
+    console.log("🔄 Cambiando a estado 'Procesando...'");
+    setIsPending(true); // Poner en estado de carga
+
+    window.OneSignalDeferred?.push(async (OneSignal: OneSignal) => {
+      console.log("➡️ Accediendo al SDK de OneSignal para mostrar el prompt.");
+      try {
+        // 2. Log justo antes de mostrar el pop-up
+        console.log("⏳ Mostrando el prompt. Esperando interacción del usuario...");
+        
+        await OneSignal.Slidedown.promptPush();
+
+        // 3. Log cuando el usuario interactúa (acepta, rechaza o cierra)
+        console.log("✅ Interacción del usuario completada.");
+
+        // 4. Log antes de refrescar los datos
+        console.log("🔄 Refrescando datos del servidor con router.refresh()...");
+        router.refresh();
+        
+      } catch (error) {
+        // 5. Log detallado si algo falla en el proceso
+        console.error("🚨 Error al mostrar o procesar el prompt de OneSignal:", error);
+        
+        console.log("🔄 Volviendo al estado inicial debido a un error.");
+        setIsPending(false);
       }
-    }, 2000);
-
-    return () => clearTimeout(timer); // Limpieza del temporizador
-  }, []);
-
-  const handleToggleNotifications = async () => {
-    if (isSdkBlocked) return; // No hacer nada si el SDK está bloqueado
-
-    setIsPending(true);
-
-    // El SDK debería estar disponible si no fue bloqueado
-    window.OneSignalDeferred?.push((OneSignal: OneSignal) => {
-      OneSignal.Slidedown.promptPush();
     });
-
-    // Refrescamos después de un tiempo para actualizar el estado desde el servidor.
-    // El OneSignalProvider se encargará de la lógica de fondo.
-    setTimeout(() => {
-      router.refresh();
-    }, 2500);
   };
-
-  // --- Renderizado Condicional ---
-
-  if (isSdkBlocked) {
-    return (
-      <div className="flex items-center space-x-4 rounded-md border border-yellow-200 bg-yellow-50 p-4">
-        <ShieldAlert className="h-5 w-5 text-yellow-600" />
-        <div className="flex-1 space-y-1">
-          <p className="text-sm font-medium leading-none text-yellow-800">
-            Función no disponible
-          </p>
-          <p className="text-sm text-yellow-700">
-            Tu navegador o un bloqueador de anuncios está impidiendo activar las
-            notificaciones.
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="flex items-center space-x-4 rounded-md border p-4">
