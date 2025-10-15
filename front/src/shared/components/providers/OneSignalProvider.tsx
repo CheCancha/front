@@ -21,7 +21,11 @@ export default function OneSignalProvider({
   const { setIsSubscribed, setIsLoading } = useOneSignalStore.getState();
 
   useEffect(() => {
-    if (typeof window === "undefined" || !ONE_SIGNAL_APP_ID || window.oneSignalInitialized) {
+    if (
+      typeof window === "undefined" ||
+      !ONE_SIGNAL_APP_ID ||
+      window.oneSignalInitialized
+    ) {
       if (!window.oneSignalInitialized) setIsLoading(false);
       return;
     }
@@ -37,41 +41,69 @@ export default function OneSignalProvider({
           allowLocalhostAsSecureOrigin: process.env.NODE_ENV === "development",
         });
 
+        await OneSignal.init({
+          appId: ONE_SIGNAL_APP_ID!,
+          allowLocalhostAsSecureOrigin: process.env.NODE_ENV === "development",
+        });
+
         console.log("✅ OneSignal inicializado correctamente");
-        
+
+        // Solicitar permiso (si no está concedido)
+        const permission = await OneSignal.Notifications.permission;
+        if (permission !== "granted") {
+          const result = await OneSignal.Notifications.requestPermission();
+          console.log("🔔 Permiso solicitado:", result);
+        }
+
+        // Forzar registro manual del worker y obtener el Player ID
+        await OneSignal.User.PushSubscription.optIn();
+        const playerId = await OneSignal.User.PushSubscription.id;
+        console.log("🆔 Player ID obtenido:", playerId);
+
         // Al iniciar, verificamos el estado actual y actualizamos el store
         const currentSubscription = OneSignal.User.PushSubscription.id;
-        const currentPermission = OneSignal.Notifications.permission;
-        if (currentSubscription && currentPermission) {
+        const currentPermission = await OneSignal.Notifications.permission;
+
+        if (currentSubscription && currentPermission === "granted") {
           setIsSubscribed(true);
         }
-        setIsLoading(false); // Terminamos la carga inicial
+
+        setIsLoading(false);
 
         // Listener para cambios de permiso
-        OneSignal.Notifications.addEventListener("permissionChange", (wasGranted: boolean) => {
-          console.log(`🔔 El permiso ha cambiado a: ${wasGranted ? 'CONCEDIDO' : 'DENEGADO'}`);
-          setIsSubscribed(wasGranted);
-          setIsLoading(false); // La interacción terminó, ya no estamos cargando
-        });
+        OneSignal.Notifications.addEventListener(
+          "permissionChange",
+          (wasGranted: boolean) => {
+            console.log(
+              `🔔 El permiso ha cambiado a: ${
+                wasGranted ? "CONCEDIDO" : "DENEGADO"
+              }`
+            );
+            setIsSubscribed(wasGranted);
+            setIsLoading(false); // La interacción terminó, ya no estamos cargando
+          }
+        );
 
         // Listener para cambios de suscripción (para sincronizar con el backend)
-        OneSignal.User.PushSubscription.addEventListener("change", async (event) => {
-          const playerId = event?.current?.id ?? null;
-          console.log("🔔 Sincronizando Player ID con el backend:", playerId);
-          await fetch("/api/user/save-player-id", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ playerId }),
-          });
-        });
-
+        OneSignal.User.PushSubscription.addEventListener(
+          "change",
+          async (event) => {
+            const playerId = event?.current?.id ?? null;
+            console.log("🔔 Sincronizando Player ID con el backend:", playerId);
+            await fetch("/api/user/save-player-id", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ playerId }),
+            });
+          }
+        );
       } catch (err) {
         console.error("❌ Error al inicializar OneSignal:", err);
         setIsLoading(false);
         window.oneSignalInitialized = false;
       }
     });
-  }, [setIsLoading, setIsSubscribed]); 
+  }, [setIsLoading, setIsSubscribed]);
 
   return <>{children}</>;
 }

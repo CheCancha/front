@@ -74,29 +74,31 @@ export default function RootLayout({
 
   return (
     <html lang="es">
-      <head>
-        <Script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" strategy="afterInteractive"
-          async/>
-      </head>
-      <body className="antialiased">
-        <link
-          href="https://api.fontshare.com/v2/css?f[]=lora@400,401,500,600,601,700,701,1,2&f[]=satoshi@300,301,400,401,500,501,700,701,900,901,1,2&display=swap"
-          rel="stylesheet"
-        />
+  <head>
+    <link
+      href="https://api.fontshare.com/v2/css?f[]=lora@400,401,500,600,601,700,701,1,2&f[]=satoshi@300,301,400,401,500,501,700,701,900,901,1,2&display=swap"
+      rel="stylesheet"
+    />
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+    />
+  </head>
+  <body className="antialiased">
+    <Script
+      src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js"
+      strategy="afterInteractive"
+      async
+    />
 
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-        />
+    <Suspense>
+      <SearchStateInitializer />
+    </Suspense>
 
-        <Suspense>
-          <SearchStateInitializer />
-        </Suspense>
-
-        <GoogleAnalytics />
-        <SmoothScroller />
-        <Providers>{children}</Providers>
-      </body>
-    </html>
+    <GoogleAnalytics />
+    <SmoothScroller />
+    <Providers>{children}</Providers>
+  </body>
+</html>
   );
 }
