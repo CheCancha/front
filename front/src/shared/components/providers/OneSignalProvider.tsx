@@ -71,9 +71,7 @@ export default function OneSignalProvider({
         window.oneSignalInitialized = false;
       }
     });
-  }, [setIsLoading, setIsSubscribed]); // Incluimos las acciones en las dependencias
+  }, [setIsLoading, setIsSubscribed]); 
 
-  // Este componente ya no necesita un "Provider" de contexto, solo necesita existir
-  // para ejecutar el useEffect.
   return <>{children}</>;
 }
