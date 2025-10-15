@@ -60,7 +60,7 @@ const DateSlider = ({
               className={cn(
                 "flex-shrink-0 flex flex-col items-center justify-center w-16 h-20 rounded-xl transition-all duration-200 border-2",
                 isSelected
-                  ? "bg-brand-orange border-brand-orange text-white"
+                  ? "bg-brand-orange border-brand-orange text-brand-dark"
                   : "bg-white border-gray-200 text-gray-700 hover:border-brand-orange"
               )}
             >
@@ -138,7 +138,7 @@ const TimeSlots = ({
               className={cn(
                 "flex-shrink-0 px-5 py-2 rounded-lg text-center font-semibold transition-colors text-sm border-2",
                 isSelected
-                  ? "bg-brand-orange border-brand-orange text-white shadow-lg"
+                  ? "bg-brand-orange border-brand-orange text-brand-dark shadow-sm"
                   : "bg-white border-gray-200 text-gray-700 hover:border-brand-orange"
               )}
             >
@@ -240,7 +240,7 @@ const MobileBookingWidget: React.FC<BookingWidgetProps> = ({
                   className={cn(
                     "flex-shrink-0 px-4 py-2 rounded-full text-sm font-bold border-2 transition-colors",
                     selectedCourt.id === court.id
-                      ? "bg-brand-orange border-brand-orange text-white"
+                      ? "bg-brand-orange border-brand-orange text-brand-dark"
                       : "bg-white border-gray-200 text-gray-700"
                   )}
                 >
@@ -272,11 +272,14 @@ const MobileBookingWidget: React.FC<BookingWidgetProps> = ({
           >
             <div className="container mx-auto px-4 py-3 flex items-center justify-between gap-4 ">
               <div>
-                <p className="text-gray-600 text-sm">Precio del turno</p>
+                <p className="text-gray-600 text-sm">Precio de seña:</p>
                 <p className="font-bold text-xl text-brand-dark">
                   {new Intl.NumberFormat("es-AR", {
                     style: "currency",
                     currency: "ARS",
+                    useGrouping: false,
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0,
                   }).format(selectedPriceRule.price)}
                 </p>
               </div>
@@ -383,7 +386,7 @@ const DesktopBookingWidget: React.FC<BookingWidgetProps> = ({
                 className={cn(
                   "px-4 py-3 rounded-lg text-left font-semibold border-2 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-orange",
                   selectedCourt.id === court.id
-                    ? "bg-brand-orange text-white border-brand-orange shadow-md"
+                    ? "bg-brand-orange text-brand-dark border-brand-orange shadow-md"
                     : "bg-gray-50 text-foreground border-gray-200 hover:border-brand-orange hover:bg-orange-50 cursor-pointer"
                 )}
               >
@@ -436,9 +439,9 @@ const DesktopBookingWidget: React.FC<BookingWidgetProps> = ({
                     isAvailable &&
                       !past &&
                       !isSelected &&
-                      "bg-neutral-200 text-neutral-800 hover:bg-brand-orange hover:text-white cursor-pointer",
+                      "bg-neutral-200 text-neutral-800 hover:bg-brand-orange hover:text-brand-dark cursor-pointer",
                     isSelected &&
-                      "bg-brand-orange text-white ring-2 ring-offset-2 ring-brand-orange"
+                      "bg-brand-orange ring-2 ring-offset-2 ring-brand-orange"
                   )}
                 >
                   {slot.time}

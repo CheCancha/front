@@ -2,18 +2,32 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams } from "next/navigation";
-import { ChevronLeft, ChevronRight, Calendar, PlusCircle } from "lucide-react";
-import { format, add, startOfDay, isBefore, isToday } from "date-fns";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Calendar,
+  PlusCircle,
+  Phone,
+} from "lucide-react";
+import {
+  format,
+  add,
+  startOfDay,
+  isBefore,
+  isToday,
+  startOfWeek,
+  endOfWeek,
+  eachDayOfInterval,
+  isSameDay,
+} from "date-fns";
 import { es } from "date-fns/locale";
 import { cn } from "@/shared/lib/utils";
 import type {
   Complex,
   Court,
-  Booking as PrismaBooking,
   Sport,
   BookingStatus,
   PriceRule,
-  Coupon,
 } from "@prisma/client";
 import { toast } from "react-hot-toast";
 import BookingFormModal, {
@@ -65,6 +79,15 @@ export default function BookingCalendarPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [sportFilter, setSportFilter] = useState<string>("Todos");
 
+  const [view, setView] = useState<"day" | "week">("day");
+  const { weekStart, weekEnd, weekDays } = useMemo(() => {
+    const weekStartsOn = 1;
+    const start = startOfWeek(currentDate, { weekStartsOn });
+    const end = endOfWeek(currentDate, { weekStartsOn });
+    const days = eachDayOfInterval({ start, end });
+    return { weekStart: start, weekEnd: end, weekDays: days };
+  }, [currentDate]);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalBooking, setModalBooking] = useState<BookingWithDetails | null>(
     null
@@ -112,13 +135,26 @@ export default function BookingCalendarPage() {
   };
 
   const fetchBookingsForDate = useCallback(
-    async (date: Date) => {
+    async (date: Date, currentView: "day" | "week") => {
       if (!complexId) return;
-      const dateString = format(date, "yyyy-MM-dd");
+
+      let url = `/api/complex/${complexId}/bookings?`;
+
+      if (currentView === "day") {
+        const dateString = format(date, "yyyy-MM-dd");
+        url += `date=${dateString}`;
+      } else {
+        const weekStartsOn = 1;
+        const startDate = startOfWeek(date, { weekStartsOn });
+        const endDate = endOfWeek(date, { weekStartsOn });
+        url += `startDate=${format(startDate, "yyyy-MM-dd")}&endDate=${format(
+          endDate,
+          "yyyy-MM-dd"
+        )}`;
+      }
+
       try {
-        const res = await fetch(
-          `/api/complex/${complexId}/bookings?date=${dateString}`
-        );
+        const res = await fetch(url);
         if (!res.ok) throw new Error("Error al cargar las reservas.");
         const data = await res.json();
         setBookings(data);
@@ -157,9 +193,9 @@ export default function BookingCalendarPage() {
 
   useEffect(() => {
     if (complex) {
-      fetchBookingsForDate(currentDate);
+      fetchBookingsForDate(currentDate, view);
     }
-  }, [complex, currentDate, fetchBookingsForDate]);
+  }, [complex, currentDate, view, fetchBookingsForDate]);
 
   const handleDateChange = (days: number) =>
     setCurrentDate((prev) => add(prev, { days }));
@@ -195,7 +231,7 @@ export default function BookingCalendarPage() {
 
       toast.success(successMessage);
       closeModal();
-      await fetchBookingsForDate(currentDate);
+      await fetchBookingsForDate(currentDate, view);  // le agregue yo view
     } catch (error) {
       toast.error(
         error instanceof Error
@@ -213,8 +249,12 @@ export default function BookingCalendarPage() {
   ) => {
     toast.loading("Actualizando reserva...");
     try {
-      const body: { bookingId: string; status: "COMPLETADO" | "CANCELADO"; depositPaid?: number } = { bookingId, status };
-      
+      const body: {
+        bookingId: string;
+        status: "COMPLETADO" | "CANCELADO";
+        depositPaid?: number;
+      } = { bookingId, status };
+
       if (status === "COMPLETADO") {
         const bookingToComplete = bookings.find((b) => b.id === bookingId);
         if (bookingToComplete) {
@@ -222,16 +262,16 @@ export default function BookingCalendarPage() {
         }
       }
 
-      const response = await fetch(`/api/complex/${complexId}/bookings`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
+      const response = await fetch(`/api/complex/${complexId}/bookings`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
       if (!response.ok) throw new Error("No se pudo actualizar la reserva.");
       toast.dismiss();
       toast.success("Reserva actualizada.");
       closeModal();
-      await fetchBookingsForDate(currentDate);
+      await fetchBookingsForDate(currentDate, view); // le agregue yo view
     } catch (error) {
       toast.dismiss();
       toast.error(
@@ -313,52 +353,99 @@ export default function BookingCalendarPage() {
   if (isLoading || !complex) return <CalendarSkeleton />;
 
   return (
-    <>
-      <div className="flex-1 bg-gray-50 p-1">
-        <header className="mb-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-4 self-start sm:self-center">
-            <div className="flex items-center p-1 bg-white border rounded-lg shadow-sm">
-              <button
-                onClick={() => handleDateChange(-1)}
-                className="p-1.5 text-gray-500 hover:text-black"
-              >
-                <ChevronLeft size={20} />
-              </button>
-              <button
-                onClick={handleGoToToday}
-                className="px-3 py-1.5 text-sm font-semibold text-gray-700 hover:text-black flex items-center gap-2"
-              >
-                <Calendar size={16} /> Hoy
-              </button>
-              <button
-                onClick={() => handleDateChange(1)}
-                className="p-1.5 text-gray-500 hover:text-black"
-              >
-                <ChevronRight size={20} />
-              </button>
+  <>
+    <div className="flex-1 bg-gray-50 p-1 md:p-4">
+      <header className="mb-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+        {/* --- GRUPO IZQUIERDO: CONTROLES DE NAVEGACIÓN --- */}
+        <div className="flex items-center gap-4 self-start sm:self-center">
+          {/* Navegación de Fecha */}
+          <div className="flex items-center p-1 bg-white border rounded-lg shadow-sm">
+            <button
+              onClick={() => handleDateChange(-1)}
+              className="p-1.5 text-gray-500 hover:text-black"
+              aria-label={view === 'day' ? "Día anterior" : "Semana anterior"}
+            >
+              <ChevronLeft size={20} />
+            </button>
+            <button
+              onClick={handleGoToToday}
+              className="px-3 py-1.5 text-sm font-semibold text-gray-700 hover:text-black flex items-center gap-2"
+            >
+              <Calendar size={16} /> Hoy
+            </button>
+            <button
+              onClick={() => handleDateChange(1)}
+              className="p-1.5 text-gray-500 hover:text-black"
+              aria-label={view === 'day' ? "Día siguiente" : "Semana siguiente"}
+            >
+              <ChevronRight size={20} />
+            </button>
+          </div>
+
+          {/* Selector de Vista */}
+          <div className="flex items-center p-1 bg-white border rounded-lg shadow-sm">
+            <button
+              onClick={() => setView("day")}
+              className={cn(
+                "px-3 py-1.5 text-sm font-semibold rounded-md transition-colors",
+                view === "day"
+                  ? "bg-black text-white"
+                  : "text-gray-700 hover:bg-gray-100"
+              )}
+            >
+              Día
+            </button>
+            <button
+              onClick={() => setView("week")}
+              className={cn(
+                "px-3 py-1.5 text-sm font-semibold rounded-md transition-colors",
+                view === "week"
+                  ? "bg-black text-white"
+                  : "text-gray-700 hover:bg-gray-100"
+              )}
+            >
+              Semana
+            </button>
+          </div>
+        </div>
+
+        {/* --- GRUPO DERECHO: INFO Y FILTROS --- */}
+        <div className="flex items-center gap-4 self-start sm:self-center">
+          <span className="font-semibold text-lg text-brand-dark capitalize text-right">
+            {view === "day"
+              ? format(currentDate, "eeee, dd MMMM", { locale: es })
+              : `${format(weekStart, "dd MMM", { locale: es })} - ${format(
+                  weekEnd,
+                  "dd MMM",
+                  { locale: es }
+                )}`}
+          </span>
+          {/* El filtro de deportes solo se muestra en la vista diaria */}
+          {view === "day" && (
+            <div className="flex items-center gap-2 overflow-x-auto pb-2">
+              {sportFilters.map((sport) => (
+                <button
+                  key={sport}
+                  onClick={() => setSportFilter(sport)}
+                  className={cn(
+                    "px-3 py-1.5 rounded-md text-sm font-semibold whitespace-nowrap",
+                    sportFilter === sport
+                      ? "bg-black text-white"
+                      : "bg-white text-gray-700 hover:bg-gray-100 border"
+                  )}
+                >
+                  {sport}
+                </button>
+              ))}
             </div>
-            <span className="font-semibold text-lg text-gray-800 capitalize">
-              {format(currentDate, "eeee, dd MMMM", { locale: es })}
-            </span>
-          </div>
-          <div className="flex items-center gap-2 self-start sm:self-center overflow-x-auto pb-2">
-            {sportFilters.map((sport) => (
-              <button
-                key={sport}
-                onClick={() => setSportFilter(sport)}
-                className={cn(
-                  "px-3 py-1.5 rounded-md text-sm font-semibold whitespace-nowrap",
-                  sportFilter === sport
-                    ? "bg-black text-white"
-                    : "bg-white text-gray-700 hover:bg-gray-100 border"
-                )}
-              >
-                {sport}
-              </button>
-            ))}
-          </div>
-        </header>
-        <div className="bg-white border rounded-lg shadow-sm overflow-x-auto">
+          )}
+        </div>
+      </header>
+      
+      {/* --- CONTENEDOR DEL CALENDARIO --- */}
+      <div className="bg-white border rounded-lg shadow-sm overflow-x-auto">
+        {view === 'day' ? (
+          // --- VISTA DIARIA (Tu código existente) ---
           <div
             className="grid"
             style={{
@@ -370,9 +457,10 @@ export default function BookingCalendarPage() {
               <button
                 onClick={handleOpenNewBookingModal}
                 disabled={filteredCourts.length === 0}
-                className="flex items-center justify-center w-full h-full text-sm font-semibold text-white bg-black hover:bg-gray-800 rounded-md cursor-pointer disabled:bg-gray-400 disabled:cursor-not-allowed"
+                className="flex items-center justify-center w-full h-full text-sm font-semibold text-white bg-black hover:bg-brand-dark rounded-md cursor-pointer disabled:bg-gray-400 disabled:cursor-not-allowed"
                 title="Añadir nueva reserva"
-              ><PlusCircle size={16} />
+              >
+                <PlusCircle size={16} />
               </button>
             </div>
             {filteredCourts.map((court) => (
@@ -389,112 +477,152 @@ export default function BookingCalendarPage() {
                   {time}
                 </div>
                 {filteredCourts.map((court) => {
-                  const courtBookings = bookingsByCourt.get(court.id) || [];
-                  const slotStartMinutes =
-                    parseInt(time.split(":")[0]) * 60 +
-                    parseInt(time.split(":")[1]);
-                  const bookingStartingNow = courtBookings.find((b) => {
-                    const bookingStart =
-                      b.startTime * 60 + (b.startMinute || 0);
-                    return slotStartMinutes === bookingStart;
-                  });
+                   const courtBookings = bookingsByCourt.get(court.id) || [];
+                   const slotStartMinutes = parseInt(time.split(":")[0]) * 60 + parseInt(time.split(":")[1]);
+                   const bookingStartingNow = courtBookings.find((b) => {
+                     const bookingStart = b.startTime * 60 + (b.startMinute || 0);
+                     return slotStartMinutes === bookingStart;
+                   });
+ 
+                   if (bookingStartingNow) {
+                     const interval = complex.timeSlotInterval || 30;
+                     const rowSpan = bookingStartingNow.court.slotDurationMinutes / interval;
+                     return (
+                       <div
+                         key={`${court.id}-${time}`}
+                         className="relative border-b border-l p-1"
+                         style={{ gridRow: `span ${rowSpan}` }}
+                       >
+                         <button
+                           onClick={() => openModalForExisting(bookingStartingNow)}
+                           className={cn(
+                             "rounded-md w-full h-full p-2 text-left text-xs font-semibold cursor-pointer flex flex-col justify-between",
+                             statusColors[bookingStartingNow.status]
+                           )}
+                         >
+                           <div>
+                             <span className="font-bold block">
+                               {bookingStartingNow.user?.name || bookingStartingNow.guestName || "Cliente"}
+                             </span>
+                             {(bookingStartingNow.user?.phone || bookingStartingNow.guestPhone) && (
+                                <span className="flex items-center gap-1 font-normal opacity-90 mt-0.5">
+                                  <Phone size={12} className="shrink-0" />
+                                  {bookingStartingNow.user?.phone || bookingStartingNow.guestPhone}
+                                </span>
+                              )}
+                             <span className="capitalize text-xs">
+                               {bookingStartingNow.status.toLowerCase()}
+                             </span>
+                           </div>
+                           <span className="font-bold text-sm self-end">
+                              {bookingStartingNow.depositPaid.toLocaleString("es-AR", { 
+                                style: "currency", 
+                                currency: "ARS",
+                                minimumFractionDigits: 0,
+                                maximumFractionDigits: 0,
+                              })}
+                           </span>
+                         </button>
+                       </div>
+                     );
+                   }
+ 
+                   const isSlotCovered = courtBookings.some((b) => {
+                     const bookingStart = b.startTime * 60 + (b.startMinute || 0);
+                     const bookingEnd = bookingStart + b.court.slotDurationMinutes;
+                     return (
+                       slotStartMinutes >= bookingStart &&
+                       slotStartMinutes < bookingEnd
+                     );
+                   });
+ 
+                   if (isSlotCovered) return null;
+ 
+                   const past = isPast(time);
+                   const isEnabled = !past && !isSlotCovered;
+ 
+                   return (
+                     <div
+                       key={`${court.id}-${time}`}
+                       className="relative border-b border-l p-1"
+                     >
+                       <button
+                         onClick={() => isEnabled && openModalForNew(court.id, time)}
+                         disabled={!isEnabled}
+                         className={cn(
+                           "h-full w-full rounded-md flex items-center justify-center transition-colors",
+                           isEnabled
+                             ? "text-gray-400 hover:bg-gray-100 hover:text-gray-600 cursor-pointer group"
+                             : "bg-gray-50 text-gray-300 cursor-not-allowed"
+                         )}
+                       >
+                         <PlusCircle
+                           size={18}
+                           className={cn("transition-opacity", isEnabled ? "group-hover:opacity-0" : "opacity-50")}
+                         />
+                         {isEnabled && (
+                           <span className="absolute text-sm font-bold text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity">
+                             {time}
+                           </span>
+                         )}
+                       </button>
+                     </div>
+                   );
+                })}
+              </React.Fragment>
+            ))}
+          </div>
+        ) : (
+          // --- VISTA SEMANAL ---
+          <div 
+            className="grid" 
+            style={{
+              gridTemplateColumns: `minmax(80px, auto) repeat(7, minmax(150px, 1fr))`,
+            }}
+          >
+            {/* Header: Esquina vacía + Días de la semana */}
+            <div className="sticky top-0 left-0 bg-white z-20 border-b border-r"></div>
+            {weekDays.map(day => (
+              <div key={day.toISOString()} className="sticky top-0 text-center font-semibold p-2 border-b border-l bg-white z-10">
+                <p className="capitalize text-xs text-gray-500">{format(day, "eee", { locale: es })}</p>
+                <p className="text-2xl">{format(day, "d")}</p>
+              </div>
+            ))}
 
-                  if (bookingStartingNow) {
-                    const interval = complex.timeSlotInterval || 30;
-                    const rowSpan =
-                      bookingStartingNow.court.slotDurationMinutes / interval;
-                    return (
-                      <div
-                        key={`${court.id}-${time}`}
-                        className="relative border-b border-l p-1"
-                        style={{ gridRow: `span ${rowSpan}` }}
-                      >
-                        <button
-                          onClick={() =>
-                            openModalForExisting(bookingStartingNow)
-                          }
+            {/* Contenido: Horas + Celdas de reservas */}
+            {timeSlots.map(time => (
+              <React.Fragment key={time}>
+                <div className="sticky left-0 text-right text-xs font-mono text-gray-500 pr-2 border-r flex items-center justify-end bg-white z-10 h-24">{time}</div>
+                {weekDays.map(day => {
+                  const bookingsForSlot = bookings.filter(b => 
+                    isSameDay(new Date(b.date), day) &&
+                    `${String(b.startTime).padStart(2, "0")}:${String(b.startMinute ?? 0).padStart(2, "0")}` === time
+                  );
+                  return (
+                    <div key={day.toISOString()} className="relative border-b border-l p-1 min-h-[6rem] flex flex-col gap-1">
+                      {bookingsForSlot.map(booking => (
+                        <button 
+                          key={booking.id}
+                          onClick={() => openModalForExisting(booking)}
                           className={cn(
-                            "rounded-md w-full h-full p-2 text-left text-xs font-semibold cursor-pointer flex flex-col justify-between",
-                            statusColors[bookingStartingNow.status]
+                            "p-1.5 rounded text-xs w-full text-left overflow-hidden cursor-pointer",
+                            statusColors[booking.status]
                           )}
                         >
-                          <div>
-                            <span className="font-bold block">
-                              {bookingStartingNow.user?.name ||
-                                bookingStartingNow.guestName ||
-                                "Cliente"}
-                            </span>
-                            <span className="capitalize text-xs">
-                              {bookingStartingNow.status.toLowerCase()}
-                            </span>
-                          </div>
-                          <span className="font-bold text-sm self-end">
-                            {bookingStartingNow.depositPaid.toLocaleString(
-                              "es-AR",
-                              { style: "currency", currency: "ARS" }
-                            )}
-                          </span>
+                          <p className="font-bold truncate">{booking.user?.name || booking.guestName}</p>
+                          <p className="truncate text-gray-600">{booking.court.name}</p>
                         </button>
-                      </div>
-                    );
-                  }
-
-                  const isSlotCovered = courtBookings.some((b) => {
-                    const bookingStart =
-                      b.startTime * 60 + (b.startMinute || 0);
-                    const bookingEnd =
-                      bookingStart + b.court.slotDurationMinutes;
-                    return (
-                      slotStartMinutes >= bookingStart &&
-                      slotStartMinutes < bookingEnd
-                    );
-                  });
-
-                  if (isSlotCovered) {
-                    return null;
-                  }
-
-                  const past = isPast(time);
-                  const isEnabled = !past && !isSlotCovered;
-
-                  return (
-                    <div
-                      key={`${court.id}-${time}`}
-                      className="relative border-b border-l p-1"
-                    >
-                      <button
-                        onClick={() =>
-                          isEnabled && openModalForNew(court.id, time)
-                        }
-                        disabled={!isEnabled}
-                        className={cn(
-                          "h-full w-full rounded-md flex items-center justify-center transition-colors",
-                          isEnabled
-                            ? "text-gray-400 hover:bg-gray-100 hover:text-gray-600 cursor-pointer group"
-                            : "bg-gray-50 text-gray-300 cursor-not-allowed"
-                        )}
-                      >
-                        <PlusCircle
-                          size={18}
-                          className={cn(
-                            "transition-opacity",
-                            isEnabled ? "group-hover:opacity-0" : "opacity-50"
-                          )}
-                        />
-                        {isEnabled && (
-                          <span className="absolute text-sm font-bold text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity">
-                            {time}
-                          </span>
-                        )}
-                      </button>
+                      ))}
                     </div>
                   );
                 })}
               </React.Fragment>
             ))}
           </div>
-        </div>
+        )}
       </div>
+    </div>
+
       {complex && (
         <BookingFormModal
           isOpen={isModalOpen}
@@ -543,6 +671,5 @@ export default function BookingCalendarPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </>
-  );
-}
+</>
+)}

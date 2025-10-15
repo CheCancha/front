@@ -16,6 +16,8 @@ interface CancellationFormProps {
 
 const CANCELLATION_OPTIONS = [
   { label: "1 hora antes del turno", value: 1 },
+  { label: "6 horas antes del turno", value: 6 },
+  { label: "8 horas antes del turno", value: 8 },
   { label: "12 horas antes del turno", value: 12 },
   { label: "24 horas antes del turno", value: 24 },
   { label: "No permitir cancelaciones", value: 0 },

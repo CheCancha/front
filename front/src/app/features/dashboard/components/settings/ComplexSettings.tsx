@@ -425,7 +425,7 @@ export const ComplexSettings = () => {
     }
   };
 
-  if (isLoading) return <div className="p-8 flex justify-center items-center"><Spinner /></div>;
+  if (isLoading) return <div className="h-[60dvh] p-8 flex justify-center items-center"><Spinner /></div>;
   if (!data) return <div className="p-8">No se encontró la configuración del complejo.</div>;
 
   return (

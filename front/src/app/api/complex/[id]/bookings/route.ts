@@ -8,6 +8,7 @@ import {
   startOfToday,
   isSameDay,
   isBefore,
+  parseISO,
 } from "date-fns";
 import { BookingStatus } from "@prisma/client";
 
@@ -84,21 +85,35 @@ export async function GET(
 
     // --- LÓGICA PARA EL CALENDARIO DE RESERVAS ---
     const dateString = searchParams.get("date");
-    if (!dateString) {
-      return new NextResponse("El parámetro 'date' es obligatorio", {
-        status: 400,
-      });
+    const startDateString = searchParams.get("startDate");
+    const endDateString = searchParams.get("endDate");
+
+    let startDate, endDate;
+
+    if (startDateString && endDateString) {
+      // Si se piden fechas de inicio y fin, usamos el rango (para la vista semanal)
+      startDate = startOfDay(parseISO(startDateString));
+      endDate = endOfDay(parseISO(endDateString));
+    } else if (dateString) {
+      // Si solo se pide una fecha, usamos la lógica existente (para la vista diaria)
+      const requestedDate = new Date(`${dateString}T00:00:00`);
+      startDate = startOfDay(requestedDate);
+      endDate = endOfDay(requestedDate);
+    } else {
+      return new NextResponse(
+        "Faltan parámetros de fecha ('date' o 'startDate'/'endDate')",
+        {
+          status: 400,
+        }
+      );
     }
-    const requestedDate = new Date(`${dateString}T00:00:00`);
-    const startOfRequestedDay = startOfDay(requestedDate);
-    const endOfRequestedDay = endOfDay(requestedDate);
 
     const bookings = await db.booking.findMany({
       where: {
         court: { complexId: complexId },
         date: {
-          gte: startOfRequestedDay,
-          lt: endOfRequestedDay,
+          gte: startDate,
+          lt: endDate,  // o lte
         },
         status: {
           in: [
@@ -148,11 +163,14 @@ export async function POST(
     }
 
     const bookingDate = new Date(`${date}T${time}`);
-    
+
     if (isBefore(bookingDate, new Date(new Date().getTime() - 60000))) {
-      return NextResponse.json({ message: "No se pueden crear reservas en horarios pasados." }, {
-        status: 400,
-      });
+      return NextResponse.json(
+        { message: "No se pueden crear reservas en horarios pasados." },
+        {
+          status: 400,
+        }
+      );
     }
 
     const [hour, minute] = time.split(":").map(Number);
@@ -249,11 +267,7 @@ export async function POST(
   } catch (error) {
     console.error("💥 ERROR en POST de bookings:", error);
 
-    if (
-      error instanceof Error &&
-      "code" in error &&
-      (error).code === "P2002"
-    ) {
+    if (error instanceof Error && "code" in error && error.code === "P2002") {
       return NextResponse.json(
         { message: "Error: Ya existe una reserva en este horario." },
         { status: 409 }
@@ -284,7 +298,7 @@ export async function PATCH(
     if (!bookingId) {
       return new NextResponse("Falta el ID de la reserva", { status: 400 });
     }
-    
+
     const existingBooking = await db.booking.findUnique({
       where: { id: bookingId },
       select: { totalPrice: true },
@@ -293,9 +307,10 @@ export async function PATCH(
     if (!existingBooking) {
       return new NextResponse("Reserva no encontrada", { status: 404 });
     }
-    
-    if (typeof updateData.depositPaid === 'number') {
-        updateData.remainingBalance = existingBooking.totalPrice - updateData.depositPaid;
+
+    if (typeof updateData.depositPaid === "number") {
+      updateData.remainingBalance =
+        existingBooking.totalPrice - updateData.depositPaid;
     }
 
     delete updateData.courtId;

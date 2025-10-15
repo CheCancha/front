@@ -65,7 +65,6 @@ export const ComplexHeader = ({
   </section>
 );
 
-
 const generateWeeklySchedule = (complex: ComplexProfileData) => {
   const schedule = [];
   const dayOrder: {
@@ -161,120 +160,122 @@ export function ClientPage({ complex }: { complex: ComplexProfileData }) {
             images={complex.images}
           />
 
-           <div className="lg:flex lg:gap-8 lg:items-start">
-    
-    {/* --- COLUMNA PRINCIPAL (izquierda en desktop) --- */}
-    {/* En móvil, esto ocupa todo el ancho. En desktop, 2/3 del espacio. */}
-    <div className="lg:w-2/3 space-y-8">
-      <BookingWidget
-        club={complex}
-        onSlotClick={handleSlotClick}
-        selectedDate={selectedDate}
-        setSelectedDate={setSelectedDate}
-      />
-
-      {/* Movimos el Mapa aquí para que siga el flujo natural en móvil */}
-      {complex.latitude && complex.longitude && (
-  <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm mt-8">
-    <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-      <MapPin size={20} className="text-brand-orange" />
-      Ubicación
-    </h3>
-    <div className="h-[400px] w-full rounded-lg overflow-hidden z-0">
-      <Map
-        lat={complex.latitude}
-        lng={complex.longitude}
-        complexName={complex.name}
-      />
-    </div>
-  </div>
-)}
-    </div>
-
-    {/* --- COLUMNA LATERAL (derecha en desktop) --- */}
-    {/* En móvil, aparece debajo de la columna principal. En desktop, ocupa 1/3 y es pegajosa. */}
-    {/* El 'mt-8 lg:mt-0' añade espacio en móvil, pero lo quita en desktop. */}
-    <div className="lg:w-1/3 space-y-6 lg:sticky lg:top-24 mt-8 lg:mt-0">
-      {/* Tarjeta de Contacto */}
-      {hasContactInfo && (
-        <div className="bg-white rounded-2xl p-6 border border-gray-200">
-          <h3 className="text-lg font-bold text-foreground mb-4">
-            Contacto y Redes
-          </h3>
-          <div className="space-y-3">
-            {complex.contactPhone && (
-              <InfoItem
-                icon={Phone}
-                text={complex.contactPhone}
-                href={`tel:${complex.contactPhone}`}
+          <div className="lg:flex lg:gap-8 lg:items-start">
+            {/* --- COLUMNA PRINCIPAL (izquierda en desktop) --- */}
+            {/* En móvil, esto ocupa todo el ancho. En desktop, 2/3 del espacio. */}
+            <div className="lg:w-2/3 space-y-8">
+              <BookingWidget
+                club={complex}
+                onSlotClick={handleSlotClick}
+                selectedDate={selectedDate}
+                setSelectedDate={setSelectedDate}
               />
-            )}
-            {complex.contactEmail && (
-              <InfoItem
-                icon={Mail}
-                text={complex.contactEmail}
-                href={`mailto:${complex.contactEmail}`}
-              />
-            )}
-            {complex.instagramHandle && (
-              <InfoItem
-                icon={FaInstagram}
-                text={`@${complex.instagramHandle}`}
-                href={`https://instagram.com/${complex.instagramHandle}`}
-              />
-            )}
-            {complex.facebookUrl && (
-              <InfoItem
-                icon={FaFacebook}
-                text="Facebook"
-                href={complex.facebookUrl}
-              />
-            )}
-          </div>
-        </div>
-      )}
 
-       {/* Tarjeta de Servicios */}
-      {complex.amenities && complex.amenities.length > 0 && (
-        <div className="bg-white rounded-2xl p-6 border border-gray-200">
-          <h3 className="text-lg font-bold text-foreground mb-4">
-            Servicios
-          </h3>
-          <div className="grid grid-cols-2 gap-x-6 gap-y-3">
-            {complex.amenities.map((amenity) => (
-              <div key={amenity.id} className="flex items-center gap-2 text-paragraph">
-                <AmenityIcon iconName={amenity.icon} className="h-4 w-4 text-brand-orange" />
-                <span className="font-medium">{amenity.name}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Tarjeta de Horarios */}
-      <div className="bg-white rounded-2xl p-6 border border-gray-200">
-        <h3 className="text-lg font-bold text-foreground mb-4">
-          Horarios
-        </h3>
-        <ul className="space-y-2 text-paragraph">
-          {weeklySchedule.map((item, index) => (
-            <li
-              key={item.day}
-              className={cn(
-                "flex justify-between",
-                index === todayIndex && "font-bold text-brand-orange"
+              {/* Movimos el Mapa aquí para que siga el flujo natural en móvil */}
+              {complex.latitude && complex.longitude && (
+                <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm mt-8">
+                  <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+                    Ubicación
+                  </h3>
+                  <div className="h-[400px] w-full rounded-lg overflow-hidden z-0">
+                    <Map
+                      lat={complex.latitude}
+                      lng={complex.longitude}
+                      complexName={complex.name}
+                    />
+                  </div>
+                </div>
               )}
-            >
-              <span>{item.day}</span>
-              <span className="font-medium">{item.hours}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-      
-     
-    </div>
-  </div>
+            </div>
+
+            {/* --- COLUMNA LATERAL (derecha en desktop) --- */}
+            {/* En móvil, aparece debajo de la columna principal. En desktop, ocupa 1/3 y es pegajosa. */}
+            {/* El 'mt-8 lg:mt-0' añade espacio en móvil, pero lo quita en desktop. */}
+            <div className="lg:w-1/3 space-y-6 lg:sticky lg:top-24 mt-8 lg:mt-0">
+              {/* Tarjeta de Contacto */}
+              {hasContactInfo && (
+                <div className="bg-white rounded-2xl p-6 border border-gray-200">
+                  <h3 className="text-lg font-bold text-foreground mb-4">
+                    Contacto y Redes
+                  </h3>
+                  <div className="space-y-3">
+                    {complex.contactPhone && (
+                      <InfoItem
+                        icon={Phone}
+                        text={complex.contactPhone}
+                        href={`tel:${complex.contactPhone}`}
+                      />
+                    )}
+                    {complex.contactEmail && (
+                      <InfoItem
+                        icon={Mail}
+                        text={complex.contactEmail}
+                        href={`mailto:${complex.contactEmail}`}
+                      />
+                    )}
+                    {complex.instagramHandle && (
+                      <InfoItem
+                        icon={FaInstagram}
+                        text={`@${complex.instagramHandle}`}
+                        href={`https://instagram.com/${complex.instagramHandle}`}
+                      />
+                    )}
+                    {complex.facebookUrl && (
+                      <InfoItem
+                        icon={FaFacebook}
+                        text="Facebook"
+                        href={complex.facebookUrl}
+                      />
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Tarjeta de Servicios */}
+              {complex.amenities && complex.amenities.length > 0 && (
+                <div className="bg-white rounded-2xl p-6 border border-gray-200">
+                  <h3 className="text-lg font-bold text-foreground mb-4">
+                    Servicios
+                  </h3>
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+                    {complex.amenities.map((amenity) => (
+                      <div
+                        key={amenity.id}
+                        className="flex items-center gap-2 text-paragraph"
+                      >
+                        <AmenityIcon
+                          iconName={amenity.icon}
+                          className="h-4 w-4 text-brand-secondary"
+                        />
+                        <span className="font-medium">{amenity.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Tarjeta de Horarios */}
+              <div className="bg-white rounded-2xl p-6 border border-gray-200">
+                <h3 className="text-lg font-bold text-foreground mb-4">
+                  Horarios
+                </h3>
+                <ul className="space-y-2 text-paragraph">
+                  {weeklySchedule.map((item, index) => (
+                    <li
+                      key={item.day}
+                      className={cn(
+                        "flex justify-between",
+                        index === todayIndex && "font-bold text-brand-secondary"
+                      )}
+                    >
+                      <span>{item.day}</span>
+                      <span className="font-medium">{item.hours}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
         </main>
         <Footer />
       </div>

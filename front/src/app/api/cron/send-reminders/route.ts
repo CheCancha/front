@@ -10,8 +10,8 @@ export async function GET(request: Request) {
 
   try {
     const now = new Date();
-    const reminderTimeStart = startOfMinute(addMinutes(now, 59));
-    const reminderTimeEnd = startOfMinute(addMinutes(now, 61));
+    const reminderTimeStart = startOfMinute(addMinutes(now, 58));
+    const reminderTimeEnd = startOfMinute(addMinutes(now, 63));
 
     const upcomingBookings = await db.booking.findMany({
       where: {
@@ -57,6 +57,7 @@ export async function GET(request: Request) {
         contents: {
           es: `Recordatorio: Tenés un turno a las ${bookingTime}hs en ${complexName}. ¡No te cuelgues!`,
         },
+        web_url: `https://www.checancha.com/profile`
       };
 
       const oneSignalResponse = await fetch(
@@ -79,6 +80,7 @@ export async function GET(request: Request) {
             userId: booking.user.id,
             title: notificationPayload.headings.es,
             message: notificationPayload.contents.es,
+            url: notificationPayload.web_url,
           },
         });
       } else {

@@ -4,24 +4,22 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
-  --color-foreground: #0d1216;
-  /* 
+  --color-foreground: #0a262c;
+  /* #0d1216 
   black #090906
   lime #e1fe01
   aqua #d2fea5
    */
   --color-background: #fff;
-  --color-brand-orange: #d2fea5; /* naranja:ff4e02  aqua:#d5fe44 #d2fea5*/
-  --color-brand-lime: #e1fe01;
-  --color-brand-dark: #0d1216;
-  --color-brand-secondary: #ff4e02;
+  --color-brand-orange: #defe9f;
+  --color-brand-dark: #111b21;
+  --color-brand-secondary: #ff4e02; /* naranja:ff4e02 */
+  --color-paragraph: #707070;
+  --color-brand-olive: #565500;
 
   --color-brand-blue: #54c3fe;
   --color-brand-green: #01c780;
-  --color-brand-olive: #565500;
   --color-brand-purple: #d0b7fe;
-
-  --color-paragraph: #707070;
 
   --color-bg-complementario: #f5f5f5;
   --color-error: #ef4444;
@@ -36,7 +34,7 @@
   --color-background: #030203;
 
   --color-paragraph: #9c9c9c;
-  --darkblue: #19274b;
+  --darkblue: #111621;
   --lime: rgb(210, 254, 165);
   --background: oklch(0.141 0.005 285.823);
   --foreground: oklch(0.985 0 0);
@@ -179,7 +177,6 @@ body {
 .animate-rippling {
   animation: rippling 600ms ease-out;
 }
-
 
 html {
   overflow-y: scroll;
