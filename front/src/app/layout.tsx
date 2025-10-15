@@ -75,11 +75,8 @@ export default function RootLayout({
   return (
     <html lang="es">
       <head>
-        <Script
-          src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js"
-          strategy="afterInteractive"
-          async
-        />
+        {/* <Script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" strategy="afterInteractive"
+          async/> */}
       </head>
       <body className="antialiased">
         <link

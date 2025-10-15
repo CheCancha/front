@@ -11,9 +11,9 @@ interface ProvidersProps {
 export default function Providers({ children }: ProvidersProps) {
     return (
         <SessionProvider>
-            <OneSignalProvider>
+            {/* <OneSignalProvider> */}
                 {children}
-            </OneSignalProvider>
+            {/* </OneSignalProvider> */}
         </SessionProvider>
     );
 }
