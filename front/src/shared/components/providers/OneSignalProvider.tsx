@@ -1,15 +1,14 @@
 "use client";
 
 import { useEffect } from "react";
-import { useSession } from "next-auth/react";
 import type { OneSignal } from "@/shared/entities/types/onesignal";
+import { useOneSignalStore } from "@/shared/store/useOneSignalStore";
 
 const ONE_SIGNAL_APP_ID = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID;
 
 declare global {
   interface Window {
     oneSignalInitialized?: boolean;
-    OneSignalDeferred?: ((OneSignal: OneSignal) => void)[];
   }
 }
 
@@ -17,56 +16,48 @@ export default function OneSignalProvider({
   children,
 }: {
   children: React.ReactNode;
-}) {
-  const { status } = useSession();
+}): React.ReactElement {
+  // Obtenemos las acciones del store. Usamos getState() porque esto solo se configura una vez.
+  const { setIsSubscribed, setIsLoading } = useOneSignalStore.getState();
 
   useEffect(() => {
-    if (
-      typeof window === "undefined" ||
-      !ONE_SIGNAL_APP_ID ||
-      window.oneSignalInitialized
-    )
+    if (typeof window === "undefined" || !ONE_SIGNAL_APP_ID || window.oneSignalInitialized) {
+      if (!window.oneSignalInitialized) setIsLoading(false);
       return;
+    }
 
     window.oneSignalInitialized = true;
     console.log("🟢 Configurando OneSignal por primera vez...");
 
     window.OneSignalDeferred = window.OneSignalDeferred || [];
-    window.OneSignalDeferred.push(async (OneSignal) => {
+    window.OneSignalDeferred.push(async (OneSignal: OneSignal) => {
       try {
         await OneSignal.init({
-          appId: ONE_SIGNAL_APP_ID,
-          safari_web_id: process.env.NEXT_PUBLIC_ONESIGNAL_SAFARI_WEB_ID,
-          notifyButton: { enable: false },
-          serviceWorkerParam: { scope: "/onesignal/" },
-          serviceWorkerPath: "OneSignalSDKWorker.js",
+          appId: ONE_SIGNAL_APP_ID!,
           allowLocalhostAsSecureOrigin: process.env.NODE_ENV === "development",
         });
 
         console.log("✅ OneSignal inicializado correctamente");
-
-        // 1️⃣ Si el usuario ya está autenticado y tiene permiso, guardamos su Player ID
-        if (status === "authenticated" && Notification.permission === "granted") {
-          const playerId = OneSignal?.User?.PushSubscription?.id ?? null;
-          if (playerId) {
-            await fetch("/api/user/save-player-id", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ playerId }),
-            });
-            console.log("💾 Player ID sincronizado al iniciar sesión:", playerId);
-          }
+        
+        // Al iniciar, verificamos el estado actual y actualizamos el store
+        const currentSubscription = OneSignal.User.PushSubscription.id;
+        const currentPermission = OneSignal.Notifications.permission;
+        if (currentSubscription && currentPermission) {
+          setIsSubscribed(true);
         }
+        setIsLoading(false); // Terminamos la carga inicial
 
-        // 2️⃣ Escuchamos cambios de suscripción
+        // Listener para cambios de permiso
+        OneSignal.Notifications.addEventListener("permissionChange", (wasGranted: boolean) => {
+          console.log(`🔔 El permiso ha cambiado a: ${wasGranted ? 'CONCEDIDO' : 'DENEGADO'}`);
+          setIsSubscribed(wasGranted);
+          setIsLoading(false); // La interacción terminó, ya no estamos cargando
+        });
+
+        // Listener para cambios de suscripción (para sincronizar con el backend)
         OneSignal.User.PushSubscription.addEventListener("change", async (event) => {
-          console.log("Cambio de suscripción detectado:", event);
-
-          if (status !== "authenticated") return;
-
           const playerId = event?.current?.id ?? null;
-          console.log("Nuevo Player ID:", playerId);
-
+          console.log("🔔 Sincronizando Player ID con el backend:", playerId);
           await fetch("/api/user/save-player-id", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -74,19 +65,15 @@ export default function OneSignalProvider({
           });
         });
 
-        // 3️⃣ Escuchamos cambios de permiso (aceptar / denegar notificaciones)
-        OneSignal.Notifications.addEventListener("permissionChange", (event) => {
-          console.log("🔔 Cambio de permiso de notificaciones:", event);
-        });
       } catch (err) {
         console.error("❌ Error al inicializar OneSignal:", err);
-        window.oneSignalInitialized = false; 
+        setIsLoading(false);
+        window.oneSignalInitialized = false;
       }
     });
-  }, [status]);
+  }, [setIsLoading, setIsSubscribed]); // Incluimos las acciones en las dependencias
 
+  // Este componente ya no necesita un "Provider" de contexto, solo necesita existir
+  // para ejecutar el useEffect.
   return <>{children}</>;
 }
-
-
-
