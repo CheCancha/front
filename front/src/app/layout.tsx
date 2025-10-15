@@ -43,9 +43,8 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#ff4e02", //brand-orange
+  themeColor: "#ff4e02", // brand-orange
 };
-
 
 export default function RootLayout({
   children,
@@ -75,27 +74,20 @@ export default function RootLayout({
 
   return (
     <html lang="es">
-      <head> 
+      <head>
+        {/* ✅ Cargamos solo el SDK, sin inicializarlo */}
         <Script
           src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js"
-          defer
+          strategy="afterInteractive"
+          async
         />
-        <Script id="onesignal-init" strategy="afterInteractive">
-          {`
-            window.OneSignalDeferred = window.OneSignalDeferred || [];
-            OneSignalDeferred.push(async function(OneSignal) {
-              await OneSignal.init({
-                appId: "ddf57deb-9806-44b8-9b76-61c18e57d29b",
-              });
-            });
-          `}
-        </Script>
       </head>
-      <body className={`antialiased`}>
+      <body className="antialiased">
         <link
           href="https://api.fontshare.com/v2/css?f[]=lora@400,401,500,600,601,700,701,1,2&f[]=satoshi@300,301,400,401,500,501,700,701,900,901,1,2&display=swap"
           rel="stylesheet"
         />
+
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -107,11 +99,8 @@ export default function RootLayout({
 
         <GoogleAnalytics />
         <SmoothScroller />
-        <Providers>
-          {children}
-        </Providers>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
 }
-

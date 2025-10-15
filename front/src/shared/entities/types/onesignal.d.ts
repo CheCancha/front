@@ -1,5 +1,7 @@
-// types/onesignal.d.ts
+// in types/onesignal.d.ts (or your chosen path)
 
+// 1. Define an interface for the OneSignal object itself.
+// We only need to define the parts of the SDK we actually use.
 export interface OneSignal {
   init(options: object): Promise<void>;
   isInitialized(): boolean;
@@ -10,8 +12,13 @@ export interface OneSignal {
   getUserId(): Promise<string | null>;
 }
 
+// 2. Use "declaration merging" to add properties to the global Window interface.
 declare global {
   interface Window {
-    OneSignalDeferred: Array<(OneSignal: OneSignal) => void>;
+    // We make it optional with '?' because it might not exist immediately on page load.
+    OneSignal?: OneSignal; 
+    
+    // Also declare OneSignalDeferred, which you use in your layout.
+    OneSignalDeferred?: Array<(OneSignal: OneSignal) => void>;
   }
 }
