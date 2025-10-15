@@ -1,7 +1,7 @@
 {
-  "name": "che cancha",
-  "short_name": "che cancha",
-  "description": "Gestiona tu complejo deportivo y haz crecer tu negocio.",
+  "name": "CheCancha",
+  "short_name": "CheCancha",
+  "description": "Gestiona tu complejo deportivo y hace crecer tu negocio.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

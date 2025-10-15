@@ -55,7 +55,7 @@ export async function GET(request: Request) {
         include_player_ids: [booking.user.oneSignalPlayerId],
         headings: { es: `¡Tu partido está por empezar!` },
         contents: {
-          es: `Recordatorio: Tenés un turno a las ${bookingTime}hs en ${courtName} (${complexName}). ¡No te cuelgues!`,
+          es: `Recordatorio: Tenés un turno a las ${bookingTime}hs en ${complexName}. ¡No te cuelgues!`,
         },
       };
 
