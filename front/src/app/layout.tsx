@@ -9,15 +9,15 @@ import Script from "next/script";
 
 export const metadata: Metadata = {
   title: {
-    template: "%s | checancha",
-    default: "checancha",
+    template: "%s | CheCancha",
+    default: "CheCancha",
   },
   description: "Página Oficial de CheCancha.",
   openGraph: {
-    title: "checancha",
+    title: "CheCancha",
     description: "Página Oficial de CheCancha.",
     url: "https://www.checancha.com.ar",
-    siteName: "checancha",
+    siteName: "CheCancha",
     images: [
       {
         url: "https://checancha.com/checanchalogo.png",
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "checancha",
+    title: "CheCancha",
     description: "Página Oficial de CheCancha.",
     images: ["https://checancha.com/checanchalogo.png"],
   },
@@ -54,7 +54,7 @@ export default function RootLayout({
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "SportsClub",
-    name: "checancha",
+    name: "CheCancha",
     url: "https://checancha.com",
     logo: "https://checancha.com/checanchalogo.png",
     address: {

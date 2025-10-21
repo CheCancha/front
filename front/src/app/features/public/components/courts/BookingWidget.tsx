@@ -60,7 +60,7 @@ const DateSlider = ({
               className={cn(
                 "flex-shrink-0 flex flex-col items-center justify-center w-16 h-20 rounded-xl transition-all duration-200 border-2",
                 isSelected
-                  ? "bg-brand-orange border-brand-orange text-brand-dark"
+                  ? "bg-brand-orange border-brand-orange text-white"
                   : "bg-white border-gray-200 text-gray-700 hover:border-brand-orange"
               )}
             >
@@ -138,7 +138,7 @@ const TimeSlots = ({
               className={cn(
                 "flex-shrink-0 px-5 py-2 rounded-lg text-center font-semibold transition-colors text-sm border-2",
                 isSelected
-                  ? "bg-brand-orange border-brand-orange text-brand-dark shadow-sm"
+                  ? "bg-brand-orange border-brand-orange text-white shadow-sm"
                   : "bg-white border-gray-200 text-gray-700 hover:border-brand-orange"
               )}
             >

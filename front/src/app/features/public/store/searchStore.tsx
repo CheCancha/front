@@ -35,7 +35,7 @@ const createSearchSlice: StateCreator<SearchState> = (set) => ({
     
     const newState: Partial<SearchState> = {};
     if (urlCity) newState.city = urlCity;
-    if (urlDate) newState.date = new Date(`${urlDate}T00:00:00Z`);
+    if (urlDate) newState.date = new Date(`${urlDate}T00:00:00`);
     if (urlTime) newState.time = urlTime;
     
     set(newState);

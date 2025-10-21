@@ -4,12 +4,12 @@ const TermsPage = () => {
   return (
     <div className="py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto prose prose-lg text-gray-700">
-        <h1>Términos y Condiciones de Uso de checancha</h1>
+        <h1>Términos y Condiciones de Uso de CheCancha</h1>
         <p className="text-sm text-gray-500">Última actualización: 3 de Octubre de 2025</p>
 
         <p>
           Estos Términos y Condiciones (&quot;Términos&quot;) rigen tu acceso y uso de la
-          plataforma en línea de checancha (el &quot;Servicio&quot;). Por favor, lee estos
+          plataforma en línea de CheCancha (el &quot;Servicio&quot;). Por favor, lee estos
           Términos detenidamente.
         </p>
 
@@ -86,18 +86,18 @@ const TermsPage = () => {
         <ul>
             <li>Realizar reservas fraudulentas o especulativas.</li>
             <li>Utilizar la plataforma para acosar, abusar o dañar a otra persona.</li>
-            <li>Intentar obtener acceso no autorizado a los sistemas o redes de checancha.</li>
+            <li>Intentar obtener acceso no autorizado a los sistemas o redes de CheCancha.</li>
         </ul>
 
         <h2>7. Propiedad Intelectual</h2>
         <p>
           El Servicio y su contenido original, características y funcionalidad son y seguirán siendo propiedad exclusiva
-          de checancha y sus licenciantes.
+          de CheCancha y sus licenciantes.
         </p>
 
         <h2>8. Limitación de Responsabilidad</h2>
         <p>
-          En la máxima medida permitida por la ley aplicable, en ningún caso checancha
+          En la máxima medida permitida por la ley aplicable, en ningún caso CheCancha
           será responsable de ningún daño indirecto, incidental, especial,
           consecuente o punitivo que surja de tu uso del Servicio o de cualquier
           disputa entre tú y un Complejo. Nuestra responsabilidad total hacia ti por

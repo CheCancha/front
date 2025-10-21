@@ -245,7 +245,7 @@ export function ClientPage({ complex }: { complex: ComplexProfileData }) {
                       >
                         <AmenityIcon
                           iconName={amenity.icon}
-                          className="h-4 w-4 text-brand-secondary"
+                          className="h-4 w-4 text-brand-orange"
                         />
                         <span className="font-medium">{amenity.name}</span>
                       </div>

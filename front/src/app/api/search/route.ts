@@ -103,8 +103,6 @@ function findNextAvailableSlots(
   });
 
   const availableSlots: AvailableSlot[] = [];
-  // --- CORRECCIÓN DE BÚSQUEDA DE HORARIOS ---
-  // Se elimina el "+ 1" que saltaba la hora actual. Ahora la búsqueda es precisa.
   const startHour = isToday ? Math.max(now.getHours(), openHour) : openHour;
   const timeInterval = complex.timeSlotInterval || 30;
 
@@ -207,7 +205,6 @@ export async function GET(req: NextRequest) {
         latitude: complex.latitude,
         longitude: complex.longitude,
         cancellationPolicyHours: complex.cancellationPolicyHours,
-        // --- MEJORA DE REVIEWS ---
         averageRating: complex.averageRating,
         reviewCount: complex.reviewCount,
       };

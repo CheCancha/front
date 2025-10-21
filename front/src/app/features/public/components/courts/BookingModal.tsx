@@ -359,14 +359,14 @@ export default function BookingModal({
 
                   <div className="space-y-4 text-left border-t border-b py-4">
                     <div className="flex items-center gap-3">
-                      <Shield className="w-5 h-5 text-brand-secondary" />
+                      <Shield className="w-5 h-5 text-brand-orange" />
                       <p>
                         <span className="font-semibold">{club?.name}</span> -{" "}
                         {court?.name}
                       </p>
                     </div>
                     <div className="flex items-center gap-3">
-                      <Calendar className="w-5 h-5 text-brand-secondary" />
+                      <Calendar className="w-5 h-5 text-brand-orange" />
                       <p>
                         {date.toLocaleDateString("es-AR", {
                           weekday: "long",
@@ -377,7 +377,7 @@ export default function BookingModal({
                       </p>
                     </div>
                     <div className="flex items-center gap-3">
-                      <Clock className="w-5 h-5 text-brand-secondary" />
+                      <Clock className="w-5 h-5 text-brand-orange" />
                       <p>
                         <span className="font-semibold">
                           {time} a {" "}
@@ -393,7 +393,7 @@ export default function BookingModal({
                       </p>
                     </div>
                     <div className="flex items-start gap-3">
-                      <DollarSign className="w-5 h-5 text-brand-secondary mt-1" />
+                      <DollarSign className="w-5 h-5 text-brand-orange mt-1" />
                       <div>
                         {appliedCoupon ? (
                           <>
@@ -440,7 +440,7 @@ export default function BookingModal({
                     ) : !showCouponInput ? (
                       <button
                         onClick={() => setShowCouponInput(true)}
-                        className="text-brand-secondary font-semibold hover:underline"
+                        className="text-brand-orange font-semibold hover:underline"
                       >
                         ¿Tenés un cupón de descuento?
                       </button>

@@ -23,12 +23,14 @@ interface DatePickerProps {
   selectedDate: Date | undefined;
   onSelectDate: (date: Date | undefined) => void;
   variant?: "default" | "hero";
+  className?: string;
 }
 
 interface TimePickerProps {
   value: string;
   onChange: (value: string) => void;
   variant?: "default" | "hero";
+  className?: string;
 }
 
 // --- Componente DatePicker con estilo unificado ---
@@ -36,6 +38,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
   selectedDate,
   onSelectDate,
   variant,
+  className,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const today = new Date();
@@ -52,7 +55,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
     "bg-white border-neutral-300 text-neutral-900 placeholder-neutral-500";
 
   return (
-    <div className="relative w-full">
+    <div className={cn("relative w-full", className)}>
       <CalendarDaysIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-500" />
       <input
         type="text"
@@ -107,6 +110,7 @@ export const TimePicker: React.FC<TimePickerProps> = ({
   value,
   onChange,
   variant,
+  className,
 }) => {
   const timeOptions: TimeOption[] = [];
   for (let h = 0; h < 24; h++) {
@@ -143,7 +147,7 @@ export const TimePicker: React.FC<TimePickerProps> = ({
   };
 
   return (
-    <div className="relative w-full cursor-pointer">
+    <div className={cn("relative w-full cursor-pointer", className)}>
       <Select<TimeOption>
         instanceId="time-select"
         options={timeOptions}

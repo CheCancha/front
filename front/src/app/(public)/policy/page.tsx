@@ -4,11 +4,11 @@ const PolicyPage = () => {
   return (
     <div className="py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto prose prose-lg text-gray-700">
-        <h1>Política de Privacidad de checancha</h1>
+        <h1>Política de Privacidad de CheCancha</h1>
         <p className="text-sm text-gray-500">Última actualización: 3 de Octubre de 2025</p>
 
         <p>
-          Bienvenido a checancha. Tu privacidad es de suma importancia para nosotros.
+          Bienvenido a CheCancha. Tu privacidad es de suma importancia para nosotros.
           Esta Política de Privacidad explica cómo recopilamos, usamos, divulgamos y protegemos tu
           información cuando utilizas nuestra plataforma (el &quot;Servicio&quot;).
         </p>
