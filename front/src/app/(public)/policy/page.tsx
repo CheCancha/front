@@ -2,7 +2,7 @@ import React from "react";
 
 const PolicyPage = () => {
   return (
-    <div className="bg-white py-12 px-4 sm:px-6 lg:px-8">
+    <div className="py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto prose prose-lg text-gray-700">
         <h1>Política de Privacidad de checancha</h1>
         <p className="text-sm text-gray-500">Última actualización: 3 de Octubre de 2025</p>

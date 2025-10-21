@@ -240,7 +240,7 @@ const MobileBookingWidget: React.FC<BookingWidgetProps> = ({
                   className={cn(
                     "flex-shrink-0 px-4 py-2 rounded-full text-sm font-bold border-2 transition-colors",
                     selectedCourt.id === court.id
-                      ? "bg-brand-orange border-brand-orange text-brand-dark"
+                      ? "bg-brand-orange border-brand-orange text-white"
                       : "bg-white border-gray-200 text-gray-700"
                   )}
                 >
@@ -386,7 +386,7 @@ const DesktopBookingWidget: React.FC<BookingWidgetProps> = ({
                 className={cn(
                   "px-4 py-3 rounded-lg text-left font-semibold border-2 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-orange",
                   selectedCourt.id === court.id
-                    ? "bg-brand-orange text-brand-dark border-brand-orange shadow-md"
+                    ? "bg-brand-orange text-white border-brand-orange shadow-md"
                     : "bg-gray-50 text-foreground border-gray-200 hover:border-brand-orange hover:bg-orange-50 cursor-pointer"
                 )}
               >
@@ -439,9 +439,9 @@ const DesktopBookingWidget: React.FC<BookingWidgetProps> = ({
                     isAvailable &&
                       !past &&
                       !isSelected &&
-                      "bg-neutral-200 text-neutral-800 hover:bg-brand-orange hover:text-brand-dark cursor-pointer",
+                      "bg-neutral-200 text-neutral-800 hover:bg-brand-orange hover:text-white cursor-pointer",
                     isSelected &&
-                      "bg-brand-orange ring-2 ring-offset-2 ring-brand-orange"
+                      "bg-brand-orange text-white ring-2 ring-offset-2 ring-brand-orange"
                   )}
                 >
                   {slot.time}

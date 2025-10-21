@@ -17,9 +17,11 @@ import { User, Phone, Calendar, Hash, DollarSign, Search } from "lucide-react";
 import { Input } from "@/shared/components/ui/inputshadcn";
 
 const formatCurrency = (value: number) =>
-  new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS" }).format(
-    value
-  );
+  new Intl.NumberFormat("es-AR", {
+    style: "currency",
+    currency: "ARS",
+    minimumFractionDigits: 0,
+  }).format(value);
 
 export function CustomersClient({ customers }: { customers: CustomerData[] }) {
   const [searchTerm, setSearchTerm] = useState("");
@@ -38,7 +40,7 @@ export function CustomersClient({ customers }: { customers: CustomerData[] }) {
   return (
     <div className="bg-white p-6 rounded-lg border shadow-sm">
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
-        <h3 className="text-lg font-semibold text-brand-dark">
+        <h3 className="text-lg font-switzer font-semibold text-brand-dark">
           Listado de Clientes ({customers.length})
         </h3>
         <div className="relative w-full sm:max-w-xs">
@@ -47,7 +49,7 @@ export function CustomersClient({ customers }: { customers: CustomerData[] }) {
             placeholder="Buscar por nombre, teléfono o email..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9" 
+            className="pl-9"
           />
         </div>
       </div>

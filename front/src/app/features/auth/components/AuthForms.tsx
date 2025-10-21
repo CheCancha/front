@@ -86,7 +86,7 @@ export const LoginForm = () => {
   return (
     <div className="w-full">
       <div className="text-center mb-8">
-        <h2 className="font-lora text-3xl font-semibold text-bg-brand-dark">
+        <h2 className="font-switzer text-3xl font-semibold text-bg-brand-dark">
           Iniciá sesión
         </h2>
         <p className="mt-2 text-sm text-paragraph">
@@ -235,14 +235,14 @@ export const RegisterForm = () => {
   return (
     <div className="w-full ">
       <div className="text-center mb-8">
-        <h2 className="font-lora text-3xl font-semibold text-foreground">
+        <h2 className="font-switzer text-3xl font-semibold text-foreground">
           Creá tu cuenta
         </h2>
         <p className="mt-2 text-sm text-paragraph">
           ¿Ya tenés una?{" "}
           <Link
             href="/login"
-            className="font-medium text-sm text-brand-secondary hover:underline"
+            className="font-medium text-sm text-brand-orange hover:underline"
           >
             Iniciá sesión
           </Link>

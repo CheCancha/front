@@ -7,7 +7,7 @@ import { normalizePhoneNumber } from "@/shared/lib/utils";
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 const createConfirmationEmailHtml = (ownerName: string) => {
-  const brandColor = "#ff4e02"; //brand-orange
+  const brandColor = "#fe4321"; //brand-orange
   const baseURL = process.env.NEXTAUTH_URL || "http://localhost:3000";
   const logoUrl = `${baseURL}/checanchalogo.png`;
 

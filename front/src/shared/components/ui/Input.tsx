@@ -2,10 +2,10 @@
 
 "use client";
 
-import React, { useState } from 'react';
-import { UseFormRegisterReturn } from 'react-hook-form';
+import React, { useState } from "react";
+import { UseFormRegisterReturn } from "react-hook-form";
 import { cn } from "@/shared/lib/utils";
-import { Eye, EyeClosed } from 'lucide-react';
+import { Eye, EyeClosed } from "lucide-react";
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -13,10 +13,18 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   error?: string;
 }
 
-export const CustomInput: React.FC<InputProps> = ({ label, register, error, type = 'text', ...props }) => {
+export const CustomInput: React.FC<InputProps> = ({
+  label,
+  register,
+  error,
+  type = "text",
+  ...props
+}) => {
   return (
     <div>
-      <label className="block text-sm font-medium text-foreground">{label}</label>
+      <label className="block text-sm font-medium text-foreground">
+        {label}
+      </label>
       <input
         type={type}
         {...register}
@@ -31,20 +39,26 @@ export const CustomInput: React.FC<InputProps> = ({ label, register, error, type
   );
 };
 
-
-export const PasswordInput: React.FC<InputProps> = ({ label, register, error, ...props }) => {
+export const PasswordInput: React.FC<InputProps> = ({
+  label,
+  register,
+  error,
+  ...props
+}) => {
   const [showPassword, setShowPassword] = useState(false);
 
   return (
     <div>
-      <label className="block text-sm font-medium text-foreground">{label}</label>
+      <label className="block text-sm font-medium text-foreground">
+        {label}
+      </label>
       <div className="relative mt-1">
         <input
-          type={showPassword ? 'text' : 'password'}
+          type={showPassword ? "text" : "password"}
           {...register}
           {...props}
           className={cn(
-            "block w-full px-3 py-2 border bg-background rounded-md shadow-sm focus:outline-none focus:ring-brand-dark focus:border-brand-dark sm:text-sm",
+            "block w-full px-3 py-2 border bg-background rounded-md shadow-xs focus:outline-none focus:ring-brand-dark focus:border-brand-dark sm:text-sm",
             error ? "border-red-500" : "border-gray-300"
           )}
         />

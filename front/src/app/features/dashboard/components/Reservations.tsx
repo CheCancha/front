@@ -41,7 +41,7 @@ const ReservationsSkeleton = () => (
 const NoReservationsMessage = () => (
   <div className="text-center py-10 px-4 flex flex-col items-center justify-center h-full">
     <Clock className="mx-auto h-12 w-12 text-gray-400" />
-    <h3 className="mt-2 text-sm font-semibold text-bg-brand-dark">
+    <h3 className="mt-2 text-md font-semibold text-bg-brand-dark">
       No hay próximos turnos
     </h3>
     <p className="mt-1 text-sm text-gray-500">
@@ -153,7 +153,7 @@ export function Reservations({ complexId }: { complexId: string }) {
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border p-6 flex flex-col h-full max-h-[500px] lg:max-h-full">
-      <h2 className="text-lg font-semibold mb-4">Próximos 10 Turnos</h2>
+      <h2 className="text-lg font-switzer font-semibold mb-4">Próximos 10 Turnos</h2>
       {renderContent()}
     </div>
   );

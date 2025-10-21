@@ -10,7 +10,7 @@ export default function LoginPage() {
   return (
     <>
     <Navbar />
-      <main className="flex py-24 justify-center items-center ">
+      <main className="flex py-24 justify-center">
         <div className="relative w-full max-w-md bg-bg-complementario p-6 rounded-xl border border-assets shadow-sm">
           <div className="flex justify-center mb-2">
             <Link href="/">

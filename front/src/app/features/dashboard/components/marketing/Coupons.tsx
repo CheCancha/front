@@ -227,7 +227,7 @@ export function CouponsManager({ complexId }: { complexId: string }) {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
-          <CardTitle>Cupones de Descuento</CardTitle>
+          <CardTitle className="font-switzer">Cupones de Descuento</CardTitle>
           <CardDescription>
             Creá y gestioná códigos de descuento para atraer más clientes.
           </CardDescription>

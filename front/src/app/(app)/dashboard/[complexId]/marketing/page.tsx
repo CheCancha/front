@@ -27,7 +27,7 @@ export default async function MarketingPage({
       
       <Card>
         <CardHeader>
-          <CardTitle>Pack Digital (Código QR)</CardTitle>
+          <CardTitle className="font-switzer">Pack Digital (Código QR)</CardTitle>
           <CardDescription>
             Generá un código QR para que tus clientes puedan acceder
             directamente a tu perfil de CheCancha y reservar. Podés imprimirlo

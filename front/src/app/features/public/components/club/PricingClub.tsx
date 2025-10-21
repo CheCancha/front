@@ -19,7 +19,7 @@ const ButtonPrimary = ({
   <a
     href={href}
     className={cn(
-      "text-white bg-gradient-to-r from-brand-secondary to-red-600 hover:brightness-110 transition-all duration-300 cursor-pointer",
+      "text-white bg-gradient-to-r from-brand-orange to-[#c60e08] hover:brightness-110 transition-all duration-300 cursor-pointer",
       "inline-block text-center w-full px-6 py-3 font-semibold text-white rounded-lg transition-colors duration-300",
       className
     )}
@@ -99,7 +99,7 @@ export const PricingSection = () => {
 
   return (
     <motion.section
-      className="py-20 bg-white"
+      className="pt-20 pb-48"
       initial="hidden"
       whileInView="visible"
       viewport={{ once: true, amount: 0.2 }}
@@ -110,12 +110,12 @@ export const PricingSection = () => {
     >
       <div className="container mx-auto px-6" id="pricing">
         <div className="text-center max-w-3xl mx-auto mb-12">
-          <h2 className="font-lora text-4xl md:text-5xl font-semibold text-foreground">
+          <h2 className="font-switzer font-semibold text-foreground text-4xl md:text-5xl">
             Una solución para cada complejo
           </h2>
           <p className="text-lg text-paragraph mt-4">
             Todos nuestros planes incluyen una{" "}
-            <span className="font-semibold text-brand-secondary">
+            <span className="font-semibold text-brand-orange">
               prueba gratuita de 90 días
             </span>
             . Sin compromisos ni tarjeta de crédito.
@@ -123,7 +123,7 @@ export const PricingSection = () => {
         </div>
 
         {/* Toggle de Pago */}
-        <div className="flex justify-center items-center gap-4 mb-16">
+        <div className="flex justify-center items-center gap-4 mb-12">
           <span
             className={cn(
               "font-semibold",
@@ -156,9 +156,6 @@ export const PricingSection = () => {
             )}
           >
             Pago Anual{" "}
-            <span className="text-brand-green font-bold">
-              (¡Ahorrá 2 meses!)
-            </span>
           </span>
         </div>
 
@@ -170,8 +167,8 @@ export const PricingSection = () => {
               className={cn(
                 "rounded-2xl p-8 flex flex-col border transition-all duration-300",
                 plan.isPopular
-                  ? "bg-foreground text-background border-foreground shadow-2xl lg:scale-105"
-                  : "bg-background text-foreground border-gray-200"
+                  ? "bg-brand-dark text-background shadow-2xl lg:scale-105"
+                  : "bg-background text-brand-dark border-gray-200"
               )}
             >
               {plan.isPopular && (
@@ -181,7 +178,7 @@ export const PricingSection = () => {
                   </span>
                 </div>
               )}
-              <h3 className="text-2xl font-lora font-semibold">{plan.name}</h3>
+              <h3 className="text-2xl font-switzer font-semibold">{plan.name}</h3>
               <p
                 className={cn(
                   "mt-1 min-h-[40px]",

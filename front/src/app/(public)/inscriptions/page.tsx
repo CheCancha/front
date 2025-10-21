@@ -12,7 +12,7 @@ export default function InscriptionsPage() {
   return (
     <div className="bg-background min-h-screen">
       <Navbar />
-      <main className="py-20">
+      <main className="py-20 lg:py-52">
         <Suspense
           fallback={
             <div>

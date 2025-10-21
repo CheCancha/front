@@ -25,7 +25,7 @@ export const CTASection = () => {
 
       {/* Contenido */}
       <div className="relative z-10 container mx-auto px-6 text-center">
-        <h2 className="font-lora text-3xl md:text-5xl font-bold mb-4">
+        <h2 className="font-switzer font-semibold text-3xl md:text-5xl mb-4">
           ¿Listo para tu próximo partido?
         </h2>
         <p className="text-lg mb-8 max-w-2xl mx-auto">
@@ -35,7 +35,7 @@ export const CTASection = () => {
         <Link
           href="#inicio"
           // className="inline-flex items-center justify-center rounded-full font-medium py-4 px-8 text-white bg-gradient-to-r from-brand-orange to-brand-secondary transition-all duration-300 hover:brightness-110 cursor-pointer"
-          className="inline-flex items-center justify-center rounded-full font-medium py-4 px-8 bg-brand-orange text-foreground transition-all duration-300 hover:brightness-110 cursor-pointer"
+          className="inline-flex items-center justify-center rounded-full font-medium py-4 px-8 bg-brand-orange text-background transition-all duration-300 hover:brightness-110 cursor-pointer"
         >
           
           Ir a Reservar

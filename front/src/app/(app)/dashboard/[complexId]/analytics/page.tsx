@@ -79,15 +79,6 @@ export default async function AnalyticsPage({
 
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-          Analíticas
-        </h1>
-        <p className="text-gray-600 mt-1">
-          Visualiza el rendimiento de tu club a lo largo del tiempo.
-        </p>
-      </header>
-
       <AnalyticsFilters availableCourts={filters.availableCourts} />
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -120,7 +111,7 @@ export default async function AnalyticsPage({
       {/* --- GRÁFICOS DINÁMICOS --- */}
       <div className="grid lg:grid-cols-2 gap-6">
         <div className="bg-white p-6 rounded-lg border shadow-sm">
-          <h3 className="text-lg font-semibold mb-4">Evolución de Ingresos</h3>
+          <h3 className="text-lg font-switzer font-semibold mb-4">Evolución de Ingresos</h3>
           {charts.lineChartData.length > 0 ? (
             <RevenueLineChart data={charts.lineChartData} />
           ) : (
@@ -132,7 +123,7 @@ export default async function AnalyticsPage({
           )}
         </div>
         <div className="bg-white p-6 rounded-lg border shadow-sm">
-          <h3 className="text-lg font-semibold mb-4">Ingresos por Cancha</h3>
+          <h3 className="text-lg font-switzer font-semibold mb-4">Ingresos por Cancha</h3>
           {charts.pieChartData.length > 0 ? (
             <CourtRevenuePieChart data={charts.pieChartData} />
           ) : (
@@ -146,7 +137,7 @@ export default async function AnalyticsPage({
       </div>
 
       <div className="bg-white p-6 rounded-lg border shadow-sm flex flex-col items-center">
-        <h3 className="text-lg font-semibold mb-4">
+        <h3 className="text-lg font-switzer font-semibold mb-4">
           Horarios de Mayor Demanda
         </h3>
         <PeakHoursHeatmap

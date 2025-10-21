@@ -91,7 +91,7 @@ export const FaqSection = () => {
         <div className="grid md:grid-cols-3 gap-12 items-start">
           {/* Columna Izquierda: Título y CTA */}
           <div className="md:col-span-1">
-            <h2 className="font-lora text-3xl md:text-5xl font-semibold text-brand-dark mt-2 mb-6">
+            <h2 className="font-switzer font-semibold text-3xl md:text-5xl text-brand-dark mt-2 mb-6">
               Preguntas Frecuentes
             </h2>
             <div className="bg-brand-secondary p-3 md:p-6 rounded-xl">

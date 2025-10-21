@@ -1,5 +1,5 @@
 .rdp-root {
-  --rdp-accent-color: #ff4e02 !important; 
+  --rdp-accent-color: #fe4321 !important; 
 }
 .react-select__control {
   border-radius: 0.5rem !important; /* 8px, igual que los otros inputs */
@@ -7,14 +7,14 @@
 }
 
 .react-select__control--is-focused {
-  border-color: #ff4e02 !important; /* tu brand-orange */
-  box-shadow: 0 0 0 1px #ff4e02 !important;
+  border-color: #fe4321 !important; /* tu brand-orange */
+  box-shadow: 0 0 0 1px #fe4321 !important;
   outline: none !important;
 }
 
 /* Opción seleccionada actualmente en el menú */
 .react-select__option--is-selected {
-  background-color: #ff4e02 !important;
+  background-color: #fe4321 !important;
   color: white !important;
 }
 
@@ -26,5 +26,5 @@
 
 /* Estilo para la opción seleccionada cuando también tiene hover, para que no cambie de color */
 .react-select__option--is-selected.react-select__option--is-focused {
-  background-color: #ff4e02 !important;
+  background-color: #fe4321 !important;
 }

@@ -17,7 +17,7 @@ interface RequestItemProps {
 
 // Componente para la tarjeta en vista móvil
 const RequestCard: React.FC<RequestItemProps> = ({ request, onReview }) => (
-  <div className="p-4 border rounded-lg bg-white shadow-sm hover:shadow-md transition-shadow">
+  <div className="p-4 border rounded-lg bg-background shadow-sm hover:shadow-md transition-shadow">
     <div className="flex justify-between items-start gap-4">
       <div className="flex-grow">
         <p className="font-semibold text-gray-800 break-words">

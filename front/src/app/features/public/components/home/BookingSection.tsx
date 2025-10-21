@@ -5,17 +5,17 @@ import { CalendarCheck, Smartphone, CreditCard } from "lucide-react";
 
 const steps = [
   {
-    icon: <CalendarCheck size={28} className='text-brand-dark' />,
+    icon: <CalendarCheck size={28} className="text-background" />,
     title: "Buscá y Compará",
     text: "Filtrá por deporte, zona y horario. Encontrá la cancha perfecta y el mejor precio en segundos.",
   },
   {
-    icon: <Smartphone size={28} className='text-brand-dark' />,
+    icon: <Smartphone size={28} className="text-background" />,
     title: "Reservá al Instante",
     text: "Mirá la disponibilidad en tiempo real y asegurá tu lugar con un clic. Tu partido se agenda automáticamente.",
   },
   {
-    icon: <CreditCard size={28} className='text-brand-dark'/>,
+    icon: <CreditCard size={28} className="text-background" />,
     title: "Pagá Como Quieras",
     text: "Aboná online con Mercado Pago para confirmar o elegí pagar directamente en el club cuando llegues.",
   },
@@ -44,7 +44,8 @@ const Step = ({
     >
       {/* Contenedor del ícono y la línea */}
       <div className="relative z-10">
-        <div className="flex-shrink-0 bg-brand-orange text-white rounded-full w-14 h-14 flex items-center justify-center shadow-[0_0_20px_rgba(210,254,165,0.7)]">{/* 210, 254, 165 */}
+        <div className="flex-shrink-0 bg-brand-orange text-white rounded-full w-14 h-14 flex items-center justify-center shadow-[0_0_20px_rgba(254,67,33,0.7)]">
+          {/* 254, 67, 33 */}
           {icon}
         </div>
         {/* Línea que conecta los íconos */}
@@ -86,7 +87,7 @@ export const BookingSection = () => {
           {/* Columna de Contenido */}
           <div className="space-y-16">
             <div className="text-center md:text-left">
-              <h2 className="font-lora text-4xl md:text-5xl font-semibold mb-4">
+              <h2 className="font-switzer font-semibold text-4xl md:text-5xl mb-4">
                 Reservar nunca fue tan fácil
               </h2>
               <p className="text-background/70 text-lg">

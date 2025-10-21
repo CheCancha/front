@@ -56,7 +56,7 @@ export const CourtsManager = ({
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Gestión de Canchas</h3>
+        <h3 className="text-lg font-switzer font-semibold">Gestión de Canchas</h3>
         <div className="flex flex-col items-end">
           {/* El botón ahora se deshabilita condicionalmente */}
           <Button onClick={onAddNewCourt} disabled={isCourtLimitReached}>

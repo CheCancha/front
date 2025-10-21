@@ -18,14 +18,14 @@ const Footer = () => {
                 width={40}
                 className="mr-3 rounded-md"
               />
-              <span className="self-center text-xl font-lora font-semibold whitespace-nowrap text-background">
+              <span className="self-center text-xl font-switzer font-semibold whitespace-nowrap text-background">
                 CheCancha
               </span>
             </Link>
           </div>
           <div className="grid grid-cols-2 gap-8 sm:gap-6 sm:grid-cols-3">
             <div>
-              <h2 className="mb-5 text-md font-lora font-semibold text-background">
+              <h2 className="mb-5 text-md font-switzer font-semibold text-background">
                 Navegación
               </h2>
               <ul className="text-paragraph font-medium">
@@ -42,7 +42,7 @@ const Footer = () => {
               </ul>
             </div>
             <div>
-              <h2 className="mb-5 text-md font-lora font-semibold text-background">
+              <h2 className="mb-5 text-md font-switzer font-semibold text-background">
                 Seguinos
               </h2>
               <ul className="text-paragraph font-medium">
@@ -59,7 +59,7 @@ const Footer = () => {
               </ul>
             </div>
             <div>
-              <h2 className="mb-5 text-md font-lora font-semibold text-background">
+              <h2 className="mb-5 text-md font-switzer font-semibold text-background">
                 Legal
               </h2>
               <ul className="text-paragraph font-medium">

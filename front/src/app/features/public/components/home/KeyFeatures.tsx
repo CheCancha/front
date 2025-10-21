@@ -40,7 +40,7 @@ const SmartphoneIcon = () => (
     />
     <path
       d="M12.5918 13.5C12.5918 12.2574 13.5992 11.25 14.8418 11.25H18.4019C19.6445 11.25 20.6519 12.2574 20.6519 13.5V19.75C20.6519 20.9926 19.6445 22 18.4019 22H14.8418C13.5992 22 12.5918 20.9926 12.5918 19.75V13.5ZM14.8418 12.75C14.4276 12.75 14.0918 13.0858 14.0918 13.5V19.75C14.0918 20.1642 14.4276 20.5 14.8418 20.5H18.4019C18.8161 20.5 19.1519 20.1642 19.1519 19.75V13.5C19.1519 13.0858 18.8161 12.75 18.4019 12.75H14.8418Z"
-      fill="#ff4e02"//brand-orange
+      fill="#fe4321"//brand-orange
     />
   </svg>
 );
@@ -133,7 +133,7 @@ export const KeyFeatures = () => {
               >
                 {feature.icon}
               </motion.div>
-              <h3 className="text-2xl font-bold text-brand-dark mb-2">
+              <h3 className="text-2xl font-switzer font-medium text-brand-dark mb-2">
                 {feature.title}
               </h3>
               <p className="text-lg text-paragraph max-w-xs leading-relaxed">

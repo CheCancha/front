@@ -25,7 +25,7 @@ export function AnalyticsTables({
     <div className="grid lg:grid-cols-2 gap-6">
       {/* Tabla de Top Clientes */}
       <div>
-        <h3 className="text-lg font-semibold mb-4">Ranking de Clientes</h3>
+        <h3 className="text-lg font-switzer font-semibold mb-4">Ranking de Clientes</h3>
         <div className="bg-white p-4 rounded-lg border shadow-sm">
           <ul className="divide-y divide-gray-200">
             {topCustomers.map((customer, index) => (
@@ -48,7 +48,7 @@ export function AnalyticsTables({
         </div>
       </div>
       <div>
-        <h3 className="text-lg font-semibold mb-4">Desglose por Cancha</h3>
+        <h3 className="text-lg font-switzer font-semibold mb-4">Desglose por Cancha</h3>
         <div className="bg-white p-4 rounded-lg border shadow-sm">
           <ul className="divide-y divide-gray-200">
             {courtsBreakdown.map((court, index) => (

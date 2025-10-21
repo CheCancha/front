@@ -43,7 +43,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#ff4e02", // brand-orange
+  themeColor: "#fe4321", // brand-orange
 };
 
 export default function RootLayout({
@@ -74,31 +74,32 @@ export default function RootLayout({
 
   return (
     <html lang="es">
-  <head>
-    <link
-      href="https://api.fontshare.com/v2/css?f[]=lora@400,401,500,600,601,700,701,1,2&f[]=satoshi@300,301,400,401,500,501,700,701,900,901,1,2&display=swap"
-      rel="stylesheet"
-    />
-    <script
-      type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-    />
-  </head>
-  <body className="antialiased">
-    <Script
-      src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js"
-      strategy="afterInteractive"
-      async
-    />
+      <head>
+        <link
+          href="https://api.fontshare.com/v2/css?f[]=switzer@400,500,600,601,700,701,800,801,900,901,1,2&f[]=satoshi@300,301,400,401,500,501,700,701,900,901,1,2&display=swap"
+          rel="stylesheet"
+        />
 
-    <Suspense>
-      <SearchStateInitializer />
-    </Suspense>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      </head>
+      <body className="antialiased">
+        <Script
+          src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js"
+          strategy="afterInteractive"
+          async
+        />
 
-    <GoogleAnalytics />
-    <SmoothScroller />
-    <Providers>{children}</Providers>
-  </body>
-</html>
+        <Suspense>
+          <SearchStateInitializer />
+        </Suspense>
+
+        <GoogleAnalytics />
+        <SmoothScroller />
+        <Providers>{children}</Providers>
+      </body>
+    </html>
   );
 }

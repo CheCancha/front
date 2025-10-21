@@ -20,15 +20,15 @@ export const AmenitiesForm = ({
   onAmenityChange,
 }: Props) => {
   return (
-    <div className="space-y-6">
-      <h3 className="text-lg font-semibold leading-6 text-brand-dark">
+    <div>
+      <h3 className="text-lg font-switzer font-semibold text-brand-dark">
         Comodidades y Servicios
       </h3>
       <p className="text-sm text-gray-500">
         Selecciona todos los servicios que ofrece tu complejo. Esto ayudará a
         los jugadores a encontrarte.
       </p>
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      <div className="mt-12 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {allAmenities.map((amenity) => {
           const isSelected = selectedAmenities.includes(amenity.id);
           return (

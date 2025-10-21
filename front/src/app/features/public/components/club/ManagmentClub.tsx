@@ -73,7 +73,7 @@ export const ManagmentClub = () => {
 
         <motion.div variants={containerVariants}>
           <motion.h2
-            className="font-lora text-4xl md:text-5xl font-semibold text-foreground mb-6"
+            className="font-switzer font-semibold text-4xl md:text-5xl  text-foreground mb-6"
             variants={itemVariants}
           >
             Control total de tu negocio desde un solo lugar.

@@ -27,7 +27,7 @@ import { NotificationBell } from "./NotificationBell";
 
 const NavbarSkeleton: React.FC = () => (
   <nav className="bg-background border-b sticky top-0 z-50 animate-pulse">
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="flex items-center justify-between h-16">
         <div className="flex items-center gap-2">
           <div className="h-8 w-8 bg-gray-200 rounded-full" />
@@ -130,7 +130,7 @@ const Navbar: React.FC = () => {
           : "bg-background border-b"
       )}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex-shrink-0">
             <Link href={routes.public.home} className="flex items-center gap-2">
@@ -153,85 +153,83 @@ const Navbar: React.FC = () => {
                     className={cn(
                       "flex items-center gap-2 font-medium py-2 px-4 rounded-md transition duration-300",
                       isTransparent
-                      ? "text-white hover:bg-white/10"
-                      : "text-brand-dark hover:bg-gray-100"
+                        ? "text-white hover:bg-white/10"
+                        : "text-brand-dark hover:bg-gray-100"
                     )}
                   >
                     <Search size={16} />
                     Buscar Cancha
                   </Link>
 
-
                   <div className="flex items-center gap-2">
-                  <NotificationBell isTransparent={isTransparent} />
-                  <div className="relative" ref={menuRef}>
-                    <button
-                      onClick={() => setIsDesktopMenuOpen(!isDesktopMenuOpen)}
-                      className={cn(
-                        "flex items-center gap-1.5 rounded-md p-2 transition-colors cursor-pointer",
-                        isTransparent
-                          ? "text-white hover:bg-white/10"
-                          : "text-brand-dark hover:bg-gray-100"
-                      )}
-                    >
-                      <span
+                    <NotificationBell isTransparent={isTransparent} />
+                    <div className="relative" ref={menuRef}>
+                      <button
+                        onClick={() => setIsDesktopMenuOpen(!isDesktopMenuOpen)}
                         className={cn(
-                          "font-medium transition-colors",
-                          isTransparent ? "text-white" : "text-gray-800"
+                          "flex items-center gap-1.5 rounded-md p-2 transition-colors cursor-pointer",
+                          isTransparent
+                            ? "text-white hover:bg-white/10"
+                            : "text-brand-dark hover:bg-gray-100"
                         )}
                       >
-                        {user?.name || "Usuario"}
-                      </span>
-                      <ChevronDown
-                        size={16}
-                        className={cn(
-                          "transition-transform duration-200",
-                          isDesktopMenuOpen && "rotate-180",
-                          isTransparent ? "text-gray-300" : "text-gray-500"
-                        )}
-                      />
-                    </button>
-
-                    <AnimatePresence>
-                      {isDesktopMenuOpen && (
-                        <motion.div
-                          initial={{ opacity: 0, y: -10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -10 }}
-                          className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-30 border"
+                        <span
+                          className={cn(
+                            "font-medium transition-colors",
+                            isTransparent ? "text-white" : "text-gray-800"
+                          )}
                         >
-                          <Link
-                            href={routes.app.perfil}
-                            onClick={() => setIsDesktopMenuOpen(false)}
-                            className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                          >
-                            <UserCircle size={16} />
-                            Mi Perfil
-                          </Link>
-                          <Link
-                            href={getDashboardUrl()}
-                            onClick={() => setIsDesktopMenuOpen(false)}
-                            className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                          >
-                            <LayoutDashboard size={16} />
-                            Mi Panel
-                          </Link>
-                          <button
-                            onClick={() => {
-                              signOut({ callbackUrl: routes.public.home });
-                              setIsDesktopMenuOpen(false);
-                            }}
-                            className="w-full text-left flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 cursor-pointer"
-                          >
-                            <LogOut size={16} />
-                            Cerrar Sesión
-                          </button>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                  </div>
+                          {user?.name || "Usuario"}
+                        </span>
+                        <ChevronDown
+                          size={16}
+                          className={cn(
+                            "transition-transform duration-200",
+                            isDesktopMenuOpen && "rotate-180",
+                            isTransparent ? "text-gray-300" : "text-gray-500"
+                          )}
+                        />
+                      </button>
 
+                      <AnimatePresence>
+                        {isDesktopMenuOpen && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-30 border"
+                          >
+                            <Link
+                              href={routes.app.perfil}
+                              onClick={() => setIsDesktopMenuOpen(false)}
+                              className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            >
+                              <UserCircle size={16} />
+                              Mi Perfil
+                            </Link>
+                            <Link
+                              href={getDashboardUrl()}
+                              onClick={() => setIsDesktopMenuOpen(false)}
+                              className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            >
+                              <LayoutDashboard size={16} />
+                              Mi Panel
+                            </Link>
+                            <button
+                              onClick={() => {
+                                signOut({ callbackUrl: routes.public.home });
+                                setIsDesktopMenuOpen(false);
+                              }}
+                              className="w-full text-left flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 cursor-pointer"
+                            >
+                              <LogOut size={16} />
+                              Cerrar Sesión
+                            </button>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  </div>
                 </>
               ) : (
                 <>
@@ -241,7 +239,7 @@ const Navbar: React.FC = () => {
                       "font-medium transition duration-300",
                       isTransparent
                         ? "text-white hover:text-gray-200"
-                        : "text-foreground hover:text-brand-secondary"
+                        : "text-foreground hover:text-brand-orange"
                     )}
                   >
                     Software para canchas
@@ -257,7 +255,7 @@ const Navbar: React.FC = () => {
           </div>
 
           <div className="-mr-2 flex items-center md:hidden">
-            {isLoggedIn && <NotificationBell isTransparent={isTransparent} />} 
+            {isLoggedIn && <NotificationBell isTransparent={isTransparent} />}
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               type="button"

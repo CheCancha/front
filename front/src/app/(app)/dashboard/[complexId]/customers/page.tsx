@@ -74,14 +74,6 @@ export default async function CustomersPage({
 
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-          Clientes
-        </h1>
-        <p className="text-gray-600 mt-1">
-          Gestioná la base de datos de jugadores de tu complejo.
-        </p>
-      </header>
       <CustomersClient customers={customers} />
     </div>
   );

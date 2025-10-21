@@ -101,7 +101,7 @@ export default function ImageSettings({
   return (
     <div className="space-y-8">
       <div>
-        <h3 className="text-lg font-semibold">Imagen de Portada</h3>
+        <h3 className="text-lg font-switzer font-semibold">Imagen de Portada</h3>
         <div className="mt-4 w-full aspect-[16/7] relative rounded-lg bg-gray-100 flex items-center justify-center border overflow-hidden">
           {primaryImage ? (
             <img src={primaryImage.url} alt="Imagen de portada" className="absolute inset-0 w-full h-full object-cover" />
@@ -112,7 +112,7 @@ export default function ImageSettings({
       </div>
 
       <div>
-        <h3 className="text-lg font-semibold">Galería de Imágenes</h3>
+        <h3 className="text-lg font-switzer font-semibold">Galería de Imágenes</h3>
         <p className="text-sm text-gray-500 mt-1">Gestiona todas las fotos de tu complejo.</p>
 
         <div className="mt-4">

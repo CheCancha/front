@@ -29,7 +29,7 @@ export const ScheduleForm = ({
   onComplexChange,
 }: Props) => (
   <div className="overflow-hidden">
-    <h3 className="text-lg font-semibold">Horarios y Reservas</h3>
+    <h3 className="text-lg font-switzer font-semibold">Horarios y Reservas</h3>
     <p className="text-sm text-gray-500 mt-1">
       Define las horas de apertura y la visualización de los turnos en el
       calendario.
@@ -91,14 +91,16 @@ export const ScheduleForm = ({
               <Select
                 value={openValue ? String(openValue) : ""}
                 onValueChange={(value) => {
-                  // Si el valor es "null-val", enviamos `null` real al handler.
-                  onScheduleChange(openKey, value === "null-val" ? null : value);
+                  onScheduleChange(
+                    openKey,
+                    value === "null-val" ? null : value
+                  );
                 }}
               >
-                <SelectTrigger>
+                <SelectTrigger className="bg-white min-w-[100px]">
                   <SelectValue placeholder="Apertura" />
                 </SelectTrigger>
-                <SelectContent className="max-h-[288px] overflow-y-auto">
+                <SelectContent className="bg-white max-h-[288px] overflow-y-auto">
                   <SelectItem value="null-val">Cerrado</SelectItem>
                   {hoursOptions.map((h) => (
                     <SelectItem
@@ -115,11 +117,13 @@ export const ScheduleForm = ({
               <Select
                 value={closeValue ? String(closeValue) : ""}
                 onValueChange={(value) => {
-                  // Si el valor es "null-val", enviamos `null` real al handler.
-                  onScheduleChange(closeKey, value === "null-val" ? null : value);
+                  onScheduleChange(
+                    closeKey,
+                    value === "null-val" ? null : value
+                  );
                 }}
               >
-                <SelectTrigger>
+                <SelectTrigger className="bg-white min-w-[100px]">
                   <SelectValue placeholder="Cierre" />
                 </SelectTrigger>
                 <SelectContent className="max-h-[288px] overflow-y-auto">

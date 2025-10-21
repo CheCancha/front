@@ -265,7 +265,7 @@ export function ClientPage({ complex }: { complex: ComplexProfileData }) {
                       key={item.day}
                       className={cn(
                         "flex justify-between",
-                        index === todayIndex && "font-bold text-brand-secondary"
+                        index === todayIndex && "font-bold text-brand-orange"
                       )}
                     >
                       <span>{item.day}</span>

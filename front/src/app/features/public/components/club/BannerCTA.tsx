@@ -16,7 +16,7 @@ export const BannerCTA = () => {
 
   return (
     <motion.section 
-      className="bg-brand-olive text-white"
+      className="bg-brand-secondary text-brand-dark"
       initial="hidden"
       whileInView="visible"
       viewport={{ once: true, amount: 0.3 }}
@@ -25,11 +25,11 @@ export const BannerCTA = () => {
         visible: { opacity: 1, transition: { duration: 0.8 } }
       }}
     >
-      <div className="container mx-auto px-6 py-20">
+      <div className="container mx-auto px-6 py-32">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Columna de Texto */}
           <div className="text-center lg:text-left">
-            <h2 className="font-lora text-4xl md:text-5xl font-semibold leading-tight mb-6">
+            <h2 className="font-switzer text-4xl md:text-5xl font-semibold leading-tight mb-6">
               Elegí CheCancha y llevá tu negocio al siguiente nivel
             </h2>
             <p className="text-lg text-brand-beige mb-10 max-w-lg mx-auto lg:mx-0">
@@ -42,7 +42,7 @@ export const BannerCTA = () => {
               {/* Botón actualizado con el enlace a WhatsApp */}
               <ButtonGhost 
                 href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(whatsappMessage)}`}
-                className="text-white hover:bg-white/10"
+                className="text-brand-dark hover:bg-brand-secondary"
                 target="_blank"
                 rel="noopener noreferrer"
               >

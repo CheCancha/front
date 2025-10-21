@@ -40,7 +40,7 @@ const OnboardingStatusDot = ({ complex }: { complex: ComplexWithManager }) => {
           complex.onboardingCompleted ? "bg-green-500" : "bg-yellow-500"
         }`}
       ></span>
-      <div className="absolute bottom-full mb-2 -ml-8 hidden group-hover:block w-max bg-gray-800 text-white text-xs rounded py-1 px-2 z-10">
+      <div className="absolute bottom-full mb-2 -ml-8 hidden group-hover:block w-max bg-gray-800 text-background text-xs rounded py-1 px-2 z-10">
         {tooltipText}
       </div>
     </div>

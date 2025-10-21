@@ -18,6 +18,7 @@ import { format } from "date-fns";
 import { DatePicker, TimePicker } from "./DateTimePicker";
 import toast from "react-hot-toast";
 import { useSearchStore } from "@/app/features/public/store/searchStore";
+import { ButtonPrimary } from "./Buttons";
 
 // --- Tipos y Opciones ---
 export interface SportOption {
@@ -244,10 +245,10 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         <DatePicker selectedDate={date} onSelectDate={setDate} variant={variant} />
         <TimePicker value={time} onChange={setTime} variant={variant} />
         
-        <button type="submit" className={buttonClass}>
+        <ButtonPrimary type="submit" className={buttonClass}>
           <MagnifyingGlassIcon className="h-5 w-5 mr-2" />
           Buscar
-        </button>
+        </ButtonPrimary>
       </form>
     </div>
   );

@@ -5,19 +5,18 @@
 
 @theme {
   --color-foreground: #0a262c;
+  --color-background: #f1fee7;
   /* #0d1216 
   black #090906
   lime #e1fe01
   aqua #d2fea5
    */
-  --color-background: #fff;
-  --color-brand-orange: #defe9f;
-  --color-brand-dark: #111b21;
-  --color-brand-secondary: #ff4e02; /* naranja:ff4e02 */
+  --color-brand-orange: #fe4321;
+  --color-brand-dark: #051223;
+  --color-brand-secondary: #eafae9;
   --color-paragraph: #707070;
-  --color-brand-olive: #565500;
 
-  --color-brand-blue: #54c3fe;
+  --color-brand-blue: #0878f5;
   --color-brand-green: #01c780;
   --color-brand-purple: #d0b7fe;
 
@@ -26,16 +25,16 @@
   --color-fixed: #0a0b0b;
 
   --font-satoshi: "Satoshi", sans-serif;
-  --font-lora: "Lora", serif;
+  --font-switzer: 'Switzer', sans-serif;
 }
 
 .dark {
-  --color-foreground: #fff;
+  --color-foreground: #f1fee7;
   --color-background: #030203;
 
   --color-paragraph: #9c9c9c;
   --darkblue: #111621;
-  --lime: rgb(210, 254, 165);
+  --lime: rgb(254, 67, 33);
   --background: oklch(0.141 0.005 285.823);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.21 0.006 285.885);
@@ -154,7 +153,7 @@ body {
   --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
   --sidebar-border: oklch(0.92 0.004 286.32);
   --sidebar-ring: oklch(0.705 0.015 286.067);
-  --background: oklch(1 0 0);
+  --background: #fff;
   --foreground: oklch(0.141 0.005 285.823);
 }
 
@@ -176,8 +175,4 @@ body {
 
 .animate-rippling {
   animation: rippling 600ms ease-out;
-}
-
-html {
-  overflow-y: scroll;
 }

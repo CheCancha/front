@@ -354,7 +354,7 @@ export default function BookingCalendarPage() {
 
   return (
   <>
-    <div className="flex-1 bg-gray-50 p-1 md:p-4">
+    <div className="flex-1 bg-gray-50 md:p-4">
       <header className="mb-6 flex flex-col sm:flex-row items-center justify-between gap-4">
         {/* --- GRUPO IZQUIERDO: CONTROLES DE NAVEGACIÓN --- */}
         <div className="flex items-center gap-4 self-start sm:self-center">
@@ -422,7 +422,7 @@ export default function BookingCalendarPage() {
           </span>
           {/* El filtro de deportes solo se muestra en la vista diaria */}
           {view === "day" && (
-            <div className="flex items-center gap-2 overflow-x-auto pb-2">
+            <div className="flex items-center gap-2 overflow-x-auto">
               {sportFilters.map((sport) => (
                 <button
                   key={sport}
@@ -466,14 +466,14 @@ export default function BookingCalendarPage() {
             {filteredCourts.map((court) => (
               <div
                 key={court.id}
-                className="sticky top-0 text-center font-semibold p-3 border-b border-l bg-white z-10 flex items-center justify-center"
+                className="sticky top-0 text-center font-switzer font-semibold p-3 border-b border-l bg-white z-10 flex items-center justify-center"
               >
                 {court.name}
               </div>
             ))}
             {timeSlots.map((time) => (
               <React.Fragment key={time}>
-                <div className="sticky left-0 text-right text-xs font-mono text-gray-500 pr-2 border-r flex items-center justify-end bg-white z-10">
+                <div className="sticky left-0 text-right text-sm font-mono text-paragraph pr-2 border-r flex items-center justify-end bg-white z-10">
                   {time}
                 </div>
                 {filteredCourts.map((court) => {

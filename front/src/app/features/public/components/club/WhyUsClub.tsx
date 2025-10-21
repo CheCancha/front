@@ -46,7 +46,7 @@ const itemVariants = {
 export const WhyUsClub = () => {
   return (
     <motion.section
-      className="py-20 bg-brand-dark -mt-1"
+      className="py-24 bg-brand-dark -mt-1"
       initial="hidden"
       whileInView="visible"
       viewport={{ once: true, amount: 0.2 }}
@@ -54,7 +54,7 @@ export const WhyUsClub = () => {
     >
       <div className="container mx-auto px-6 text-center">
         <motion.h2
-          className="font-lora text-4xl md:text-5xl font-semibold text-background mb-16"
+          className="font-switzer font-semibold text-4xl md:text-5xl text-background mb-16"
           variants={itemVariants}
         >
           ¿Por qué los complejos eligen CheCancha?

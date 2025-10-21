@@ -15,12 +15,12 @@ type ChartData = {
 };
 
 const COLORS = [
-  "#ff4e02", //brand-orange
-  "#54c3fe",
+  "#0878f5",
+  "#eafae9",
+  "#fe4321", //brand-orange
+  "#051223",
+  "#ccfc03",
   "#565500",
-  "#01c780",
-  "#d0b7fe",
-  "#3b82f6",
 ];
 
 export function CourtRevenuePieChart({ data }: { data: ChartData[] }) {

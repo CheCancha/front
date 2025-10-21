@@ -38,7 +38,7 @@ const HeroSection: FC = () => {
             sizes="(max-width: 768px) 100vw, 1280px"
           />
           {/* Capa oscura */}
-          <div className="absolute inset-0 bg-black/60 z-10"></div>
+          <div className="absolute inset-0 bg-[#0e0f10]/50 z-10"></div>
 
           <motion.div
             className="relative z-20 w-full max-w-4xl mx-auto"
@@ -49,7 +49,7 @@ const HeroSection: FC = () => {
           >
             <motion.h1
               variants={itemVariants}
-              className="font-satoshi text-4xl sm:text-5xl md:text-6xl font-bold uppercase tracking-tight leading-tight mb-4"
+              className="font-switzer italic font-extrabold uppercase text-4xl sm:text-5xl md:text-6xl tracking-tight leading-tight"
             >
               JUGÁ. COMPETÍ. DISFRUTÁ.
             </motion.h1>

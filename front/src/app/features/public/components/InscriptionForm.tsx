@@ -239,7 +239,7 @@ export const InscriptionsForm = () => {
                               <span className="text-sm text-gray-500 mt-1">Ideal para empezar.</span>
                           </label>
                           <label htmlFor="annual" className={`relative flex flex-col p-4 border-2 rounded-lg cursor-pointer transition-all ${field.value === 'ANUAL' ? 'border-brand-orange ring-2 ring-brand-orange/20' : 'border-gray-200 hover:border-gray-300'}`}>
-                              <div className="absolute top-2 right-2 bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-0.5 rounded-full">AHORRÁ 2 MESES</div>
+                              <div className="absolute top-2 right-2 bg-[#99f264] text-[#265314] text-xs font-bold px-2 py-0.5 rounded-full">AHORRÁ 2 MESES</div>
                               {field.value === 'ANUAL' && (<div className="absolute top-2 right-2 w-5 h-5 bg-brand-orange rounded-full flex items-center justify-center"><Check className="w-3 h-3 text-white" /></div>)}
                               <RadioGroupItem value="ANUAL" id="annual" className="sr-only" />
                               <span className="font-semibold text-gray-800">Anual</span>
@@ -268,7 +268,7 @@ export const InscriptionsForm = () => {
                                 <Checkbox id="terms" checked={field.value} onCheckedChange={field.onChange} />
                                 <div className="grid gap-1.5 leading-none">
                                     <label htmlFor="terms" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                                        Acepto los <Link href="/terminos-y-condiciones" target="_blank" className="underline text-brand-orange hover:text-brand-orange/80">Términos y Condiciones</Link>
+                                        Acepto los <Link href="/terms" target="_blank" className="underline text-brand-orange hover:text-brand-orange/80">Términos y Condiciones</Link>
                                     </label>
                                 </div>
                             </div>
