@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/shared/lib/db";
 import { startOfDay, endOfDay, subMinutes } from "date-fns";
+import { toZonedTime } from "date-fns-tz";
 import { BookingStatus } from "@prisma/client";
 
 export async function GET(
@@ -19,8 +20,13 @@ export async function GET(
       );
     }
 
-    const requestedDate = new Date(`${dateString}T00:00:00`);
-    const fiveMinutesAgo = subMinutes(new Date(), 5);
+    //FIX: Usar la zona horaria de Argentina para consistencia
+    const TIMEZONE = "America/Argentina/Buenos_Aires";
+    
+    // Parsear la fecha en la zona horaria correcta
+    const requestedDate = toZonedTime(`${dateString}T00:00:00`, TIMEZONE);
+    const now = toZonedTime(new Date(), TIMEZONE);
+    const fiveMinutesAgo = subMinutes(now, 5);
 
     const complex = await db.complex.findUnique({
       where: { slug: slug },
@@ -59,7 +65,8 @@ export async function GET(
 
     const timeGridInterval = complex.timeSlotInterval;
 
-    const dayOfWeek = requestedDate.getUTCDay();
+    // IMPORTANTE: Usar getDay() en lugar de getUTCDay() para fecha local
+    const dayOfWeek = requestedDate.getDay();
     const dayKeys = [
       "sunday",
       "monday",
@@ -88,6 +95,16 @@ export async function GET(
     if (typeof openHour !== "number" || typeof closeHour !== "number") {
       return NextResponse.json([]);
     }
+
+    // NUEVO: Filtrar horarios pasados si es el día de hoy
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+    const currentTimeInMinutes = currentHour * 60 + currentMinute;
+    
+    const isToday = 
+      requestedDate.getDate() === now.getDate() &&
+      requestedDate.getMonth() === now.getMonth() &&
+      requestedDate.getFullYear() === now.getFullYear();
 
     const availabilityMap = new Map<string, boolean[]>();
     const totalSlots = (closeHour - openHour) * (60 / timeGridInterval);
@@ -118,6 +135,12 @@ export async function GET(
     const closingTime = closeHour * 60;
 
     while (currentTime < closingTime) {
+      // NUEVO: Saltar horarios pasados si es hoy
+      if (isToday && currentTime < currentTimeInMinutes) {
+        currentTime += timeGridInterval;
+        continue;
+      }
+
       const hour = Math.floor(currentTime / 60);
       const minute = currentTime % 60;
       const timeString = `${String(hour).padStart(2, "0")}:${String(
@@ -155,4 +178,3 @@ export async function GET(
     );
   }
 }
-

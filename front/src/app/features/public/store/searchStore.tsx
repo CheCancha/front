@@ -1,6 +1,7 @@
 import { create, StateCreator } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { SportOption } from '@/shared/components/ui/Searchbar';
+import { parse } from 'date-fns';
 
 interface SearchState {
   city: string;
@@ -35,7 +36,12 @@ const createSearchSlice: StateCreator<SearchState> = (set) => ({
     
     const newState: Partial<SearchState> = {};
     if (urlCity) newState.city = urlCity;
-    if (urlDate) newState.date = new Date(`${urlDate}T00:00:00`);
+    
+    // FIX: Usar parse de date-fns para parsear sin conversión UTC
+    if (urlDate) {
+      newState.date = parse(urlDate, 'yyyy-MM-dd', new Date());
+    }
+    
     if (urlTime) newState.time = urlTime;
     
     set(newState);

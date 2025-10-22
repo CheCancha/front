@@ -15,19 +15,19 @@ import { Spinner } from "@/shared/components/ui/Spinner";
 import BookingModal from "@/app/features/public/components/courts/BookingModal";
 import { routes } from "@/routes";
 import dynamic from "next/dynamic";
-import { format } from "date-fns";
+import { format, parse } from "date-fns";
 
 // --- TIPOS DE DATOS ---
 export type Club = {
-  id: string;
-  slug: string;
-  name: string;
-  address: string;
-  imageUrl: string;
-  availableSlots: AvailableSlot[];
-  cancellationPolicyHours: number;
-  latitude: number | null;
-  longitude: number | null;
+  id: string;
+  slug: string;
+  name: string;
+  address: string;
+  imageUrl: string;
+  availableSlots: AvailableSlot[];
+  cancellationPolicyHours: number;
+  latitude: number | null;
+  longitude: number | null;
   averageRating: number;
   reviewCount: number;  
 };
@@ -212,10 +212,10 @@ const SearchResultsComponent = () => {
     let needsRedirect = false;
 
     if (!currentParams.has("date")) {
+      // FIX: Usar solo fecha, sin hora
       currentParams.set("date", format(new Date(), "yyyy-MM-dd"));
       needsRedirect = true;
     }
-    
 
     if (needsRedirect) {
       router.replace(`${pathname}?${currentParams.toString()}`);
@@ -223,7 +223,11 @@ const SearchResultsComponent = () => {
   }, [searchParams, router, pathname]);
   
   const dateParam = searchParams.get("date");
-  const searchDate = dateParam ? new Date(`${dateParam}T00:00:00`) : new Date();
+  
+  // FIX: Parsear la fecha correctamente sin conversión UTC
+  const searchDate = dateParam 
+    ? parse(dateParam, "yyyy-MM-dd", new Date())
+    : new Date();
 
   useEffect(() => {
     if (!dateParam) {
@@ -389,4 +393,3 @@ export default function SearchResultsPage() {
     </Suspense>
   );
 }
-
