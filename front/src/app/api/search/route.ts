@@ -3,9 +3,6 @@ import { db } from "@/shared/lib/db";
 import { Prisma, PriceRule, Schedule } from "@prisma/client";
 import { z } from "zod";
 import { endOfDay, getDay, startOfDay } from "date-fns";
-import { toZonedTime } from "date-fns-tz";
-
-const TIMEZONE = "America/Argentina/Buenos_Aires";
 
 const searchSchema = z.object({
   city: z.string().optional(),
@@ -57,16 +54,13 @@ function findNextAvailableSlots(
   searchDate: Date,
   count: number = 3
 ): AvailableSlot[] {
-  // FIX: Usar zona horaria consistente
-  const now = toZonedTime(new Date(), TIMEZONE);
-  const zonedSearchDate = toZonedTime(searchDate, TIMEZONE);
-  
+  const now = new Date();
   const isToday =
-    now.getFullYear() === zonedSearchDate.getFullYear() &&
-    now.getMonth() === zonedSearchDate.getMonth() &&
-    now.getDate() === zonedSearchDate.getDate();
+    now.getFullYear() === searchDate.getFullYear() &&
+    now.getMonth() === searchDate.getMonth() &&
+    now.getDate() === searchDate.getDate();
 
-  const dayOfWeek = getDay(zonedSearchDate);
+  const dayOfWeek = getDay(searchDate);
   const dayKeys = [
     "sunday",
     "monday",
@@ -109,49 +103,51 @@ function findNextAvailableSlots(
   });
 
   const availableSlots: AvailableSlot[] = [];
-  
-  // FIX: Calcular la hora actual en minutos para comparación precisa
-  const currentTimeInMinutes = now.getHours() * 60 + now.getMinutes();
-  const startHour = isToday ? Math.max(now.getHours(), openHour) : openHour;
   const timeInterval = complex.timeSlotInterval || 30;
+  
+  // FIX: Calcular desde qué minuto del día empezar
+  const currentHour = now.getHours();
+  const currentMinute = now.getMinutes();
+  const currentTimeInMinutes = currentHour * 60 + currentMinute;
+  
+  // Si es hoy, empezar desde el próximo slot disponible después de la hora actual
+  // Si no es hoy, empezar desde la hora de apertura
+  const startTimeInMinutes = isToday 
+    ? Math.max(
+        openHour * 60,
+        Math.ceil(currentTimeInMinutes / timeInterval) * timeInterval
+      )
+    : openHour * 60;
 
-  for (let hour = startHour; hour < closeHour; hour++) {
-    for (let minute = 0; minute < 60; minute += timeInterval) {
-      if (availableSlots.length >= count) return availableSlots;
+  // Iterar por cada slot de tiempo desde startTimeInMinutes
+  for (let timeInMinutes = startTimeInMinutes; timeInMinutes < closeHour * 60; timeInMinutes += timeInterval) {
+    if (availableSlots.length >= count) break;
 
-      const slotTimeInMinutes = hour * 60 + minute;
-      
-      // FIX: Comparación simplificada y correcta para horarios pasados
-      if (isToday && slotTimeInMinutes < currentTimeInMinutes) {
-        continue;
-      }
+    const hour = Math.floor(timeInMinutes / 60);
+    const minute = timeInMinutes % 60;
+    const timeString = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
 
-      const timeString = `${String(hour).padStart(2, "0")}:${String(
-        minute
-      ).padStart(2, "0")}`;
+    // Para cada cancha, verificar si está disponible en este horario
+    for (const court of complex.courts) {
+      if (availableSlots.length >= count) break;
 
-      for (const court of complex.courts) {
-        if (availableSlots.length >= count) break;
+      const courtBookedSlots = bookedSlotsByCourtId.get(court.id);
+      if (!courtBookedSlots?.has(timeString)) {
+        const priceRule = getPriceRuleForTime(court, timeString);
+        if (!priceRule) continue;
 
-        const courtBookedSlots = bookedSlotsByCourtId.get(court.id);
-        if (!courtBookedSlots?.has(timeString)) {
-          const priceRule = getPriceRuleForTime(court, timeString);
-          if (!priceRule) continue;
+        const cleanCourtData: CourtInfo = {
+          id: court.id,
+          name: court.name,
+          slotDurationMinutes: court.slotDurationMinutes,
+          price: priceRule.price,
+          depositAmount: priceRule.depositAmount,
+          priceRules: court.priceRules,
+        };
 
-          const cleanCourtData: CourtInfo = {
-            id: court.id,
-            name: court.name,
-            slotDurationMinutes: court.slotDurationMinutes,
-            price: priceRule.price,
-            depositAmount: priceRule.depositAmount,
-            priceRules: court.priceRules,
-          };
-
-          availableSlots.push({ time: timeString, court: cleanCourtData });
-        }
+        availableSlots.push({ time: timeString, court: cleanCourtData });
       }
     }
-    if (availableSlots.length >= count) break;
   }
 
   return availableSlots;
@@ -172,8 +168,7 @@ export async function GET(req: NextRequest) {
 
     const { city, sport, date } = validation.data;
 
-    // FIX: Parsear fecha con zona horaria consistente
-    const searchDate = date ? toZonedTime(`${date}T00:00:00`, TIMEZONE) : null;
+    const searchDate = date ? new Date(`${date}T00:00:00`) : null;
 
     const whereClause: Prisma.ComplexWhereInput = {
       onboardingCompleted: true,
