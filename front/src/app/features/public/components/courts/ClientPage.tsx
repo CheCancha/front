@@ -2,10 +2,9 @@
 
 import "@/styles/day-picker.css";
 import React, { useState } from "react";
-import Image from "next/image";
 import { getDay } from "date-fns";
 import { FaFacebook, FaInstagram } from "react-icons/fa";
-import { MapPin, Phone, Mail, Star, MessageSquare } from "lucide-react";
+import { MapPin, Phone, Mail } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
 import Navbar from "@/shared/components/Navbar";
 import Footer from "@/shared/components/Footer";

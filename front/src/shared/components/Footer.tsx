@@ -1,7 +1,8 @@
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { FaFacebook, FaInstagram, FaGithub } from "react-icons/fa";
+import { FaFacebook, FaInstagram, FaYoutube } from "react-icons/fa";
+
 import { routes } from "@/routes";
 
 const Footer = () => {
@@ -47,7 +48,7 @@ const Footer = () => {
               </h2>
               <ul className="text-paragraph font-medium">
                 <li className="mb-4">
-                  <a href="#" className="hover:underline">
+                  <a href="https://www.instagram.com/checancha/" className="hover:underline">
                     Instagram
                   </a>
                 </li>
@@ -91,11 +92,14 @@ const Footer = () => {
               <FaFacebook className="w-4 h-4" />
               <span className="sr-only">Página de Facebook</span>
             </a>
-            <a href="#" className="text-paragraph hover:text-white">
+            <a href="https://www.instagram.com/checancha/" className="text-paragraph hover:text-white">
               <FaInstagram className="w-4 h-4" />
               <span className="sr-only">Página de Instagram</span>
             </a>
-            
+            <a href="#" className="text-paragraph hover:text-white">
+              <FaYoutube className="w-4 h-4" />
+              <span className="sr-only">Página de Youtube</span>
+            </a>
           </div>
         </div>
       </div>

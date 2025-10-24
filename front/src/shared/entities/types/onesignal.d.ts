@@ -9,6 +9,9 @@ export interface PushSubscriptionChangeEvent {
 export interface OneSignalPushSubscription {
   id: string | null;
 
+  // Método si necesitas el payload completo
+  getJsonPayload(): Promise<{ id: string | null }>;
+
   // Forzar opt-in / opt-out manualmente
   optIn(): Promise<void>;
   optOut(): Promise<void>;

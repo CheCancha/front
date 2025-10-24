@@ -14,7 +14,9 @@ import {
   Menu,
   X,
   ChevronDown,
+  Trophy,
 } from "lucide-react";
+import { FaFacebook, FaInstagram, FaYoutube } from "react-icons/fa";
 import {
   motion,
   AnimatePresence,
@@ -24,6 +26,13 @@ import {
 import { Button } from "./ui/button";
 import { cn } from "@/shared/lib/utils";
 import { NotificationBell } from "./NotificationBell";
+
+// Definición de enlaces de Redes Sociales (ajusta los URLs reales de Che Cancha)
+const socialLinks = [
+  { icon: FaInstagram, href: "https://www.instagram.com/checancha", label: "Instagram" },
+  { icon: FaFacebook, href: "https://www.facebook.com/che_cancha", label: "Facebook" },
+  { icon: FaYoutube, href: "https://www.youtube.com/@che_cancha", label: "YouTube" },
+];
 
 const NavbarSkeleton: React.FC = () => (
   <nav className="bg-background border-b sticky top-0 z-50 animate-pulse">
@@ -283,7 +292,7 @@ const Navbar: React.FC = () => {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="absolute top-full left-0 w-full bg-background border-t md:hidden"
+            className="fixed top-16 left-0 w-full h-[calc(100vh-4rem)] bg-background border-t md:hidden overflow-y-auto"
             id="mobile-menu"
           >
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
@@ -305,6 +314,14 @@ const Navbar: React.FC = () => {
                   >
                     <Search size={18} /> Buscar Cancha
                   </Link>
+                  {/* ENLACE DE TORNEOS (PRÓXIMAMENTE) */}
+                  <div
+                    title="Torneos disponibles pronto"
+                    className="w-full text-left flex items-center gap-3 px-3 py-2 text-base font-medium rounded-md text-gray-400 cursor-not-allowed"
+                  >
+                    <Trophy size={18} /> Torneos (Próximamente)
+                  </div>
+                  {/* FIN ENLACE DE TORNEOS */}
                   <Link
                     href={routes.app.perfil}
                     onClick={() => setIsMobileMenuOpen(false)}
@@ -346,8 +363,32 @@ const Navbar: React.FC = () => {
                   >
                     Iniciar Sesión
                   </Link>
+                  {/* ENLACE DE TORNEOS (PRÓXIMAMENTE) - También visible para no logueados si lo deseas */}
+                  <div
+                    title="Torneos disponibles pronto"
+                    className="w-full text-left flex items-center gap-3 px-3 py-2 text-base font-medium rounded-md text-gray-400 cursor-not-allowed"
+                  >
+                    <Trophy size={18} /> Torneos (Próximamente)
+                  </div>
                 </>
               )}
+
+              <hr className="my-2" />
+              <div className="flex justify-around items-center px-3 py-2 space-x-2">
+                {socialLinks.map((social) => (
+                  <a
+                    key={social.label}
+                    href={social.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    title={social.label}
+                    className="p-2 rounded-full text-gray-600 hover:text-brand-orange hover:bg-gray-100 transition-colors"
+                  >
+                    <social.icon size={24} />
+                  </a>
+                ))}
+              </div>
             </div>
           </motion.div>
         )}

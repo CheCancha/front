@@ -1,60 +1,85 @@
 "use client";
 
 import { useEffect } from "react";
+import { useOneSignalStore } from "@/shared/store/useOneSignalStore";
+import type {
+  OneSignal,
+  PushSubscriptionChangeEvent,
+} from "@/shared/entities/types/onesignal";
 
-declare global {
-  interface Window {
-    oneSignalInitialized?: boolean;
-  }
-}
-
-interface OneSignalType {
-  Notifications: {
-    permission: Promise<"default" | "granted" | "denied">;
-  };
-  User: {
-    PushSubscription: {
-      addEventListener: (
-        event: "change",
-        listener: (event: { current?: { id?: string | null } }) => void
-      ) => void;
-    };
-  };
-}
+// --- Configuración  ---
+const ONESIGNAL_APP_ID = "040c5b36-a36c-486a-848e-f633ff89edff"; // ⚠️ REEMPLAZA con tu ID real de OneSignal ⚠️
+// -----------------------------------------------------
 
 export default function OneSignalProvider({
   children,
 }: {
   children: React.ReactNode;
 }): React.ReactElement {
+  const { setIsSubscribed, setIsLoading } = useOneSignalStore();
 
-useEffect(() => {
-  if (typeof window === "undefined" || window.oneSignalInitialized) return;
+  useEffect(() => {
+    if (typeof window === "undefined" || window.oneSignalInitialized) return;
 
-  window.oneSignalInitialized = true;
-  console.log("🟢 Esperando a que OneSignal esté disponible...");
+    window.oneSignalInitialized = true;
+    console.log("🟢 [INIT] Esperando a que OneSignal esté disponible...");
 
-  window.OneSignalDeferred = window.OneSignalDeferred || [];
-  window.OneSignalDeferred.push(async (OneSignal: OneSignalType) => {
-    console.log("✅ OneSignal listo y auto-inicializado");
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
 
-    // Consultar permiso actual
-    const permission = await OneSignal.Notifications.permission;
-    console.log("🔔 Permiso actual:", permission);
+    // ✅ Ahora usamos el tipo OneSignal importado
+    window.OneSignalDeferred.push(async (OneSignal: OneSignal) => {
+      console.log("✅ [INIT] OneSignal listo para inicializar.");
 
-    // Escuchar cambios
-    OneSignal.User.PushSubscription.addEventListener("change", async (event) => {
-      const playerId = event.current?.id ?? null;
-      console.log("🔔 Player ID actualizado:", playerId);
+      // 1. LLAMADA DE INICIALIZACIÓN FALTANTE
+      try {
+        await OneSignal.init({
+          appId: ONESIGNAL_APP_ID,
+          allowLocalhostAsSecureOrigin: true,
+        });
+        console.log(
+          "🚀 [INIT] OneSignal inicializado y configurado con App ID."
+        );
+      } catch (error) {
+        console.error(
+          "❌ [INIT ERROR] Falló la inicialización de OneSignal:",
+          error
+        );
+        setIsLoading(false);
+        return;
+      }
 
-      await fetch("/api/user/save-player-id", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ playerId }),
-      });
+      // 2. LOG Y ESTADO INICIAL
+      const permission = await OneSignal.Notifications.permission;
+      // ✅ Usar operador de encadenamiento opcional
+      const subscriptionPayload =
+        await OneSignal.User.PushSubscription.getJsonPayload();
+      const isCurrentlySubscribed = subscriptionPayload?.id !== null;
+
+      console.log("🔔 [STATE] Permiso actual:", permission);
+      console.log("💻 [STATE] ¿Suscrito actualmente?:", isCurrentlySubscribed);
+
+      setIsSubscribed(isCurrentlySubscribed);
+      setIsLoading(false);
+
+      // 3. ESCUCHAR CAMBIOS (Con tipado correcto)
+      OneSignal.User.PushSubscription.addEventListener(
+        "change",
+        async (event: PushSubscriptionChangeEvent) => {
+          const playerId = event.current?.id ?? null;
+          const isNowSubscribed = playerId !== null;
+
+          console.log("📢 [EVENT] Player ID actualizado:", playerId);
+          setIsSubscribed(isNowSubscribed);
+
+          await fetch("/api/user/save-player-id", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ playerId }),
+          });
+        }
+      );
     });
-  });
-}, []);
+  }, [setIsSubscribed, setIsLoading]);
 
   return <>{children}</>;
 }

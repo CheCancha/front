@@ -365,7 +365,7 @@ export default function ProfilePage() {
                 <button
                   type="submit"
                   disabled={isUpdatingInfo}
-                  className="w-full bg-brand-dark text-white font-semibold py-2 px-4 rounded-lg hover:bg-brand-orange hover:text-brand-dark transition-colors disabled:bg-gray-400 flex items-center justify-center cursor-pointer"
+                  className="w-full bg-brand-dark text-white font-semibold py-2 px-4 rounded-lg hover:bg-brand-orange transition-colors disabled:bg-gray-400 flex items-center justify-center cursor-pointer"
                 >
                   {isUpdatingInfo ? <Spinner /> : "Guardar Información"}
                 </button>
