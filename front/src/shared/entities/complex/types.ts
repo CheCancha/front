@@ -8,8 +8,6 @@ import {
   SubscriptionCycle,
   SubscriptionPlan,
   SubscriptionStatus,
-  Amenity,
-  Image as PrismaImage,
 } from "@prisma/client";
 
 

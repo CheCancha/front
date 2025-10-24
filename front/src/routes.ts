@@ -24,6 +24,7 @@ export const routes = {
     settings: (complexId: string) => `/dashboard/${complexId}/settings`,
     marketing: (complexId: string) => `/dashboard/${complexId}/marketing`,
     customers: (complexId: string) => `/dashboard/${complexId}/customers`,
+    newfeatures: (complexId: string) => `/dashboard/${complexId}/newfeatures`,
 
     perfil: "/profile",
   },

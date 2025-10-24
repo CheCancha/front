@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/shared/lib/db";
 import { z } from "zod";
-import { authorizeAndVerify } from "@/shared/lib/authorize";
 
 const validateSchema = z.object({
   couponCode: z.string(),

@@ -2,15 +2,11 @@ import { NextResponse, type NextRequest } from "next/server";
 import { db } from "@/shared/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/authOptions";
-import {
-  startOfDay,
-  endOfDay,
-  startOfToday,
-  isSameDay,
-  isBefore,
-  parseISO,
-} from "date-fns";
+import { startOfDay, endOfDay, isSameDay, isBefore, parseISO } from "date-fns";
+import { toDate } from "date-fns-tz";
 import { BookingStatus } from "@prisma/client";
+
+const ARGENTINA_TIME_ZONE = "America/Argentina/Buenos_Aires";
 
 // --- GET ---
 export async function GET(
@@ -28,10 +24,14 @@ export async function GET(
 
     // --- LÓGICA PARA PRÓXIMAS RESERVAS ---
     if (searchParams.get("upcoming") === "true") {
-      const now = new Date();
-      const currentHour = now.getHours();
-      const currentMinute = now.getMinutes();
-      const today = startOfToday();
+      const nowArgentina = toDate(new Date(), {
+        timeZone: ARGENTINA_TIME_ZONE,
+      });
+      const todayArgentina = startOfDay(nowArgentina);
+
+      const currentHour = nowArgentina.getHours();
+      const currentMinute = nowArgentina.getMinutes();
+      const today = todayArgentina;
 
       const potentialBookings = await db.booking.findMany({
         where: {
@@ -113,7 +113,7 @@ export async function GET(
         court: { complexId: complexId },
         date: {
           gte: startDate,
-          lt: endDate,  // o lte
+          lt: endDate, // o lte
         },
         status: {
           in: [
@@ -162,11 +162,24 @@ export async function POST(
       );
     }
 
-    const bookingDate = new Date(`${date}T${time}`);
+    const bookingDateUtc = toDate(
+      `${date}T${time.length === 5 ? `${time}:00` : time}`,
+      { timeZone: ARGENTINA_TIME_ZONE }
+    );
 
-    if (isBefore(bookingDate, new Date(new Date().getTime() - 60000))) {
+    // ⚠️ MODIFICACIÓN CLAVE: Usamos 'new Date()' directamente sin el offset.
+    // new Date() siempre retorna la hora actual del sistema en UTC.
+    if (isBefore(bookingDateUtc, new Date())) {
       return NextResponse.json(
-        { message: "No se pueden crear reservas en horarios pasados." },
+        {
+          message: "No se pueden crear reservas en horarios pasados.",
+          // 💡 DEBUG: Retorna valores para verificar en la consola de tu navegador
+          debug: {
+            bookingUtc: bookingDateUtc.toISOString(),
+            nowUtc: new Date().toISOString(),
+            timeZone: ARGENTINA_TIME_ZONE,
+          },
+        },
         {
           status: 400,
         }
@@ -200,15 +213,19 @@ export async function POST(
     const newBookingEndMinutes =
       newBookingStartMinutes + court.slotDurationMinutes;
 
-    const startOfBookingDay = startOfDay(bookingDate);
-    const endOfBookingDay = endOfDay(bookingDate);
+    const startOfBookingDayUtc = toDate(`${date}T00:00:00`, {
+      timeZone: ARGENTINA_TIME_ZONE,
+    });
+    const endOfBookingDayUtc = toDate(`${date}T23:59:59.999`, {
+      timeZone: ARGENTINA_TIME_ZONE,
+    });
 
     const existingBookings = await db.booking.findMany({
       where: {
         courtId,
         date: {
-          gte: startOfBookingDay,
-          lt: endOfBookingDay,
+          gte: startOfBookingDayUtc,
+          lt: endOfBookingDayUtc,
         },
         status: { not: "CANCELADO" },
       },
@@ -243,7 +260,7 @@ export async function POST(
         courtId,
         guestName,
         guestPhone,
-        date: bookingDate,
+        date: bookingDateUtc,
         startTime: hour,
         startMinute: minute,
         totalPrice,

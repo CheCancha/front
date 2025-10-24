@@ -2,7 +2,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { db } from "@/shared/lib/db";
 import { Prisma, PriceRule, Schedule } from "@prisma/client";
 import { z } from "zod";
-import { endOfDay, getDay, startOfDay } from "date-fns";
+import { addDays } from "date-fns";
+import { formatInTimeZone, toDate } from "date-fns-tz";
 
 const searchSchema = z.object({
   city: z.string().optional(),
@@ -11,8 +12,11 @@ const searchSchema = z.object({
   time: z.string().optional(),
 });
 
+const ARGENTINA_TIME_ZONE = "America/Argentina/Buenos_Aires";
+
 type ComplexWithCourtsAndBookings = Prisma.ComplexGetPayload<{
   include: {
+    images: true;
     schedule: true;
     courts: {
       include: {
@@ -55,12 +59,17 @@ function findNextAvailableSlots(
   count: number = 3
 ): AvailableSlot[] {
   const now = new Date();
-  const isToday =
-    now.getFullYear() === searchDate.getFullYear() &&
-    now.getMonth() === searchDate.getMonth() &&
-    now.getDate() === searchDate.getDate();
+  const currentHour = Number(formatInTimeZone(now, ARGENTINA_TIME_ZONE, "H"));
+  const currentMinute = Number(formatInTimeZone(now, ARGENTINA_TIME_ZONE, "m"));
+  const currentTimeInMinutes = currentHour * 60 + currentMinute;
 
-  const dayOfWeek = getDay(searchDate);
+  const isToday =
+    formatInTimeZone(searchDate, ARGENTINA_TIME_ZONE, "yyyy-MM-dd") ===
+    formatInTimeZone(now, ARGENTINA_TIME_ZONE, "yyyy-MM-dd");
+
+  const dayOfWeek = Number(
+    formatInTimeZone(searchDate, ARGENTINA_TIME_ZONE, "w")
+  );
   const dayKeys = [
     "sunday",
     "monday",
@@ -104,15 +113,10 @@ function findNextAvailableSlots(
 
   const availableSlots: AvailableSlot[] = [];
   const timeInterval = complex.timeSlotInterval || 30;
-  
-  // FIX: Calcular desde qué minuto del día empezar
-  const currentHour = now.getHours();
-  const currentMinute = now.getMinutes();
-  const currentTimeInMinutes = currentHour * 60 + currentMinute;
-  
+
   // Si es hoy, empezar desde el próximo slot disponible después de la hora actual
   // Si no es hoy, empezar desde la hora de apertura
-  const startTimeInMinutes = isToday 
+  const startTimeInMinutes = isToday
     ? Math.max(
         openHour * 60,
         Math.ceil(currentTimeInMinutes / timeInterval) * timeInterval
@@ -120,12 +124,18 @@ function findNextAvailableSlots(
     : openHour * 60;
 
   // Iterar por cada slot de tiempo desde startTimeInMinutes
-  for (let timeInMinutes = startTimeInMinutes; timeInMinutes < closeHour * 60; timeInMinutes += timeInterval) {
+  for (
+    let timeInMinutes = startTimeInMinutes;
+    timeInMinutes < closeHour * 60;
+    timeInMinutes += timeInterval
+  ) {
     if (availableSlots.length >= count) break;
 
     const hour = Math.floor(timeInMinutes / 60);
     const minute = timeInMinutes % 60;
-    const timeString = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+    const timeString = `${String(hour).padStart(2, "0")}:${String(
+      minute
+    ).padStart(2, "0")}`;
 
     // Para cada cancha, verificar si está disponible en este horario
     for (const court of complex.courts) {
@@ -168,14 +178,27 @@ export async function GET(req: NextRequest) {
 
     const { city, sport, date } = validation.data;
 
-    const searchDate = date ? new Date(`${date}T00:00:00`) : null;
+    const searchDateStart = date
+      ? toDate(`${date}T00:00:00`, { timeZone: ARGENTINA_TIME_ZONE })
+      : null;
+
+    const bookingsInclude = searchDateStart
+      ? {
+          where: {
+            date: {
+              gte: searchDateStart,
+              lt: addDays(searchDateStart, 1),
+            },
+          },
+        }
+      : true;
 
     const whereClause: Prisma.ComplexWhereInput = {
       onboardingCompleted: true,
       city: city ? { contains: city, mode: "insensitive" } : undefined,
     };
 
-    const complexes = await db.complex.findMany({
+    const complexes = (await db.complex.findMany({
       where: whereClause,
       include: {
         images: { where: { isPrimary: true }, take: 1 },
@@ -185,30 +208,22 @@ export async function GET(req: NextRequest) {
             sport: sport ? { slug: sport } : undefined,
           },
           include: {
-            bookings: searchDate
-              ? {
-                  where: {
-                    date: {
-                      gte: startOfDay(searchDate),
-                      lt: endOfDay(searchDate),
-                    },
-                  },
-                }
-              : false,
+            
+            bookings: bookingsInclude,
             priceRules: true,
           },
         },
       },
-    });
+    })) as ComplexWithCourtsAndBookings[];
 
     const filteredComplexes = complexes.filter((c) => c.courts.length > 0);
 
     const formattedComplexes = filteredComplexes
       .map((complex) => {
-        const availableSlots = searchDate
+        const availableSlots = searchDateStart
           ? findNextAvailableSlots(
               complex as unknown as ComplexWithCourtsAndBookings,
-              searchDate,
+              searchDateStart,
               3
             )
           : [];
@@ -225,7 +240,7 @@ export async function GET(req: NextRequest) {
           reviewCount: complex.reviewCount,
         };
 
-        if (!searchDate) {
+        if (!searchDateStart) {
           return {
             ...baseComplexData,
             availableSlots: [],

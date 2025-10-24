@@ -15,7 +15,9 @@ import { Spinner } from "@/shared/components/ui/Spinner";
 import BookingModal from "@/app/features/public/components/courts/BookingModal";
 import { routes } from "@/routes";
 import dynamic from "next/dynamic";
-import { format, parse } from "date-fns";
+import { formatInTimeZone, toDate } from "date-fns-tz";
+
+const ARGENTINA_TIME_ZONE = "America/Argentina/Buenos_Aires";
 
 // --- TIPOS DE DATOS ---
 export type Club = {
@@ -212,8 +214,12 @@ const SearchResultsComponent = () => {
     let needsRedirect = false;
 
     if (!currentParams.has("date")) {
-      // FIX: Usar solo fecha, sin hora
-      currentParams.set("date", format(new Date(), "yyyy-MM-dd"));
+      const todayInArgentina = formatInTimeZone(
+        new Date(),
+        ARGENTINA_TIME_ZONE,
+        "yyyy-MM-dd"
+      );
+      currentParams.set("date", todayInArgentina);
       needsRedirect = true;
     }
 
@@ -224,10 +230,14 @@ const SearchResultsComponent = () => {
   
   const dateParam = searchParams.get("date");
   
-  // FIX: Parsear la fecha correctamente sin conversión UTC
-  const searchDate = dateParam 
-    ? parse(dateParam, "yyyy-MM-dd", new Date())
-    : new Date();
+  const fallbackDateString = formatInTimeZone(
+    new Date(),
+    ARGENTINA_TIME_ZONE,
+    "yyyy-MM-dd"
+  );
+  const searchDate = toDate(`${dateParam ?? fallbackDateString}T00:00:00`, {
+    timeZone: ARGENTINA_TIME_ZONE,
+  });
 
   useEffect(() => {
     if (!dateParam) {

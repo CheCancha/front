@@ -18,8 +18,6 @@ import type {
   PrismaImage,
   Schedule,
 } from "@/app/(public)/canchas/[slug]/page";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
 import { ImageCarousel } from "./ImageCarousel";
 
 // --- Carga dinámica del Mapa ---
@@ -143,10 +141,6 @@ export function ClientPage({ complex }: { complex: ComplexProfileData }) {
     complex.instagramHandle ||
     complex.facebookUrl;
 
-  const primaryImage =
-    complex.images.find((img) => img.isPrimary)?.url ||
-    complex.images[0]?.url ||
-    null;
 
   return (
     <>
@@ -188,8 +182,6 @@ export function ClientPage({ complex }: { complex: ComplexProfileData }) {
             </div>
 
             {/* --- COLUMNA LATERAL (derecha en desktop) --- */}
-            {/* En móvil, aparece debajo de la columna principal. En desktop, ocupa 1/3 y es pegajosa. */}
-            {/* El 'mt-8 lg:mt-0' añade espacio en móvil, pero lo quita en desktop. */}
             <div className="lg:w-1/3 space-y-6 lg:sticky lg:top-24 mt-8 lg:mt-0">
               {/* Tarjeta de Contacto */}
               {hasContactInfo && (

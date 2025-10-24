@@ -34,7 +34,8 @@ export default function DashboardNavTabs({ subscriptionPlan, subscriptionStatus 
     { name: "Analíticas", href: routes.app.analytics(complexId), pro: true },
     { name: "Marketing", href: routes.app.marketing(complexId), pro: true },
     { name: "Gestión de Clientes", href: routes.app.customers(complexId), pro: true },
-    { name: "Ajustes", href: routes.app.settings(complexId), pro: false },
+    { name: "Próximamente", href: routes.app.newfeatures(complexId), pro: true },
+    { name: "Configuración", href: routes.app.settings(complexId), pro: false },
   ];
 
   return (
