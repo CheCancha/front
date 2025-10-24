@@ -51,13 +51,14 @@ export default function OneSignalProvider({
       // 2. LOG Y ESTADO INICIAL
       const permission = await OneSignal.Notifications.permission;
       // ✅ Usar operador de encadenamiento opcional
-      const subscriptionId = await OneSignal.User.PushSubscription.id;
-      const isCurrentlySubscribed = subscriptionId !== null;
+      
+      const { id, optedIn } = OneSignal.User.PushSubscription;
+      const isCurrentlySubscribed =
+        typeof optedIn === "boolean" ? optedIn : id !== null && id !== undefined;
 
       console.log("🔔 [STATE] Permiso actual:", permission);
-      console.log("💻 [STATE] Subscription ID:", subscriptionId);
       console.log("💻 [STATE] ¿Suscrito actualmente?:", isCurrentlySubscribed);
-      
+
       setIsSubscribed(isCurrentlySubscribed);
       setIsLoading(false);
 
@@ -66,7 +67,10 @@ export default function OneSignalProvider({
         "change",
         async (event: PushSubscriptionChangeEvent) => {
           const playerId = event.current?.id ?? null;
-          const isNowSubscribed = playerId !== null;
+          const isNowSubscribed =
+            typeof event.current?.optedIn === "boolean"
+              ? event.current.optedIn
+              : playerId !== null;
 
           console.log("📢 [EVENT] Player ID actualizado:", playerId);
           setIsSubscribed(isNowSubscribed);

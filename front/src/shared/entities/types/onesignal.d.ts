@@ -1,15 +1,18 @@
 // --- TIPOS PARA LA API V16 ---
 
-export interface PushSubscriptionChangeEvent {
-  current: {
-    id: string | null;
-  };
+export interface PushSubscriptionState {
+  id: string | null | undefined;
+  token?: string | null;
+  optedIn?: boolean;
 }
 
-export interface OneSignalPushSubscription {
-  id: string | null;
+export interface PushSubscriptionChangeEvent {
+  previous?: PushSubscriptionState;
+  current?: PushSubscriptionState;
+}
 
   // Forzar opt-in / opt-out manualmente
+export interface OneSignalPushSubscription extends PushSubscriptionState {
   optIn(): Promise<void>;
   optOut(): Promise<void>;
 
