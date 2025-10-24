@@ -79,7 +79,7 @@ export default function BookingStatusContent() {
           <Link
             key={link.href}
             href={link.href}
-            className="rounded-md bg-brand-orange px-3.5 py-2.5 text-sm font-semibold text-brand-dark shadow-sm hover:opacity-90 focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+            className="rounded-md bg-brand-orange px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:opacity-90 focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
           >
             {link.text}
           </Link>

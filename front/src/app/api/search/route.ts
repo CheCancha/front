@@ -94,53 +94,85 @@ function findNextAvailableSlots(
   const openHour = openHourForDay;
   const closeHour = closeHourForDay;
 
-  const bookedSlotsByCourtId = new Map<string, Set<string>>();
+  const timeInterval = complex.timeSlotInterval || 30; // Intervalo base (e.g., 30 mins)
+  const totalSlotsInDay = (closeHour - openHour) * (60 / timeInterval);
+  const availableSlots: AvailableSlot[] = [];
+
+  const availabilityMap = new Map<string, boolean[]>();
   complex.courts.forEach((court) => {
-    const bookedTimes = new Set<string>();
-    if (court.bookings) {
-      court.bookings.forEach((booking) => {
-        const timeString = `${String(booking.startTime).padStart(
-          2,
-          "0"
-        )}:${String(booking.startMinute || 0).padStart(2, "0")}`;
-        bookedTimes.add(timeString);
-      });
-    }
-    bookedSlotsByCourtId.set(court.id, bookedTimes);
+    const courtSlots = new Array(totalSlotsInDay).fill(true); // Todos empiezan libres
+    
+    // Marcar los slots ocupados por reservas CONFIRMADAS o PENDIENTES recientes
+    court.bookings?.forEach((booking) => {
+      // Filtrar por status si es necesario (ya lo hace la query de Prisma ahora)
+      
+      const startIdx =
+        (booking.startTime * 60 +
+          (booking.startMinute || 0) -
+          openHour * 60) /
+        timeInterval;
+      
+      // Determinar cuántos slots de 'timeInterval' ocupa esta reserva
+      const slotsToBook = court.slotDurationMinutes / timeInterval; 
+      
+      for (let i = 0; i < slotsToBook; i++) {
+        const slotIndex = Math.floor(startIdx + i); // Asegurarse de que sea entero
+        if (slotIndex >= 0 && slotIndex < totalSlotsInDay) {
+          courtSlots[slotIndex] = false; // Marcar como ocupado
+        }
+      }
+    });
+    availabilityMap.set(court.id, courtSlots);
   });
 
-  const availableSlots: AvailableSlot[] = [];
-  const timeInterval = complex.timeSlotInterval || 30;
-
-  // Si es hoy, empezar desde el próximo slot disponible después de la hora actual
-  // Si no es hoy, empezar desde la hora de apertura
-  const startTimeInMinutes = isToday
+  // 2. Encontrar los próximos 'count' slots disponibles
+  const availableSlotsResult: AvailableSlot[] = [];
+  
+  // Calcular minuto inicial (como antes)
+  const startTimeInMinutes = isToday 
     ? Math.max(
         openHour * 60,
-        Math.ceil(currentTimeInMinutes / timeInterval) * timeInterval
+        // Redondear hacia ARRIBA al próximo intervalo
+        Math.ceil(currentTimeInMinutes / timeInterval) * timeInterval 
       )
     : openHour * 60;
+    
+  const closingTimeInMinutes = closeHour * 60;
 
-  // Iterar por cada slot de tiempo desde startTimeInMinutes
-  for (
-    let timeInMinutes = startTimeInMinutes;
-    timeInMinutes < closeHour * 60;
-    timeInMinutes += timeInterval
-  ) {
-    if (availableSlots.length >= count) break;
+  // Iterar por cada POSIBLE slot de inicio
+  for (let timeInMinutes = startTimeInMinutes; timeInMinutes < closingTimeInMinutes; timeInMinutes += timeInterval) {
+    if (availableSlotsResult.length >= count) break; // Ya encontramos los que necesitamos
 
     const hour = Math.floor(timeInMinutes / 60);
     const minute = timeInMinutes % 60;
-    const timeString = `${String(hour).padStart(2, "0")}:${String(
-      minute
-    ).padStart(2, "0")}`;
+    const timeString = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
 
-    // Para cada cancha, verificar si está disponible en este horario
+    // Revisar cada cancha para ver si está libre en ESTE slot
     for (const court of complex.courts) {
-      if (availableSlots.length >= count) break;
+      if (availableSlotsResult.length >= count) break; // Salir si ya llenamos
 
-      const courtBookedSlots = bookedSlotsByCourtId.get(court.id);
-      if (!courtBookedSlots?.has(timeString)) {
+      const courtAvailability = availabilityMap.get(court.id);
+      if (!courtAvailability) continue;
+
+      // Calcular cuántos slots necesita esta cancha y el índice actual
+      const slotsNeeded = court.slotDurationMinutes / timeInterval;
+      const currentSlotIndex = (timeInMinutes - openHour * 60) / timeInterval;
+
+      // Verificar si hay suficientes slots CONSECUTIVOS libres
+      let canBook = true;
+      if (timeInMinutes + court.slotDurationMinutes > closingTimeInMinutes) {
+          canBook = false; 
+      } else {
+          for (let i = 0; i < slotsNeeded; i++) {
+              const slotIndexToCheck = Math.floor(currentSlotIndex + i);
+              if (slotIndexToCheck >= totalSlotsInDay || !courtAvailability[slotIndexToCheck]) {
+                  canBook = false;
+                  break; 
+              }
+          }
+      }
+      
+      if (canBook) {
         const priceRule = getPriceRuleForTime(court, timeString);
         if (!priceRule) continue;
 
@@ -153,14 +185,17 @@ function findNextAvailableSlots(
           priceRules: court.priceRules,
         };
 
-        availableSlots.push({ time: timeString, court: cleanCourtData });
+        if (!availableSlotsResult.some(s => s.time === timeString && s.court.id === court.id)) {
+            availableSlotsResult.push({ time: timeString, court: cleanCourtData });
+        }
       }
-    }
-  }
+    } 
+  } 
 
-  return availableSlots;
+  return availableSlotsResult.slice(0, count);
 }
 
+// --- Recuerda corregir la consulta de Prisma en GET para filtrar bookings ---
 export async function GET(req: NextRequest) {
   try {
     const searchParams = req.nextUrl.searchParams;
@@ -206,13 +241,22 @@ export async function GET(req: NextRequest) {
             sport: sport ? { slug: sport } : undefined,
           },
           include: {
-            
-            bookings: bookingsInclude,
-            priceRules: true,
-          },
+          bookings: searchDateStart
+            ? {
+                where: {
+                  date: {
+                    gte: searchDateStart,
+                    lt: addDays(searchDateStart, 1),
+                  },
+                  status: { in: ["CONFIRMADO", "PENDIENTE"] } 
+                },
+              }
+            : false, 
+          priceRules: true,
         },
       },
-    })) as ComplexWithCourtsAndBookings[];
+    },
+  })) as ComplexWithCourtsAndBookings[];
 
     const filteredComplexes = complexes.filter((c) => c.courts.length > 0);
 

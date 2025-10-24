@@ -3,80 +3,71 @@ import { db } from "@/shared/lib/db";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/authOptions";
 import { differenceInHours } from "date-fns";
-import { sendBookingCancelledByPlayerEmail, sendBookingCancelledByManagerEmail } from "@/shared/lib/email";
+import {
+  sendBookingCancelledByPlayerEmail,
+  sendBookingCancelledByManagerEmail,
+} from "@/shared/lib/email";
 
 export async function POST(
   req: Request,
-  context: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ bookingId: string }> }
 ) {
   try {
-    const { id: bookingId } = await context.params;
+    const { bookingId } = await context.params; 
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    if (!session?.user?.id)
       return new NextResponse("No autenticado", { status: 401 });
-    }
 
     const booking = await db.booking.findUnique({
       where: { id: bookingId },
       include: {
-        user: true, 
+        user: true,
         court: {
           include: {
             complex: {
-              include: {
-                manager: true,
-              },
+              include: { manager: true },
             },
           },
         },
       },
     });
 
-    if (!booking) {
+    if (!booking)
       return new NextResponse("Reserva no encontrada", { status: 404 });
-    }
 
-    // --- LÓGICA DE AUTORIZACIÓN  ---
     const isPlayerOwner = booking.userId === session.user.id;
-    const isComplexManager = booking.court.complex.managerId === session.user.id;
+    const isComplexManager =
+      booking.court?.complex?.managerId === session.user.id;
 
-    if (!isPlayerOwner && !isComplexManager && session.user.role !== "ADMIN") {
-      return new NextResponse("No autorizado para cancelar esta reserva.", { status: 403 });
-    }
+    if (!isPlayerOwner && !isComplexManager && session.user.role !== "ADMIN")
+      return new NextResponse("No autorizado", { status: 403 });
 
-    if (booking.status !== "CONFIRMADO") {
+    if (booking.status !== "CONFIRMADO")
       return new NextResponse("Solo se pueden cancelar reservas confirmadas.", {
         status: 400,
       });
-    }
 
     const now = new Date();
     const bookingDateTime = booking.date;
     const hoursDifference = differenceInHours(bookingDateTime, now);
-
     const cancellationPolicyHours =
-      booking.court.complex.cancellationPolicyHours;
+      booking.court?.complex?.cancellationPolicyHours ?? 0;
 
-    let refundPending = false;
-    if (cancellationPolicyHours > 0 && hoursDifference >= cancellationPolicyHours) {
-      refundPending = true;
-    }
+    const refundPending =
+      cancellationPolicyHours > 0 &&
+      hoursDifference >= cancellationPolicyHours;
 
     await db.booking.update({
       where: { id: bookingId },
-      data: {
-        status: "CANCELADO",
-        refundPending: refundPending,
-      },
+      data: { status: "CANCELADO", refundPending },
     });
 
-    // --- LÓGICA DE NOTIFICACIONES ---
-    if (isPlayerOwner) {
-      console.log(`Notificando al manager (${booking.court.complex.manager.email}) y al jugador (${booking.user?.email}) sobre la cancelación por parte del jugador.`);
-       await sendBookingCancelledByPlayerEmail(booking);
-    } else {
-      console.log(`Notificando al jugador (${booking.user?.email}) sobre la cancelación por parte del manager.`);
-       await sendBookingCancelledByManagerEmail(booking);
+    try {
+      if (isPlayerOwner)
+        await sendBookingCancelledByPlayerEmail(booking);
+      else await sendBookingCancelledByManagerEmail(booking);
+    } catch (mailError) {
+      console.error("Error enviando email:", mailError);
     }
 
     return NextResponse.json({ success: true, message: "Reserva cancelada." });

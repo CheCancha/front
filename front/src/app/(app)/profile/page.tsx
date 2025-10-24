@@ -100,7 +100,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [isUpdatingInfo, setIsUpdatingInfo] = useState(false);
   const [isNotificationsEnabled, setIsNotificationsEnabled] = useState(false);
-  
+
   // --- ESTADOS PARA CANCELACIÓN ---
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [bookingToCancel, setBookingToCancel] = useState<Booking | null>(null);
@@ -380,7 +380,6 @@ export default function ProfilePage() {
               <NotificationToggle initialState={isNotificationsEnabled} />
             </div>
 
-
             {/* Tarjeta de Seguridad */}
             <div className="bg-white p-6 rounded-2xl border">
               <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
@@ -478,11 +477,9 @@ export default function ProfilePage() {
                         <p className="text-gray-700">{booking.court}</p>
                         <p className="text-sm text-gray-600 flex items-center gap-2 mt-1">
                           <Calendar size={14} />
-                          {format(
-                            parseISO(booking.date),
-                            "eeee dd 'de' MMMM, yyyy",
-                            { locale: es }
-                          )}
+                          {format(parseISO(booking.date), "eeee dd 'de' MMMM", {
+                            locale: es,
+                          })}{" "}
                           a las {booking.startTime} hs
                         </p>
                       </div>
@@ -643,7 +640,7 @@ export default function ProfilePage() {
 
           <div className="flex justify-end gap-3">
             <Button variant="ghost" onClick={() => setIsRatingModalOpen(false)}>
-              Cancelar
+            Cancelar
             </Button>
             <Button
               onClick={handlePostReview}

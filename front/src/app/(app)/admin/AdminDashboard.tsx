@@ -3,7 +3,7 @@
 import { ComplexWithManager } from "@/shared/entities/complex/types";
 import { format, differenceInDays } from "date-fns";
 import { es } from "date-fns/locale";
-import { MoreHorizontal, Mail, Edit } from "lucide-react";
+import { MoreHorizontal, Mail, Edit, PlusCircle } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,7 +16,7 @@ import { toast } from "react-hot-toast";
 import { resendWelcomeEmail } from "@/app/features/admin/inscriptionActions";
 import { EditManagerModal } from "@/app/features/admin/components/EditManagerModal";
 import { useRouter } from "next/navigation";
-import { QuickCreateComplexForm } from "@/app/features/admin/components/QuickCreateComplexForm";
+import { CreateComplexModal } from "@/app/features/admin/components/CreateComplexModal";
 
 const planMap = {
   FREE: "Demo",
@@ -186,8 +186,7 @@ export default function AdminDashboard({
     ComplexWithManager["manager"] | null
   >(null);
   const router = useRouter();
-
-
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const handleOpenEditModal = (manager: ComplexWithManager["manager"]) => {
     setSelectedManager(manager);
@@ -195,20 +194,20 @@ export default function AdminDashboard({
   };
 
   const handleCreationSuccess = () => {
-      // Cuando la creación es exitosa, refrescamos la data del Server Component
-      router.refresh(); 
+    // Cuando la creación es exitosa, refrescamos la data del Server Component
+    router.refresh();
   };
 
   return (
     <>
-      <div className="bg-[#f8f9f9] p-4 sm:p-6 rounded-lg border mb-6"> 
-        <h2 className="text-lg font-semibold mb-4">Creación Rápida de Complejo (Onboarding Asistido)</h2>
-        <QuickCreateComplexForm onSuccess={handleCreationSuccess} /> 
-      </div>
-      
       {/* --- LISTA DE COMPLEJOS EXISTENTES --- */}
       <div className="bg-[#f8f9f9] p-4 sm:p-6 rounded-lg border">
-        <h2 className="text-lg font-semibold mb-4">Lista de Complejos</h2>
+        <div className="mb-6 flex justify-between items-center">
+          <h2 className="text-lg font-semibold">Lista de Complejos</h2>
+            <Button onClick={() => setIsCreateModalOpen(true)}>
+              <PlusCircle className="mr-2 h-4 w-4" /> Crear Nuevo Complejo
+            </Button>
+        </div>
         {complexes.length === 0 ? (
           <p className="text-gray-500">No hay complejos para mostrar.</p>
         ) : (
@@ -244,6 +243,11 @@ export default function AdminDashboard({
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         manager={selectedManager}
+      />
+      <CreateComplexModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSuccess={handleCreationSuccess}
       />
     </>
   );
