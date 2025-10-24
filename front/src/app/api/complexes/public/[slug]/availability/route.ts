@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/shared/lib/db";
-import { startOfDay, endOfDay, subMinutes } from "date-fns";
-import { toZonedTime } from "date-fns-tz";
+import { addDays, subMinutes } from "date-fns";
+import { formatInTimeZone, toDate } from "date-fns-tz";
 import { BookingStatus } from "@prisma/client";
 
 export async function GET(
@@ -22,11 +22,27 @@ export async function GET(
 
     //FIX: Usar la zona horaria de Argentina para consistencia
     const TIMEZONE = "America/Argentina/Buenos_Aires";
-    
+
     // Parsear la fecha en la zona horaria correcta
-    const requestedDate = toZonedTime(`${dateString}T00:00:00`, TIMEZONE);
-    const now = toZonedTime(new Date(), TIMEZONE);
-    const fiveMinutesAgo = subMinutes(now, 5);
+    const requestedDayStart = toDate(`${dateString}T00:00:00`, {
+      timeZone: TIMEZONE,
+    });
+    const requestedDayEnd = addDays(requestedDayStart, 1);
+
+    const nowUtc = new Date();
+    const fiveMinutesAgo = subMinutes(nowUtc, 5);
+
+    const requestedDayKey = formatInTimeZone(
+      requestedDayStart,
+      TIMEZONE,
+      "yyyy-MM-dd"
+    );
+    const todayKey = formatInTimeZone(nowUtc, TIMEZONE, "yyyy-MM-dd");
+    const isToday = requestedDayKey === todayKey;
+
+    const currentHour = Number(formatInTimeZone(nowUtc, TIMEZONE, "H"));
+    const currentMinute = Number(formatInTimeZone(nowUtc, TIMEZONE, "m"));
+    const currentTimeInMinutes = currentHour * 60 + currentMinute;
 
     const complex = await db.complex.findUnique({
       where: { slug: slug },
@@ -37,8 +53,8 @@ export async function GET(
             bookings: {
               where: {
                 date: {
-                  gte: startOfDay(requestedDate),
-                  lt: endOfDay(requestedDate),
+                  gte: requestedDayStart,
+                  lt: requestedDayEnd,
                 },
                 AND: [
                   { status: { not: BookingStatus.CANCELADO } },
@@ -66,7 +82,10 @@ export async function GET(
     const timeGridInterval = complex.timeSlotInterval;
 
     // IMPORTANTE: Usar getDay() en lugar de getUTCDay() para fecha local
-    const dayOfWeek = requestedDate.getDay();
+    const isoDayOfWeek = Number(
+      formatInTimeZone(requestedDayStart, TIMEZONE, "i")
+    );
+    const dayOfWeek = isoDayOfWeek % 7;
     const dayKeys = [
       "sunday",
       "monday",
@@ -95,16 +114,6 @@ export async function GET(
     if (typeof openHour !== "number" || typeof closeHour !== "number") {
       return NextResponse.json([]);
     }
-
-    // NUEVO: Filtrar horarios pasados si es el día de hoy
-    const currentHour = now.getHours();
-    const currentMinute = now.getMinutes();
-    const currentTimeInMinutes = currentHour * 60 + currentMinute;
-    
-    const isToday = 
-      requestedDate.getDate() === now.getDate() &&
-      requestedDate.getMonth() === now.getMonth() &&
-      requestedDate.getFullYear() === now.getFullYear();
 
     const availabilityMap = new Map<string, boolean[]>();
     const totalSlots = (closeHour - openHour) * (60 / timeGridInterval);
@@ -149,7 +158,8 @@ export async function GET(
 
       const courtStatuses = complex.courts.map((court) => {
         const slotsNeeded = court.slotDurationMinutes / timeGridInterval;
-        const currentSlotIndex = (currentTime - openHour * 60) / timeGridInterval;
+        const currentSlotIndex =
+          (currentTime - openHour * 60) / timeGridInterval;
 
         let canBook = true;
         if (currentTime + court.slotDurationMinutes > closingTime) {
