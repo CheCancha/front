@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { db } from "@/shared/lib/db";
 import { Prisma, PriceRule, Schedule } from "@prisma/client";
 import { z } from "zod";
-import { addDays } from "date-fns";
+import { addDays, getDay } from "date-fns";
 import { formatInTimeZone, toDate } from "date-fns-tz";
 
 const searchSchema = z.object({
@@ -67,9 +67,7 @@ function findNextAvailableSlots(
     formatInTimeZone(searchDate, ARGENTINA_TIME_ZONE, "yyyy-MM-dd") ===
     formatInTimeZone(now, ARGENTINA_TIME_ZONE, "yyyy-MM-dd");
 
-  const dayOfWeek = Number(
-    formatInTimeZone(searchDate, ARGENTINA_TIME_ZONE, "w")
-  );
+  const dayOfWeek = getDay(searchDate);
   const dayKeys = [
     "sunday",
     "monday",
