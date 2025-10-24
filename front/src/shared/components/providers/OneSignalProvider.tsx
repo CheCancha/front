@@ -8,7 +8,7 @@ import type {
 } from "@/shared/entities/types/onesignal";
 
 // --- Configuración  ---
-const ONESIGNAL_APP_ID = "040c5b36-a36c-486a-848e-f633ff89edff"; // ⚠️ REEMPLAZA con tu ID real de OneSignal ⚠️
+const ONESIGNAL_APP_ID = "b5b527c8-9b39-4e83-a2b1-36220bc27f53"; // ⚠️ REEMPLAZA con tu ID real de OneSignal ⚠️
 // -----------------------------------------------------
 
 export default function OneSignalProvider({
