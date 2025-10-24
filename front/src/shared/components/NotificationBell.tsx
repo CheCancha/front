@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import useSWR from 'swr';
 import { Bell } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover';
@@ -23,7 +23,7 @@ interface NotificationBellProps {
 }
 
 export function NotificationBell({ isTransparent }: NotificationBellProps) {
-  const { data: notifications, mutate } = useSWR<Notification[]>('/api/notifications', fetcher);
+  const { data: notifications, mutate } = useSWR<Notification[]>('/api/notifications', fetcher, );
   const [isOpen, setIsOpen] = useState(false);
 
   const unreadCount = notifications?.filter((n) => !n.isRead).length || 0;
@@ -41,6 +41,12 @@ export function NotificationBell({ isTransparent }: NotificationBellProps) {
       mutate();
     }
   };
+
+  useEffect(() => {
+  const listener = () => mutate();
+  window.addEventListener("new-notification", listener);
+  return () => window.removeEventListener("new-notification", listener);
+}, [mutate]);
 
   return (
     <Popover open={isOpen} onOpenChange={handleOpenChange}>

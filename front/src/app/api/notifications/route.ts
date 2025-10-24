@@ -17,3 +17,24 @@ export async function GET() {
 
   return NextResponse.json(notifications);
 }
+
+export async function POST(req: Request) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return new NextResponse("No autorizado", { status: 401 });
+  }
+
+  const body = await req.json();
+  const notification = await db.notification.create({
+    data: {
+      userId: session.user.id,
+      title: body.title,
+      message: body.message,
+      url: body.url,
+      isRead: false,
+      createdAt: new Date(),
+    },
+  });
+
+  return NextResponse.json(notification);
+}

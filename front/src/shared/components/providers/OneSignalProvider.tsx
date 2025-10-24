@@ -5,11 +5,11 @@ import { useOneSignalStore } from "@/shared/store/useOneSignalStore";
 import type {
   OneSignal,
   PushSubscriptionChangeEvent,
+  NotificationDisplayEvent,
 } from "@/shared/entities/types/onesignal";
 
-// --- Configuración  ---
-const ONESIGNAL_APP_ID = "b5b527c8-9b39-4e83-a2b1-36220bc27f53"; // ⚠️ REEMPLAZA con tu ID real de OneSignal ⚠️
-// -----------------------------------------------------
+// --- Configuración ---
+const ONESIGNAL_APP_ID = "b5b527c8-9b39-4e83-a2b1-36220bc27f53";
 
 export default function OneSignalProvider({
   children,
@@ -26,53 +26,43 @@ export default function OneSignalProvider({
 
     window.OneSignalDeferred = window.OneSignalDeferred || [];
 
-    // ✅ Ahora usamos el tipo OneSignal importado
     window.OneSignalDeferred.push(async (OneSignal: OneSignal) => {
       console.log("✅ [INIT] OneSignal listo para inicializar.");
 
-      // 1. LLAMADA DE INICIALIZACIÓN FALTANTE
       try {
         await OneSignal.init({
           appId: ONESIGNAL_APP_ID,
           allowLocalhostAsSecureOrigin: true,
         });
-        console.log(
-          "🚀 [INIT] OneSignal inicializado y configurado con App ID."
-        );
+        console.log("🚀 [INIT] OneSignal inicializado y configurado.");
       } catch (error) {
-        console.error(
-          "❌ [INIT ERROR] Falló la inicialización de OneSignal:",
-          error
-        );
+        console.error("❌ [INIT ERROR]", error);
         setIsLoading(false);
         return;
       }
 
-      // 2. LOG Y ESTADO INICIAL
+      // --- ESTADO INICIAL ---
       const permission = await OneSignal.Notifications.permission;
-      // ✅ Usar operador de encadenamiento opcional
-      
       const { id, optedIn } = OneSignal.User.PushSubscription;
-      const isCurrentlySubscribed =
-        typeof optedIn === "boolean" ? optedIn : id !== null && id !== undefined;
+      const isSubscribed =
+        typeof optedIn === "boolean"
+          ? optedIn
+          : id !== null && id !== undefined;
 
-      console.log("🔔 [STATE] Permiso actual:", permission);
-      console.log("💻 [STATE] ¿Suscrito actualmente?:", isCurrentlySubscribed);
+      console.log("🔔 Permiso:", permission);
+      console.log("💻 Suscrito:", isSubscribed);
 
-      setIsSubscribed(isCurrentlySubscribed);
+      setIsSubscribed(isSubscribed);
       setIsLoading(false);
 
-      // 3. ESCUCHAR CAMBIOS (Con tipado correcto)
+      // --- CAMBIO DE SUSCRIPCIÓN ---
       OneSignal.User.PushSubscription.addEventListener(
         "change",
         async (event: PushSubscriptionChangeEvent) => {
           const playerId = event.current?.id ?? null;
-          const isNowSubscribed =
-            typeof event.current?.optedIn === "boolean"
-              ? event.current.optedIn
-              : playerId !== null;
+          const isNowSubscribed = playerId !== null;
 
-          console.log("📢 [EVENT] Player ID actualizado:", playerId);
+          console.log("📢 Player ID actualizado:", playerId);
           setIsSubscribed(isNowSubscribed);
 
           await fetch("/api/user/save-player-id", {
@@ -80,6 +70,38 @@ export default function OneSignalProvider({
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ playerId }),
           });
+        }
+      );
+
+      // --- NOTIFICACIÓN MOSTRADA (v16 usa 'foregroundWillDisplay') ---
+      OneSignal.Notifications.addEventListener(
+        "notificationDisplay",
+        async (event: NotificationDisplayEvent) => {
+          const notification = event.notification;
+          console.log("🔔 [NOTIFICATION] Recibida:", notification);
+
+          try {
+            await fetch("/api/notifications", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                title: notification.title,
+                message: notification.body,
+                icon: notification.icon,
+                url: notification.data?.url ?? null,
+              }),
+            });
+
+            // 👇 Disparar evento global para actualizar NotificationBell
+            window.dispatchEvent(new Event("new-notification"));
+
+            console.log("✅ [NOTIFICATION] Guardada en la base de datos.");
+          } catch (err) {
+            console.error(
+              "❌ [NOTIFICATION] Error al guardar la notificación:",
+              err
+            );
+          }
         }
       );
     });

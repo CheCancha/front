@@ -15,6 +15,8 @@ import { useState, useTransition } from "react";
 import { toast } from "react-hot-toast";
 import { resendWelcomeEmail } from "@/app/features/admin/inscriptionActions";
 import { EditManagerModal } from "@/app/features/admin/components/EditManagerModal";
+import { useRouter } from "next/navigation";
+import { QuickCreateComplexForm } from "@/app/features/admin/components/QuickCreateComplexForm";
 
 const planMap = {
   FREE: "Demo",
@@ -89,7 +91,7 @@ const ComplexActions = ({
   manager,
   onEdit,
 }: {
-  manager: ComplexWithManager['manager'];
+  manager: ComplexWithManager["manager"];
   onEdit: () => void;
 }) => {
   const [isPending, startTransition] = useTransition();
@@ -131,7 +133,13 @@ const ComplexActions = ({
   );
 };
 
-const ComplexRow = ({ complex, onEditManager }: { complex: ComplexWithManager; onEditManager: (manager: ComplexWithManager['manager']) => void; }) => (
+const ComplexRow = ({
+  complex,
+  onEditManager,
+}: {
+  complex: ComplexWithManager;
+  onEditManager: (manager: ComplexWithManager["manager"]) => void;
+}) => (
   <tr className="border-b hover:bg-gray-50 text-sm">
     <td className="p-3 flex items-center gap-3">
       <OnboardingStatusDot complex={complex} />
@@ -141,7 +149,10 @@ const ComplexRow = ({ complex, onEditManager }: { complex: ComplexWithManager; o
     <td className="p-3">{complex.manager.email || "N/A"}</td>
     <td className="p-3">{complex.manager.phone || "N/A"}</td>
     <td className="p-3">
-      <SubscriptionStatusCell status={complex.subscriptionStatus} trialEndsAt={complex.trialEndsAt}/>
+      <SubscriptionStatusCell
+        status={complex.subscriptionStatus}
+        trialEndsAt={complex.trialEndsAt}
+      />
     </td>
     <td className="p-3">
       {planMap[complex.subscriptionPlan]}
@@ -153,26 +164,49 @@ const ComplexRow = ({ complex, onEditManager }: { complex: ComplexWithManager; o
         : "N/A"}
     </td>
     <td className="p-3 text-right">
-        {complex.manager.id && (
-            <ComplexActions manager={complex.manager} onEdit={() => onEditManager(complex.manager)} />
-        )}
+      {complex.manager.id && (
+        <ComplexActions
+          manager={complex.manager}
+          onEdit={() => onEditManager(complex.manager)}
+        />
+      )}
     </td>
   </tr>
 );
 
 // --- COMPONENTE PRINCIPAL ---
-export default function AdminDashboard({ complexes }: { complexes: ComplexWithManager[] }) {
-    // --- 3. Añadir estados para controlar el modal de edición ---
-    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [selectedManager, setSelectedManager] = useState<ComplexWithManager['manager'] | null>(null);
+export default function AdminDashboard({
+  complexes,
+}: {
+  complexes: ComplexWithManager[];
+}) {
+  // --- 3. Añadir estados para controlar el modal de edición ---
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedManager, setSelectedManager] = useState<
+    ComplexWithManager["manager"] | null
+  >(null);
+  const router = useRouter();
 
-    const handleOpenEditModal = (manager: ComplexWithManager['manager']) => {
-        setSelectedManager(manager);
-        setIsEditModalOpen(true);
-    };
+
+
+  const handleOpenEditModal = (manager: ComplexWithManager["manager"]) => {
+    setSelectedManager(manager);
+    setIsEditModalOpen(true);
+  };
+
+  const handleCreationSuccess = () => {
+      // Cuando la creación es exitosa, refrescamos la data del Server Component
+      router.refresh(); 
+  };
 
   return (
     <>
+      <div className="bg-[#f8f9f9] p-4 sm:p-6 rounded-lg border mb-6"> 
+        <h2 className="text-lg font-semibold mb-4">Creación Rápida de Complejo (Onboarding Asistido)</h2>
+        <QuickCreateComplexForm onSuccess={handleCreationSuccess} /> 
+      </div>
+      
+      {/* --- LISTA DE COMPLEJOS EXISTENTES --- */}
       <div className="bg-[#f8f9f9] p-4 sm:p-6 rounded-lg border">
         <h2 className="text-lg font-semibold mb-4">Lista de Complejos</h2>
         {complexes.length === 0 ? (
@@ -194,7 +228,11 @@ export default function AdminDashboard({ complexes }: { complexes: ComplexWithMa
               </thead>
               <tbody>
                 {complexes.map((c) => (
-                  <ComplexRow key={c.id} complex={c} onEditManager={handleOpenEditModal} />
+                  <ComplexRow
+                    key={c.id}
+                    complex={c}
+                    onEditManager={handleOpenEditModal}
+                  />
                 ))}
               </tbody>
             </table>
@@ -202,7 +240,7 @@ export default function AdminDashboard({ complexes }: { complexes: ComplexWithMa
         )}
       </div>
       {/* --- 4. Renderizar el modal --- */}
-      <EditManagerModal 
+      <EditManagerModal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         manager={selectedManager}

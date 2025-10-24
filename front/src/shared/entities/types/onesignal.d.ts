@@ -7,12 +7,18 @@ export interface PushSubscriptionState {
 }
 
 export interface PushSubscriptionChangeEvent {
-  previous?: PushSubscriptionState;
-  current?: PushSubscriptionState;
+  current: {
+    id: string | null;
+    optedIn?: boolean;
+  };
 }
 
   // Forzar opt-in / opt-out manualmente
-export interface OneSignalPushSubscription extends PushSubscriptionState {
+export interface OneSignalPushSubscription {
+  id: string | null;
+  optedIn?: boolean;
+
+  // Forzar opt-in / opt-out manualmente
   optIn(): Promise<void>;
   optOut(): Promise<void>;
 
@@ -34,6 +40,24 @@ export interface OneSignalNotifications {
     event: "permissionChange",
     listener: (wasGranted: boolean) => void
   ): void;
+  addEventListener(
+    event: "notificationDisplay",
+    listener: (event: NotificationDisplayEvent) => void
+  ): void;
+}
+
+export interface NotificationData {
+  url?: string | null;
+  [key: string]: unknown;
+}
+
+export interface NotificationDisplayEvent {
+  notification: {
+    title?: string | null;
+    body?: string | null;
+    icon?: string | null;
+    data?: NotificationData | null;
+  };
 }
 
 export interface OneSignal {
