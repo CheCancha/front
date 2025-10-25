@@ -18,9 +18,8 @@ export async function GET(request: Request) {
 
   try {
     const now = new Date();
-    // ⚠️ SUGERENCIA: Ampliar la ventana ligeramente para más robustez (ej: 55 a 65 mins)
-    const reminderTimeStart = startOfMinute(addMinutes(now, 25)); 
-    const reminderTimeEnd = startOfMinute(addMinutes(now, 35));
+    const reminderTimeStart = startOfMinute(addMinutes(now, 20));
+    const reminderTimeEnd = startOfMinute(addMinutes(now, 30));
 
     // 🪵 LOG 3: Mostrar la ventana de tiempo en UTC y ARG
     console.log(
@@ -90,9 +89,13 @@ export async function GET(request: Request) {
       const notificationPayload = {
         app_id: process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID!,
         include_player_ids: [booking.user.oneSignalPlayerId],
-        headings: { es: `¡Tu partido está por empezar!` },
+        headings: {
+          es: `¡Tu partido está por empezar!`,
+          en: `¡Tu partido está por empezar!`,
+        },
         contents: {
           es: `Recordatorio: Tenés un turno a las ${bookingTime}hs en ${complexName}. ¡No te cuelgues!`,
+          en: `Recordatorio: Tenés un turno a las ${bookingTime}hs en ${complexName}. ¡No te cuelgues!`,
         },
         web_url: `https://www.checancha.com/profile`,
       };
@@ -132,9 +135,8 @@ export async function GET(request: Request) {
             `✅ CRON: Notificación enviada y registrada para reserva ${booking.id}.`
           ); // 🪵 LOG 8: Éxito
         } else {
-          const errorBody = await oneSignalResponse.text(); // Leer el cuerpo del error
           console.error(
-            `❌ CRON ERROR: Fallo al enviar a OneSignal para reserva ${booking.id}. Status: ${oneSignalResponse.status}, Body: ${errorBody}`
+            `❌ CRON ERROR: Fallo al enviar a OneSignal para reserva ${booking.id}. Status: ${oneSignalResponse.status}, Body: ${responseBody}` // Usar responseBody aquí
           );
           failedBookingIds.push(
             booking.id + ` (OneSignal status ${oneSignalResponse.status})`
