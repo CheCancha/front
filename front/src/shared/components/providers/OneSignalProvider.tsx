@@ -77,6 +77,7 @@ export default function OneSignalProvider({
       OneSignal.Notifications.addEventListener(
         "notificationDisplay",
         async (event: NotificationDisplayEvent) => {
+          console.log("🔥 LISTENER 'notificationDisplay' ACTIVADO!", event); // <-- AÑADIR ESTO
           const notification = event.notification;
           console.log("🔔 [NOTIFICATION] Recibida:", notification);
 
