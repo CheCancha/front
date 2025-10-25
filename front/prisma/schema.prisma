@@ -294,7 +294,7 @@ model Booking {
   coupon    Coupon?  @relation(fields: [couponId], references: [id], onDelete: SetNull)
 
   reminderSent Boolean @default(false)
-  @@unique([courtId, date, startTime])
+  // @@unique([courtId, date, startTime])
   @@index([courtId])
   @@index([userId])
   @@index([date])
