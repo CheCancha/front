@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { db } from "@/shared/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/authOptions";
-import { startOfDay, endOfDay, isSameDay, isBefore, parseISO } from "date-fns";
+import { startOfDay, endOfDay, isSameDay, isBefore, parseISO, addDays } from "date-fns";
 import { toDate } from "date-fns-tz";
 import { BookingStatus } from "@prisma/client";
 
@@ -88,32 +88,43 @@ export async function GET(
     const startDateString = searchParams.get("startDate");
     const endDateString = searchParams.get("endDate");
 
-    let startDate, endDate;
+   let startDate: Date; 
+    let endDateExclusive: Date;
 
     if (startDateString && endDateString) {
-      // Si se piden fechas de inicio y fin, usamos el rango (para la vista semanal)
-      startDate = startOfDay(parseISO(startDateString));
-      endDate = endOfDay(parseISO(endDateString));
+      // ✅ WEEK VIEW (Corrected): Interpret start and end from Argentina TZ
+      startDate = toDate(`${startDateString}T00:00:00`, { timeZone: ARGENTINA_TIME_ZONE });
+      // End is the start of the day AFTER endDateString
+      const endDayStart = toDate(`${endDateString}T00:00:00`, { timeZone: ARGENTINA_TIME_ZONE });
+      endDateExclusive = addDays(endDayStart, 1);
+
     } else if (dateString) {
-      // Si solo se pide una fecha, usamos la lógica existente (para la vista diaria)
-      const requestedDate = new Date(`${dateString}T00:00:00`);
-      startDate = startOfDay(requestedDate);
-      endDate = endOfDay(requestedDate);
+      // ✅ DAY VIEW (Corrected): Interpret start and end from Argentina TZ
+      // startDate is midnight Argentina converted to UTC
+      startDate = toDate(`${dateString}T00:00:00`, { timeZone: ARGENTINA_TIME_ZONE }); 
+      // endDateExclusive is midnight of the NEXT day in Argentina, converted to UTC
+      endDateExclusive = addDays(startDate, 1); 
+
     } else {
       return new NextResponse(
         "Faltan parámetros de fecha ('date' o 'startDate'/'endDate')",
-        {
-          status: 400,
-        }
+        { status: 400 }
       );
     }
+
+    // --- DEBUG LOGS (Optional but helpful) ---
+    console.log(`[GET Bookings] Fetching for complex ${complexId}`);
+    console.log(`[GET Bookings] dateString: ${dateString}`);
+    console.log(`[GET Bookings] Querying UTC Range: ${startDate.toISOString()} to ${endDateExclusive.toISOString()}`);
+    // --- END LOGS ---
 
     const bookings = await db.booking.findMany({
       where: {
         court: { complexId: complexId },
+        // ✅ CORRECTED QUERY: Uses the right UTC window
         date: {
-          gte: startDate,
-          lt: endDate, // o lte
+          gte: startDate,      // Greater than or equal to start of ARG day (in UTC)
+          lt: endDateExclusive, // Less than start of NEXT ARG day (in UTC)
         },
         status: {
           in: [
@@ -128,7 +139,12 @@ export async function GET(
         user: { select: { name: true, phone: true } },
         coupon: true,
       },
+       orderBy: { // Optional: order bookings chronologically
+         date: 'asc',
+       }
     });
+
+    console.log(`[GET Bookings] Found ${bookings.length} bookings for the range.`); // DEBUG LOG
 
     return NextResponse.json(bookings);
   } catch (error) {
