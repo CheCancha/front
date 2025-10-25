@@ -22,19 +22,16 @@ export default function OneSignalProvider({
     if (typeof window === "undefined" || window.oneSignalInitialized) return;
 
     window.oneSignalInitialized = true;
-    console.log("🟢 [INIT] Esperando a que OneSignal esté disponible...");
 
     window.OneSignalDeferred = window.OneSignalDeferred || [];
 
     window.OneSignalDeferred.push(async (OneSignal: OneSignal) => {
-      console.log("✅ [INIT] OneSignal listo para inicializar.");
 
       try {
         await OneSignal.init({
           appId: ONESIGNAL_APP_ID,
           allowLocalhostAsSecureOrigin: true,
         });
-        console.log("🚀 [INIT] OneSignal inicializado y configurado.");
       } catch (error) {
         console.error("❌ [INIT ERROR]", error);
         setIsLoading(false);
@@ -42,15 +39,12 @@ export default function OneSignalProvider({
       }
 
       // --- ESTADO INICIAL ---
-      const permission = await OneSignal.Notifications.permission;
       const { id, optedIn } = OneSignal.User.PushSubscription;
       const isSubscribed =
         typeof optedIn === "boolean"
           ? optedIn
           : id !== null && id !== undefined;
 
-      console.log("🔔 Permiso:", permission);
-      console.log("💻 Suscrito:", isSubscribed);
 
       setIsSubscribed(isSubscribed);
       setIsLoading(false);
@@ -62,7 +56,6 @@ export default function OneSignalProvider({
           const playerId = event.current?.id ?? null;
           const isNowSubscribed = playerId !== null;
 
-          console.log("📢 Player ID actualizado:", playerId);
           setIsSubscribed(isNowSubscribed);
 
           await fetch("/api/user/save-player-id", {
@@ -77,9 +70,7 @@ export default function OneSignalProvider({
       OneSignal.Notifications.addEventListener(
         "notificationDisplay",
         async (event: NotificationDisplayEvent) => {
-          console.log("🔥 LISTENER 'notificationDisplay' ACTIVADO!", event); // <-- AÑADIR ESTO
           const notification = event.notification;
-          console.log("🔔 [NOTIFICATION] Recibida:", notification);
 
           try {
             await fetch("/api/notifications", {
@@ -93,10 +84,8 @@ export default function OneSignalProvider({
               }),
             });
 
-            // 👇 Disparar evento global para actualizar NotificationBell
             window.dispatchEvent(new Event("new-notification"));
 
-            console.log("✅ [NOTIFICATION] Guardada en la base de datos.");
           } catch (err) {
             console.error(
               "❌ [NOTIFICATION] Error al guardar la notificación:",

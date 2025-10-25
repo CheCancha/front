@@ -1,13 +1,9 @@
 # .github/workflows/send_reminders.yml
-
 name: "Send Booking Reminders"
 
-# Disparador: se ejecuta en un horario programado
 on:
   schedule:
-    # Ejecutar CADA MINUTO (ajusta si prefieres otra frecuencia, ej: '*/5 * * * *' para cada 5 mins)
-    - cron: "*/5 * * * *"
-  # También puedes añadir un disparador manual para probarlo
+    - cron: '0,30 * * * *'
   workflow_dispatch:
 
 jobs:
