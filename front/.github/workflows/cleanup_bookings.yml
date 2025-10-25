@@ -19,3 +19,5 @@ jobs:
           curl --request POST \
           --url '${{ secrets.CLEANUP_URL }}' \
           --header 'Authorization: Bearer ${{ secrets.CRON_SECRET }}'
+
+          
