@@ -1,12 +1,16 @@
 "use client";
 
-import { useEffect, useState } from 'react';
-import useSWR from 'swr';
-import { Bell } from 'lucide-react';
-import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover';
-import { formatDistanceToNow } from 'date-fns';
-import { es } from 'date-fns/locale';
-import { cn } from '@/lib/utils';
+import { useEffect, useState } from "react";
+import useSWR from "swr";
+import { Bell } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/shared/components/ui/popover";
+import { formatDistanceToNow } from "date-fns";
+import { es } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 
 interface Notification {
   id: string;
@@ -22,31 +26,58 @@ interface NotificationBellProps {
   isTransparent: boolean;
 }
 
+const BASE_TITLE = "CheCancha";
+
 export function NotificationBell({ isTransparent }: NotificationBellProps) {
-  const { data: notifications, mutate } = useSWR<Notification[]>('/api/notifications', fetcher, );
+  const { data: notifications, mutate } = useSWR<Notification[]>(
+    "/api/notifications",
+    fetcher,
+    { 
+      refreshInterval: 60000 
+    }
+  );
   const [isOpen, setIsOpen] = useState(false);
 
   const unreadCount = notifications?.filter((n) => !n.isRead).length || 0;
 
+  useEffect(() => {
+    if (typeof document !== 'undefined') { 
+      if (unreadCount > 0) {
+        document.title = `(${unreadCount}) ${BASE_TITLE}`;
+      } else {
+        document.title = BASE_TITLE;
+      }
+    }
+     return () => { if (typeof document !== 'undefined') document.title = BASE_TITLE; };
+  }, [unreadCount]);
+
   const handleOpenChange = async (open: boolean) => {
     setIsOpen(open);
-    // Si se abre el popover y hay notificaciones sin leer, las marcamos como leídas
     if (open && unreadCount > 0) {
-      // Optimistic UI: Actualizamos la UI localmente al instante
-      const newNotifications = notifications!.map(n => ({ ...n, isRead: true }));
+      const newNotifications = notifications!.map((n) => ({
+        ...n,
+        isRead: true,
+      }));
       mutate(newNotifications, false);
 
-      await fetch('/api/notifications/mark-as-read', { method: 'POST' });
-      
-      mutate();
+      try {
+          await fetch("/api/notifications/mark-as-read", { method: "POST" });
+          mutate(); 
+      } catch (error) {
+          console.error("Error al marcar notificaciones como leídas:", error);
+          mutate(notifications, false);
+      }
     }
   };
 
   useEffect(() => {
-  const listener = () => mutate();
-  window.addEventListener("new-notification", listener);
-  return () => window.removeEventListener("new-notification", listener);
-}, [mutate]);
+    const listener = () => {
+        console.log("🔔 Evento 'new-notification' recibido, refrescando...");
+        mutate();
+    };
+    window.addEventListener("new-notification", listener);
+    return () => window.removeEventListener("new-notification", listener);
+  }, [mutate]);
 
   return (
     <Popover open={isOpen} onOpenChange={handleOpenChange}>
@@ -55,7 +86,7 @@ export function NotificationBell({ isTransparent }: NotificationBellProps) {
           className={cn(
             "relative p-2 rounded-md focus:outline-none transition-colors cursor-pointer",
             isTransparent
-              ? "text-white hover:bg-white/10" 
+              ? "text-white hover:bg-white/10"
               : "text-brand-dark hover:bg-gray-100"
           )}
         >
@@ -79,12 +110,17 @@ export function NotificationBell({ isTransparent }: NotificationBellProps) {
                 <p className="font-semibold">{notif.title}</p>
                 <p className="text-sm text-gray-600">{notif.message}</p>
                 <p className="text-xs text-gray-400 mt-1">
-                  {formatDistanceToNow(new Date(notif.createdAt), { addSuffix: true, locale: es })}
+                  {formatDistanceToNow(new Date(notif.createdAt), {
+                    addSuffix: true,
+                    locale: es,
+                  })}
                 </p>
               </div>
             ))
           ) : (
-            <p className="p-4 text-center text-gray-500">No tienes notificaciones.</p>
+            <p className="p-4 text-center text-gray-500">
+              No tienes notificaciones.
+            </p>
           )}
         </div>
       </PopoverContent>

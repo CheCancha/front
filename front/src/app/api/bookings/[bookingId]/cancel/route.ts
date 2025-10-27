@@ -2,13 +2,16 @@ import { NextResponse } from "next/server";
 import { db } from "@/shared/lib/db";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/authOptions";
-import { differenceInHours, format } from "date-fns"; // Importar format
+import { differenceInHours } from "date-fns";
+import { formatInTimeZone } from 'date-fns-tz';
 import { es } from "date-fns/locale";
 import {
   sendBookingCancelledByPlayerEmail,
   sendBookingCancelledByManagerEmail,
 } from "@/shared/lib/email";
 import { BookingStatus } from "@prisma/client";
+
+const ARGENTINA_TIME_ZONE = "America/Argentina/Buenos_Aires";
 
 export async function POST(
   req: Request,
@@ -76,7 +79,9 @@ export async function POST(
     let notificationTitle = "";
     let notificationMessage = "";
 
-    const formattedDate = format(booking.date, "dd/MM HH:mm'hs'", { locale: es });
+    const formattedBookingDate = formatInTimeZone(booking.date, ARGENTINA_TIME_ZONE, "dd/MM/yyyy", { locale: es });
+    const formattedBookingTime = formatInTimeZone(booking.date, ARGENTINA_TIME_ZONE, "HH:mm'hs'", { locale: es });
+
     const complexName = booking.court?.complex?.name ?? "El complejo";
     const courtName = booking.court?.name ?? "la cancha";
 
@@ -85,19 +90,18 @@ export async function POST(
       targetUserId = booking.court?.complex?.managerId ?? null;
       targetPlayerId = booking.court?.complex?.manager?.oneSignalPlayerId ?? null;
       notificationTitle = "Reserva Cancelada por Jugador";
-      notificationMessage = `${booking.user?.name ?? 'Un jugador'} canceló el turno de ${courtName} del ${formattedDate}. El horario está libre.`;
+      // ✅ Usar las variables formateadas correctamente
+      notificationMessage = `${booking.user?.name ?? 'Un jugador'} canceló el turno de ${courtName} del ${formattedBookingDate} a las ${formattedBookingTime}. El horario está libre.`;
       
-      // Enviar email al manager 
       try { await sendBookingCancelledByPlayerEmail(booking); } catch (e) { console.error("Error email a manager:", e); }
 
     } else { 
-      // Manager/Admin cancela -> Notificar al JUGADOR (si existe y tiene playerId)
+      // Manager/Admin cancela -> Notificar al JUGADOR
       targetUserId = booking.userId ?? null;
       targetPlayerId = booking.user?.oneSignalPlayerId ?? null;
       notificationTitle = "Tu Reserva fue Cancelada";
-      notificationMessage = `${complexName} canceló tu reserva de ${courtName} del ${formattedDate}. Contactate si tenés dudas.`;
+      notificationMessage = `${complexName} canceló tu reserva de ${courtName} del ${formattedBookingDate} a las ${formattedBookingTime}. Contactate si tenés dudas.`;
 
-      // Enviar email al jugador 
        try { await sendBookingCancelledByManagerEmail(booking); } catch (e) { console.error("Error email a jugador:", e); }
     }
 
