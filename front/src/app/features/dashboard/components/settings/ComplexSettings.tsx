@@ -591,12 +591,12 @@ export const ComplexSettings = () => {
 
       <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value)}>
         {/* 2. TabsList reemplaza la navegación con botones y el border-b manual */}
-        <TabsList className="grid w-full grid-cols-7 overflow-x-auto justify-start border-b mb-6">
+        <TabsList className="flex md:grid w-full grid-cols-7 overflow-x-auto justify-start border-b mb-6">
           {TABS.map((tab) => (
             <TabsTrigger
               key={tab.id}
               value={tab.id}
-              className="min-w-[100px]"
+              className="flex-shrink-0 px-4 py-2"
             >
               {tab.label}
             </TabsTrigger>

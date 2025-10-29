@@ -11,7 +11,7 @@ const images = [
 ];
 
 export const BannerCTA = () => {
-  const whatsappNumber = "5493491699012";
+  const whatsappNumber = "5491154702118";
   const whatsappMessage = "Hola! Quisiera saber más sobre CheCancha para mi complejo deportivo.";
 
   return (
@@ -39,7 +39,6 @@ export const BannerCTA = () => {
               <ButtonPrimary href="/inscriptions">
                 Solicitar una Demo
               </ButtonPrimary>
-              {/* Botón actualizado con el enlace a WhatsApp */}
               <ButtonGhost 
                 href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(whatsappMessage)}`}
                 className="text-brand-dark hover:bg-brand-secondary"

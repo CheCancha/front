@@ -12,12 +12,12 @@ export function OnboardingPrompt({ complexId }: { complexId: string }) {
           ¡Bienvenido! Termina de configurar tu complejo
         </h3>
         <p className="text-sm text-yellow-700">
-          Añade tus canchas y define tus horarios en la sección de Ajustes para
+          Añade tus canchas y define tus horarios en la sección de Configuración para
           empezar a recibir reservas.
         </p>
       </div>
       <ButtonPrimary>
-        <Link href={`/dashboard/${complexId}/settings`}>Ir a Ajustes</Link>
+        <Link href={`/dashboard/${complexId}/settings`}>Ir a Configuración</Link>
       </ButtonPrimary>
     </div>
   );

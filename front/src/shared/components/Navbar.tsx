@@ -15,6 +15,7 @@ import {
   X,
   ChevronDown,
   Trophy,
+  CircleQuestionMark,
 } from "lucide-react";
 import { FaFacebook, FaInstagram, FaYoutube } from "react-icons/fa";
 import {
@@ -29,9 +30,21 @@ import { NotificationBell } from "./NotificationBell";
 
 // Definición de enlaces de Redes Sociales (ajusta los URLs reales de Che Cancha)
 const socialLinks = [
-  { icon: FaInstagram, href: "https://www.instagram.com/checancha", label: "Instagram" },
-  { icon: FaFacebook, href: "https://www.facebook.com/che_cancha", label: "Facebook" },
-  { icon: FaYoutube, href: "https://www.youtube.com/@che_cancha", label: "YouTube" },
+  {
+    icon: FaInstagram,
+    href: "https://www.instagram.com/checancha",
+    label: "Instagram",
+  },
+  {
+    icon: FaFacebook,
+    href: "https://www.facebook.com/che_cancha",
+    label: "Facebook",
+  },
+  {
+    icon: FaYoutube,
+    href: "https://www.youtube.com/@che_cancha",
+    label: "YouTube",
+  },
 ];
 
 const NavbarSkeleton: React.FC = () => (
@@ -154,7 +167,7 @@ const Navbar: React.FC = () => {
           </div>
 
           <div className="hidden md:block">
-            <div className="ml-10 flex items-center space-x-6">
+            <div className="ml-10 flex items-center space-x-4">
               {isLoggedIn ? (
                 <>
                   <Link
@@ -224,6 +237,13 @@ const Navbar: React.FC = () => {
                               <LayoutDashboard size={16} />
                               Mi Panel
                             </Link>
+                            <Link
+                              href={routes.app.soporte}
+                              onClick={() => setIsMobileMenuOpen(false)}
+                              className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            >
+                              <CircleQuestionMark size={18} /> Soporte
+                            </Link>
                             <button
                               onClick={() => {
                                 signOut({ callbackUrl: routes.public.home });
@@ -242,20 +262,38 @@ const Navbar: React.FC = () => {
                 </>
               ) : (
                 <>
-                  <Link
-                    href={routes.public.clubs}
-                    className={cn(
-                      "font-medium transition duration-300",
-                      isTransparent
-                        ? "text-white hover:text-gray-200"
-                        : "text-foreground hover:text-brand-orange"
-                    )}
-                  >
-                    Software para canchas
+                  {/* Botón Principal: Para Complejos */}
+                  <Link href={routes.public.clubs}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className={isTransparent ? "text-white mr-2" : ""}
+                    >
+                      Software para Canchas
+                    </Button>
+                    <div className="border-r border-white/40 hidden md:inline"></div>
                   </Link>
                   <Link href={routes.auth.ingreso}>
-                    <Button variant={isTransparent ? "secondary" : "default"}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className={
+                        isTransparent ? "text-white border border-white/30" : ""
+                      }
+                    >
                       Iniciar Sesión
+                    </Button>
+                  </Link>
+
+                  <Link href={routes.auth.registro}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className={
+                        "text-white bg-brand-orange border-brand-orange hover:bg-brand-orange/90 hover:text-whtie"
+                      }
+                    >
+                      Comenzar Ahora
                     </Button>
                   </Link>
                 </>
@@ -314,14 +352,12 @@ const Navbar: React.FC = () => {
                   >
                     <Search size={18} /> Buscar Cancha
                   </Link>
-                  {/* ENLACE DE TORNEOS (PRÓXIMAMENTE) */}
                   <div
                     title="Torneos disponibles pronto"
                     className="w-full text-left flex items-center gap-3 px-3 py-2 text-base font-medium rounded-md text-gray-400 cursor-not-allowed"
                   >
                     <Trophy size={18} /> Torneos (Próximamente)
                   </div>
-                  {/* FIN ENLACE DE TORNEOS */}
                   <Link
                     href={routes.app.perfil}
                     onClick={() => setIsMobileMenuOpen(false)}
@@ -335,6 +371,13 @@ const Navbar: React.FC = () => {
                     className="w-full text-left flex items-center gap-3 px-3 py-2 text-base font-medium rounded-md text-gray-700 hover:bg-gray-100"
                   >
                     <LayoutDashboard size={18} /> Mi Panel
+                  </Link>
+                  <Link
+                    href={routes.app.soporte}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="w-full text-left flex items-center gap-3 px-3 py-2 text-base font-medium rounded-md text-gray-700 hover:bg-gray-100"
+                  >
+                    <CircleQuestionMark size={18} /> Soporte
                   </Link>
                   <button
                     onClick={() => {
@@ -363,7 +406,6 @@ const Navbar: React.FC = () => {
                   >
                     Iniciar Sesión
                   </Link>
-                  {/* ENLACE DE TORNEOS (PRÓXIMAMENTE) - También visible para no logueados si lo deseas */}
                   <div
                     title="Torneos disponibles pronto"
                     className="w-full text-left flex items-center gap-3 px-3 py-2 text-base font-medium rounded-md text-gray-400 cursor-not-allowed"

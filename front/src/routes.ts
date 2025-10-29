@@ -27,5 +27,6 @@ export const routes = {
     newfeatures: (complexId: string) => `/dashboard/${complexId}/newfeatures`,
 
     perfil: "/profile",
+    soporte: "/soporte",
   },
 };

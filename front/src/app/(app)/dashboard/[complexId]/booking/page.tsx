@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useTransition } from "react";
 import { useParams } from "next/navigation";
 import {
   ChevronLeft,
@@ -8,6 +8,7 @@ import {
   Calendar,
   PlusCircle,
   Phone,
+  RefreshCw,
 } from "lucide-react";
 import {
   format,
@@ -44,6 +45,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/shared/components/ui/alert-dialog";
+import { Button } from "@/shared/components/ui/button";
 
 // --- TIPOS ---
 type CourtWithSportAndPriceRules = Court & {
@@ -75,9 +77,10 @@ export default function BookingCalendarPage() {
 
   const [complex, setComplex] = useState<ComplexWithCourts | null>(null);
   const [bookings, setBookings] = useState<BookingWithDetails[]>([]);
-  const [currentDate, setCurrentDate] = useState(startOfDay(new Date()));
+  const [currentDate, setCurrentDate] = useState(() => startOfDay(new Date()));
   const [isLoading, setIsLoading] = useState(true);
   const [sportFilter, setSportFilter] = useState<string>("Todos");
+  const [isRefreshing, startRefresh] = useTransition();
 
   const [view, setView] = useState<"day" | "week">("day");
   const { weekStart, weekEnd, weekDays } = useMemo(() => {
@@ -200,6 +203,15 @@ export default function BookingCalendarPage() {
   const handleDateChange = (days: number) =>
     setCurrentDate((prev) => add(prev, { days }));
   const handleGoToToday = () => setCurrentDate(startOfDay(new Date()));
+
+
+  const handleRefresh = () => {
+    toast.success("Actualizando calendario...");
+    startRefresh(() => {
+      fetchBookingsForDate(currentDate, view);
+    });
+  };
+
 
   const handleBookingSubmit = async (bookingData: SubmitPayload) => {
     setIsSubmitting(true);
@@ -407,6 +419,9 @@ export default function BookingCalendarPage() {
               Semana
             </button>
           </div>
+          <Button variant="ghost" size="icon" onClick={handleRefresh} disabled={isRefreshing} title="Actualizar calendario">
+            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+          </Button>
         </div>
 
         {/* --- GRUPO DERECHO: INFO Y FILTROS --- */}
@@ -420,7 +435,7 @@ export default function BookingCalendarPage() {
                   { locale: es }
                 )}`}
           </span>
-          {/* El filtro de deportes solo se muestra en la vista diaria */}
+          
           {view === "day" && (
             <div className="flex items-center gap-2 overflow-x-auto">
               {sportFilters.map((sport) => (
