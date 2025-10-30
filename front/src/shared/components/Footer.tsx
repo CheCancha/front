@@ -96,7 +96,7 @@ const Footer = () => {
               <FaInstagram className="w-4 h-4" />
               <span className="sr-only">Página de Instagram</span>
             </a>
-            <a href="#" className="text-paragraph hover:text-white">
+            <a href="https://youtube.com/@checancha?si=qETNXWSq9-_r56Kh" className="text-paragraph hover:text-white">
               <FaYoutube className="w-4 h-4" />
               <span className="sr-only">Página de Youtube</span>
             </a>

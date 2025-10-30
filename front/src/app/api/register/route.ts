@@ -6,7 +6,6 @@ import { normalizePhoneNumber } from "@/shared/lib/utils";
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    // --- CAMBIO: Aceptamos el email, que ahora es obligatorio ---
     const { name, email, phone, password } = body;
 
     if (!name || !email || !phone || !password) {
@@ -16,7 +15,6 @@ export async function POST(request: Request) {
     const normalizedPhone = normalizePhoneNumber(phone);
     const lowercasedEmail = email.toLowerCase();
 
-    // --- MEJORA: Verificar si el email O el teléfono ya existen ---
     const existingUser = await db.user.findFirst({
       where: {
         OR: [

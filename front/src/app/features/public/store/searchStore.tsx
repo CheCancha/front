@@ -37,7 +37,6 @@ const createSearchSlice: StateCreator<SearchState> = (set) => ({
     const newState: Partial<SearchState> = {};
     if (urlCity) newState.city = urlCity;
     
-    // FIX: Usar parse de date-fns para parsear sin conversión UTC
     if (urlDate) {
       newState.date = parse(urlDate, 'yyyy-MM-dd', new Date());
     }

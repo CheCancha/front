@@ -1,6 +1,5 @@
 "use client";
 
-import "@/styles/day-picker.css";
 import React, { useState } from "react";
 import { getDay } from "date-fns";
 import { FaFacebook, FaInstagram } from "react-icons/fa";
@@ -20,7 +19,6 @@ import type {
 } from "@/app/(public)/canchas/[slug]/page";
 import { ImageCarousel } from "./ImageCarousel";
 
-// --- Carga dinámica del Mapa ---
 const Map = dynamic(
   () => import("@/app/features/public/components/courts/Map"),
   {

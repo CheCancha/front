@@ -282,7 +282,7 @@ export default function BookingModal({
   const handleAlertClose = () => {
     setShowConflictAlert(false);
     handleClose();
-    window.location.reload(); // Recarga para ver disponibilidad actualizada
+    window.location.reload();
   };
 
   return (
@@ -308,122 +308,131 @@ export default function BookingModal({
                 <X size={24} />
               </button>
 
-              {!preferenceData ? (
-                <div>
-                  <h2 className="text-2xl font-bold text-foreground mb-4 text-center">
-                    Confirmá tu Reserva
-                  </h2>
+              <div>
+                <h2 className="text-2xl font-bold text-foreground mb-4 text-center">
+                  {/* El título cambia dinámicamente */}
+                  {!preferenceData
+                    ? "Confirmá tu Reserva"
+                    : "Completá el pago"}
+                </h2>
 
-                  {status === "unauthenticated" && (
-                    <div className="mb-4 space-y-3">
-                      <div>
-                        <label
-                          htmlFor="guestName"
-                          className="block text-sm font-semibold text-gray-700 mb-1"
-                        >
-                          <User className="inline-block w-4 h-4 mr-1" /> Nombre
-                          y Apellido
-                        </label>
-                        <input
-                          type="text"
-                          id="guestName"
-                          value={guestName}
-                          onChange={(e) => setGuestName(e.target.value)}
-                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
-                          placeholder="Juan Pérez"
-                        />
-                      </div>
-                      <div>
-                        <label
-                          htmlFor="guestPhone"
-                          className="block text-sm font-semibold text-gray-700 mb-1"
-                        >
-                          <Phone className="inline-block w-4 h-4 mr-1" />{" "}
-                          Teléfono (WhatsApp)
-                        </label>
-                        <input
-                          type="tel"
-                          id="guestPhone"
-                          value={guestPhone}
-                          onChange={(e) => setGuestPhone(e.target.value)}
-                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
-                          placeholder="3491123456"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">
-                          Lo usaremos para contactarte por tu reserva si es
-                          necesario.
-                        </p>
-                      </div>
+                {/*
+                 * Los campos de invitado y de cupón solo se muestran
+                 * si el usuario NO está autenticado Y si AÚN no se ha
+                 * generado la preferencia de pago.
+                 */}
+                {status === "unauthenticated" && !preferenceData && (
+                  <div className="mb-4 space-y-3">
+                    <div>
+                      <label
+                        htmlFor="guestName"
+                        className="block text-sm font-semibold text-gray-700 mb-1"
+                      >
+                        <User className="inline-block w-4 h-4 mr-1" /> Nombre
+                        y Apellido
+                      </label>
+                      <input
+                        type="text"
+                        id="guestName"
+                        value={guestName}
+                        onChange={(e) => setGuestName(e.target.value)}
+                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                        placeholder="Juan Pérez"
+                      />
                     </div>
-                  )}
+                    <div>
+                      <label
+                        htmlFor="guestPhone"
+                        className="block text-sm font-semibold text-gray-700 mb-1"
+                      >
+                        <Phone className="inline-block w-4 h-4 mr-1" />{" "}
+                        Teléfono (WhatsApp)
+                      </label>
+                      <input
+                        type="tel"
+                        id="guestPhone"
+                        value={guestPhone}
+                        onChange={(e) => setGuestPhone(e.target.value)}
+                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                        placeholder="3491123456"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Lo usaremos para contactarte por tu reserva si es
+                        necesario.
+                      </p>
+                    </div>
+                  </div>
+                )}
 
-                  <div className="space-y-4 text-left border-t border-b py-4">
-                    <div className="flex items-center gap-3">
-                      <Shield className="w-5 h-5 text-brand-orange" />
-                      <p>
-                        <span className="font-semibold">{club?.name}</span> -{" "}
-                        {court?.name}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <Calendar className="w-5 h-5 text-brand-orange" />
-                      <p>
-                        {date.toLocaleDateString("es-AR", {
-                          weekday: "long",
-                          year: "numeric",
-                          month: "long",
-                          day: "numeric",
-                        })}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <Clock className="w-5 h-5 text-brand-orange" />
-                      <p>
-                        <span className="font-semibold">
-                          {time} a {" "}
-                          {calculateEndTime(
-                            time,
-                            court?.slotDurationMinutes || 60
-                          )}
-                          hs
-                        </span>
-                        <span className="text-gray-500 text-sm ml-2">
-                          ({court?.slotDurationMinutes || 60} min)
-                        </span>
-                      </p>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <DollarSign className="w-5 h-5 text-brand-orange mt-1" />
-                      <div>
-                        {appliedCoupon ? (
-                          <>
-                            <p className="text-gray-500 line-through">
-                              {formatCurrency(originalTotalPrice)}
-                            </p>
-                            <p className="text-green-600 font-semibold">
-                              Descuento: - {" "}
-                              {formatCurrency(appliedCoupon.discountAmount)}
-                            </p>
-                            <p>
-                              Nuevo Total:
-                              <span className="font-bold">
-                                {formatCurrency(totalPrice)}
-                              </span>
-                            </p>
-                          </>
-                        ) : (
+                {/* Los detalles de la reserva se muestran siempre */}
+                <div className="space-y-4 text-left border-t border-b py-4">
+                  <div className="flex items-center gap-3">
+                    <Shield className="w-5 h-5 text-brand-orange" />
+                    <p>
+                      <span className="font-semibold">{club?.name}</span> -{" "}
+                      {court?.name}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Calendar className="w-5 h-5 text-brand-orange" />
+                    <p>
+                      {date.toLocaleDateString("es-AR", {
+                        weekday: "long",
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Clock className="w-5 h-5 text-brand-orange" />
+                    <p>
+                      <span className="font-semibold">
+                        {time} a{" "}
+                        {calculateEndTime(
+                          time,
+                          court?.slotDurationMinutes || 60
+                        )}
+                        hs
+                      </span>
+                      <span className="text-gray-500 text-sm ml-2">
+                        ({court?.slotDurationMinutes || 60} min)
+                      </span>
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <DollarSign className="w-5 h-5 text-brand-orange mt-1" />
+                    <div>
+                      {appliedCoupon ? (
+                        <>
+                          <p className="text-gray-500 line-through">
+                            {formatCurrency(originalTotalPrice)}
+                          </p>
+                          <p className="text-green-600 font-semibold">
+                            Descuento: -{" "}
+                            {formatCurrency(appliedCoupon.discountAmount)}
+                          </p>
                           <p>
-                            Total a pagar:{" "}
+                            Nuevo Total:
                             <span className="font-bold">
                               {formatCurrency(totalPrice)}
                             </span>
                           </p>
-                        )}
-                      </div>
+                        </>
+                      ) : (
+                        <p>
+                          Total a pagar:{" "}
+                          <span className="font-bold">
+                            {formatCurrency(totalPrice)}
+                          </span>
+                        </p>
+                      )}
                     </div>
                   </div>
+                </div>
 
-                  {/* --- SECCIÓN DE CUPÓN --- */}
+                {/* La sección de cupón solo se muestra ANTES de crear la preferencia */}
+                {!preferenceData && (
                   <div className="py-2 text-sm">
                     {appliedCoupon ? (
                       <div className="flex justify-between items-center text-green-700">
@@ -484,23 +493,26 @@ export default function BookingModal({
                       </div>
                     )}
                   </div>
+                )}
 
-                  <p className="text-sm text-center text-paragraph py-2">
-                    ⚠️{" "}
-                    {club.cancellationPolicyHours > 0 ? (
-                      <>
-                        Podrás cancelar sin costo hasta{" "}
-                        <strong>{club.cancellationPolicyHours} horas</strong>
-                        {" "}antes del turno.
-                      </>
-                    ) : (
-                      <strong>
-                        Una vez confirmada, esta reserva no permite reembolso.
-                      </strong>
-                    )}
-                  </p>
+                {/* La política de cancelación se muestra siempre */}
+                <p className="text-sm text-center text-paragraph py-2">
+                  ⚠️{" "}
+                  {club.cancellationPolicyHours > 0 ? (
+                    <>
+                      Podrás cancelar sin costo hasta{" "}
+                      <strong>{club.cancellationPolicyHours} horas</strong>{" "}
+                      antes del turno.
+                    </>
+                  ) : (
+                    <strong>
+                      Una vez confirmada, esta reserva no permite reembolso.
+                    </strong>
+                  )}
+                </p>
 
-                  <div className="mt-2">
+                <div className="mt-4">
+                  {!preferenceData ? (
                     <ButtonPrimary
                       onClick={handleCreatePreference}
                       className="w-full"
@@ -510,21 +522,23 @@ export default function BookingModal({
                         ? "Procesando..."
                         : `Ir a pagar seña de ${formatCurrency(depositAmount)}`}
                     </ButtonPrimary>
-                  </div>
+                  ) : (
+                    <div className="text-center">
+                      <p className="text-paragraph mb-4">
+                        Completá el pago seguro con Mercado Pago.
+                      </p>
+                      <Wallet
+                        initialization={{ preferenceId: preferenceData.id }}
+                      />
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <div className="text-center">
-                  <h2 className="text-2xl font-bold text-foreground mb-4">
-                    Completá el pago
-                  </h2>
-                  <p className="text-paragraph mb-6">
-                    Serás redirigido al finalizar la compra.
-                  </p>
-                  <Wallet
-                    initialization={{ preferenceId: preferenceData.id }}
-                  />
-                </div>
-              )}
+              </div>
+              {/*
+               * ====================================================================
+               * FIN DE LA MODIFICACIÓN
+               * ====================================================================
+               */}
             </motion.div>
           </motion.div>
         )}

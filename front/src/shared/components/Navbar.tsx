@@ -42,7 +42,7 @@ const socialLinks = [
   },
   {
     icon: FaYoutube,
-    href: "https://www.youtube.com/@che_cancha",
+    href: "https://youtube.com/@checancha?si=qETNXWSq9-_r56Kh",
     label: "YouTube",
   },
 ];

@@ -58,7 +58,7 @@ function getMercadoPagoCredentials(complex: {
   return { accessToken, publicKey };
 }
 
-// --- 2. Transacción de Base de Datos (Refactorizada) ---
+// --- 2. Transacción de Base de Datos ---
 async function createPendingBookingInTransaction(
   data: BookingRequest,
   userId: string | undefined,
@@ -72,7 +72,6 @@ async function createPendingBookingInTransaction(
   const endOfBookingDay = endOfDay(bookingDate);
 
   return db.$transaction(async (prisma) => {
-    // Verificación de conflictos (sin cambios)
     const conflictingBookings = await prisma.booking.findMany({
       where: {
         courtId: data.courtId,
@@ -80,7 +79,6 @@ async function createPendingBookingInTransaction(
           gte: startOfBookingDay,
           lt: endOfBookingDay,
         },
-        // MEJORA: Usar el enum de Prisma para consistencia
         status: { in: [BookingStatus.CONFIRMADO, BookingStatus.PENDIENTE] },
       },
       include: { court: { select: { slotDurationMinutes: true } } },
@@ -106,14 +104,11 @@ async function createPendingBookingInTransaction(
       throw new Error("Lo sentimos, este horario ya no está disponible.");
     }
 
-    // ---  Lógica de cupón dentro de la transacción para evitar race conditions ---
     if (coupon) {
-      // Se vuelve a traer el cupón dentro de la transacción para bloquear la fila
       const freshCoupon = await prisma.coupon.findUnique({
         where: { id: coupon.id },
       });
 
-      // Se vuelve a validar por si cambió entre la primera verificación y ahora
       if (
         !freshCoupon ||
         !freshCoupon.isActive ||
@@ -124,7 +119,6 @@ async function createPendingBookingInTransaction(
         );
       }
 
-      // Se incrementa el contador de usos
       await prisma.coupon.update({
         where: { id: coupon.id },
         data: { uses: { increment: 1 } },

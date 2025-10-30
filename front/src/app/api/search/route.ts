@@ -94,15 +94,14 @@ function findNextAvailableSlots(
   const openHour = openHourForDay;
   const closeHour = closeHourForDay;
 
-  const timeInterval = complex.timeSlotInterval || 30; // Intervalo base (e.g., 30 mins)
+  const timeInterval = complex.timeSlotInterval || 30; 
   const totalSlotsInDay = (closeHour - openHour) * (60 / timeInterval);
   const availableSlots: AvailableSlot[] = [];
 
   const availabilityMap = new Map<string, boolean[]>();
   complex.courts.forEach((court) => {
-    const courtSlots = new Array(totalSlotsInDay).fill(true); // Todos empiezan libres
+    const courtSlots = new Array(totalSlotsInDay).fill(true);
     
-    // Marcar los slots ocupados por reservas CONFIRMADAS o PENDIENTES recientes
     court.bookings?.forEach((booking) => {
       // Filtrar por status si es necesario (ya lo hace la query de Prisma ahora)
       

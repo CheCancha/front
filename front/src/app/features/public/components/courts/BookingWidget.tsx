@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { format, addDays, isToday, isSameDay, startOfDay } from "date-fns";
+import { motion, AnimatePresence } from "framer-motion";
 import { es } from "date-fns/locale";
 import { cn } from "@/shared/lib/utils";
 import type {
@@ -11,7 +12,6 @@ import type {
 } from "@/app/(public)/canchas/[slug]/page";
 import { Clock, ArrowRight, Calendar as CalendarIcon, Tag } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
-import { motion, AnimatePresence } from "framer-motion";
 import { Calendar } from "@/shared/components/ui/calendar";
 
 // --- TIPOS ---
