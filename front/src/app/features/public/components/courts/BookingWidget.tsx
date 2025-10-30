@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { format, addDays, isToday, isSameDay } from "date-fns";
+import { format, addDays, isToday, isSameDay, startOfDay } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn } from "@/shared/lib/utils";
 import type {
@@ -9,11 +9,10 @@ import type {
   CourtWithPriceRules,
   ValidStartTime,
 } from "@/app/(public)/canchas/[slug]/page";
-import { Clock, ArrowRight, Calendar, Tag } from "lucide-react";
+import { Clock, ArrowRight, Calendar as CalendarIcon, Tag } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
-import { DayPicker } from "react-day-picker";
-import "react-day-picker/dist/style.css";
+import { Calendar } from "@/shared/components/ui/calendar";
 
 // --- TIPOS ---
 interface BookingWidgetProps {
@@ -47,7 +46,7 @@ const DateSlider = ({
   return (
     <div>
       <h3 className="text-md font-semibold text-paragraph mb-2 flex items-center gap-2">
-        <Calendar size={16} /> 1. Elegí el día
+        <CalendarIcon size={16} /> 1. Elegí el día
       </h3>
       <div className="flex space-x-3 overflow-x-auto pb-1 -mb-3 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
         {dates.map((date, index) => {
@@ -362,15 +361,16 @@ const DesktopBookingWidget: React.FC<BookingWidgetProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 mb-8">
         <div>
           <label className="text-sm font-semibold text-paragraph mb-2 flex items-center gap-2">
-            <Calendar size={16} /> 1. Elegí el día
+            <CalendarIcon size={16} /> 1. Elegí el día
           </label>
-          <DayPicker
+          <Calendar
             mode="single"
             selected={selectedDate}
-            onSelect={(date) => date && setSelectedDate(date)}
-            className="border rounded-md p-2 bg-white"
+            onSelect={(date: Date | undefined) => date && setSelectedDate(date)}
+            className="rounded-lg border bg-white [--cell-size:theme(spacing.11)] md:[--cell-size:theme(spacing.12)]"
             locale={es}
-            disabled={{ before: new Date() }}
+            disabled={{ before: startOfDay(new Date()) }}
+            numberOfMonths={1}
           />
         </div>
 

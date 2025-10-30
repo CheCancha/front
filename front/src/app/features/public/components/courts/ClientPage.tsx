@@ -42,7 +42,7 @@ export const ComplexHeader = ({
   address: string;
   images: PrismaImage[];
 }) => (
-  <section className="relative mb-2 md:mb-12 rounded-2xl overflow-hidden h-52 md:h-80">
+  <section className="relative mb-2 md:mb-12 rounded-2xl overflow-hidden h-64 md:h-96">
     <ImageCarousel images={images} />
     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
     <div className="absolute bottom-6 left-6 z-10">
@@ -141,7 +141,6 @@ export function ClientPage({ complex }: { complex: ComplexProfileData }) {
     complex.instagramHandle ||
     complex.facebookUrl;
 
-
   return (
     <>
       <div className="bg-background min-h-screen overflow-hidden">
@@ -163,25 +162,10 @@ export function ClientPage({ complex }: { complex: ComplexProfileData }) {
                 selectedDate={selectedDate}
                 setSelectedDate={setSelectedDate}
               />
-
-              {/* Movimos el Mapa aquí para que siga el flujo natural en móvil */}
-              {complex.latitude && complex.longitude && (
-                <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm mt-8">
-                  <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-                    Ubicación
-                  </h3>
-                  <div className="h-[400px] w-full rounded-lg overflow-hidden z-0">
-                    <Map
-                      lat={complex.latitude}
-                      lng={complex.longitude}
-                      complexName={complex.name}
-                    />
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* --- COLUMNA LATERAL (derecha en desktop) --- */}
+            {/* Sigue siendo sticky */}
             <div className="lg:w-1/3 space-y-6 lg:sticky lg:top-24 mt-8 lg:mt-0">
               {/* Tarjeta de Contacto */}
               {hasContactInfo && (
@@ -267,6 +251,22 @@ export function ClientPage({ complex }: { complex: ComplexProfileData }) {
               </div>
             </div>
           </div>
+
+          {complex.latitude && complex.longitude && (
+            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm mt-8">
+              <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+                Ubicación
+              </h3>
+              <div className="h-[400px] w-full rounded-lg overflow-hidden z-0">
+                <Map
+                  lat={complex.latitude}
+                  lng={complex.longitude}
+                  complexName={complex.name}
+                />
+              </div>
+            </div>
+          )}
+          
         </main>
         <Footer />
       </div>
