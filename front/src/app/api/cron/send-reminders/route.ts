@@ -133,7 +133,7 @@ export async function GET(request: Request) {
           });
           console.log(
             `✅ CRON: Notificación enviada y registrada para reserva ${booking.id}.`
-          ); // 🪵 LOG 8: Éxito
+          ); 
         } else {
           console.error(
             `❌ CRON ERROR: Fallo al enviar a OneSignal para reserva ${booking.id}. Status: ${oneSignalResponse.status}, Body: ${responseBody}` // Usar responseBody aquí
@@ -143,7 +143,6 @@ export async function GET(request: Request) {
           );
         }
       } catch (fetchError) {
-        // 🪵 LOG 10: Error de red al llamar a OneSignal
         console.error(
           `❌ CRON FETCH ERROR: Error de red al llamar a OneSignal para reserva ${booking.id}:`,
           fetchError
@@ -154,33 +153,27 @@ export async function GET(request: Request) {
 
     if (notifiedBookingIds.length > 0) {
       try {
-        // 👈 Añadir try/catch alrededor del updateMany
         await db.booking.updateMany({
           where: { id: { in: notifiedBookingIds } },
           data: { reminderSent: true },
         });
-        console.log(
-          `💾 CRON: Marcadas ${notifiedBookingIds.length} reservas como notificadas.`
-        ); // 🪵 LOG 11: Update DB
       } catch (dbError) {
         console.error(
           `❌ CRON DB ERROR: Error al actualizar 'reminderSent':`,
           dbError
-        ); // 🪵 LOG 12: Error DB Update
+        ); 
       }
     }
 
-    console.log("🏁 CRON: Ejecución finalizada."); // 🪵 LOG 13: Fin
 
     return NextResponse.json({
       success: true,
       notified: notifiedBookingIds.length,
       attempted: upcomingBookings.length,
       failures: failedBookingIds.length,
-      failedBookingDetails: failedBookingIds, // 🪵 Devolver detalles de fallos
+      failedBookingDetails: failedBookingIds, 
     });
   } catch (error) {
-    console.error("💥 CRON CATCH GENERAL:", error); // 🪵 LOG 14: Error General
     return new NextResponse("Error interno del servidor", { status: 500 });
   }
 }

@@ -21,7 +21,7 @@ import {
   ExternalLink,
   RefreshCw,
   XCircle,
-} from "lucide-react"; // Importando íconos
+} from "lucide-react"; 
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,32 +39,33 @@ interface Props {
   data: FullComplexData;
 }
 
+interface MPButtonProps {
+  complex: Complex;
+}
+
 // --- SECCIÓN 1: Lógica y componente para conectar Mercado Pago ---
 const MercadoPagoConnectButton = ({ complexId }: { complexId: string }) => {
   const CLIENT_ID = process.env.NEXT_PUBLIC_MERCADOPAGO_CLIENT_ID;
   const redirectUri = `${process.env.NEXT_PUBLIC_BASE_URL}/api/mercadopago/callback`;
+  
   const authUrl = `https://auth.mercadopago.com.ar/authorization?client_id=${CLIENT_ID}&response_type=code&platform_id=mp&redirect_uri=${redirectUri}&state=${complexId}`;
 
   return (
-    <a href={authUrl}>
-      <Button className="bg-[#009EE3] hover:bg-[#0089cc] text-white">
-        <ExternalLink className="mr-2 h-4 w-4" />
-        Conectar con Mercado Pago
-      </Button>
+    <a
+      href={authUrl}
+      className="inline-block w-full whitespace-nowrap rounded-lg bg-[#009EE3] py-2 px-4 text-center font-semibold text-white transition-colors hover:bg-[#0089cc] sm:w-auto"
+    >
+      Conectar con Mercado Pago
     </a>
   );
 };
 
-const MercadoPagoConnect = ({ complex }: { complex: Complex }) => {
+export default function MPButton({ complex }: MPButtonProps) {
   const router = useRouter();
-  const isConnected = !!complex.mp_connected_at;
-  const [isAlertOpen, setIsAlertOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const isConnected = !!complex.mp_connected_at;
 
   const handleDisconnect = async () => {
-    // ❌ Quitar todo el JSX del AlertDialog de aquí
-    // ❌ Quitar el 'if (!confirmation) return;' (es de window.confirm)
-
     setIsLoading(true);
     toast.loading("Desconectando...");
     try {
@@ -73,110 +74,85 @@ const MercadoPagoConnect = ({ complex }: { complex: Complex }) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ complexId: complex.id }),
       });
+      
       toast.dismiss();
-      if (!response.ok) throw new Error("No se pudo desconectar la cuenta.");
+      if (!response.ok) {
+        throw new Error("No se pudo desconectar la cuenta.");
+      }
+      
       toast.success("Cuenta de Mercado Pago desconectada.");
       router.refresh();
     } catch (error) {
       toast.dismiss();
-      toast.error(
-        error instanceof Error ? error.message : "Error desconocido."
-      );
+      toast.error(error instanceof Error ? error.message : "Error desconocido.");
     } finally {
       setIsLoading(false);
-      setIsAlertOpen(false);
     }
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Pagos de Clientes (Señas)</CardTitle>
-        <CardDescription>
-          Conectá tu propia cuenta de Mercado Pago para aceptar señas y pagos
-          online de tus clientes de forma segura.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 p-4 border rounded-lg">
-          <div className="flex items-center gap-4 flex-1">
-            <img
-              src="https://logospng.org/download/mercado-pago/logo-mercado-pago-256.png"
-              alt="Mercado Pago Logo"
-              width={40}
-              height={40}
-              className="h-10 w-10 flex-shrink-0"
-            />
-            <div className="flex-1">
-              {isConnected ? (
-                <>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="h-5 w-5 text-green-600" />
-                    <p className="font-semibold text-green-700">Conectado</p>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Conectado desde el{" "}
-                    {format(new Date(complex.mp_connected_at!), "dd/MM/yyyy", {
-                      locale: es,
-                    })}
-                    .
-                  </p>
-                </>
-              ) : (
-                <>
-                  <div className="flex items-center gap-2">
-                    <XCircle className="h-5 w-5 text-red-600" />
-                    <p className="font-semibold text-red-700">No Conectado</p>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    No puedes recibir pagos online. Conéctate para empezar.
-                  </p>
-                </>
-              )}
-            </div>
-          </div>
-
+    <div className="space-y-6">
+      <h3 className="text-lg font-semibold leading-6 text-bg-brand-dark">
+        Pagos y Cobranzas
+      </h3>
+      <p className="mt-1 text-sm text-gray-500">
+        Conecta tu cuenta de Mercado Pago para aceptar señas y pagos online.
+      </p>
+      
+      <div className="mt-6 flex flex-col items-start gap-4 rounded-lg border p-4 sm:flex-row sm:items-center">
+        <img
+          src="https://logospng.org/download/mercado-pago/logo-mercado-pago-256.png"
+          alt="Mercado Pago Logo"
+          className="h-10 w-10 flex-shrink-0"
+        />
+        <div className="flex-1">
           {isConnected ? (
-            <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="w-full sm:w-auto text-red-600 border-red-200 hover:bg-red-50"
-                  disabled={isLoading}
-                >
-                  Desconectar
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>
-                    ¿Estás seguro de desconectar?
-                  </AlertDialogTitle>
-                  <AlertDialogDescription>
-                    No podrás recibir pagos online hasta que vuelvas a conectar
-                    tu cuenta.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel disabled={isLoading}>
-                    Volver
-                  </AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={handleDisconnect} // 👈 El botón de acción llama a la lógica
-                    disabled={isLoading}
-                    className="bg-red-600 hover:bg-red-700"
-                  >
-                    {isLoading ? "Desconectando..." : "Sí, desconectar"}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            <>
+              <p className="font-medium text-green-600">Estado: Conectado</p>
+              <p className="text-sm text-gray-500">
+                Conectado el {new Date(complex.mp_connected_at!).toLocaleDateString()}
+              </p>
+            </>
           ) : (
-            <MercadoPagoConnectButton complexId={complex.id} />
+            <>
+              <p className="font-medium text-red-600">Estado: No conectado</p>
+              <p className="text-sm text-gray-500">
+                Aún no puedes recibir pagos online.
+              </p>
+            </>
           )}
         </div>
-      </CardContent>
-    </Card>
+        
+        {isConnected ? (
+           <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <button
+                disabled={isLoading}
+                className="w-full rounded-lg bg-gray-200 py-2 px-4 font-semibold text-gray-800 transition-colors hover:bg-gray-300 sm:w-auto disabled:opacity-50 cursor-pointer"
+              >
+                Desconectar
+              </button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Al desconectar tu cuenta, no podrás recibir pagos online a través de CheCancha. Podrás volver a conectarla en cualquier momento.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDisconnect} className="bg-red-600 hover:bg-red-700">
+                  Sí, desconectar
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        ) : (
+          <MercadoPagoConnectButton complexId={complex.id} />
+        )}
+      </div>
+    </div>
   );
 };
 
@@ -359,7 +335,7 @@ export const PaymentsSettings = ({ data }: Props) => {
         <h3 className="text-lg font-switzer font-semibold text-brand-dark">
           Conexión de Pagos
         </h3>
-        <MercadoPagoConnect complex={data} />
+        <MPButton complex={data} />
       </section>
 
       <hr className="border-gray-200" />

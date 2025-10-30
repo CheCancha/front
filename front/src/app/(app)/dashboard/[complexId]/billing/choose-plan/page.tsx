@@ -115,7 +115,7 @@ export default function ChoosePlanPage() {
   
   return (
     <div className="container mx-auto py-12">
-      <div className="text-center max-w-3xl mx-auto mb-10">
+      <div className="text-center max-w-3xl mx-auto min-h-dvh mb-10">
         <h1 className="text-3xl md:text-4xl font-bold text-brand-dark">
           Activá tu Cuenta
         </h1>
