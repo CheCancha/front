@@ -53,7 +53,7 @@ export const LoginForm = () => {
 
   const handleRedirect = async () => {
     try {
-      const response = await fetch("/api/auth/redirect-after-login");
+      const response = await fetch("/api/auth/redirect");
       if (response.ok) {
         const { redirectUrl } = await response.json();
         router.push(redirectUrl);
@@ -177,7 +177,7 @@ export const RegisterForm = () => {
 
   const handleRedirect = async () => {
     try {
-      const response = await fetch("/api/auth/redirect-after-login");
+      const response = await fetch("/api/auth/redirect");
       if (response.ok) {
         const { redirectUrl } = await response.json();
         router.push(redirectUrl);

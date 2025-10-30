@@ -27,7 +27,7 @@ export type ValidStartTime = {
   courts: { courtId: string; available: boolean }[];
 };
 
-// --- FUNCIÓN DE OBTENCIÓN DE DATOS (SERVER) ---
+// --- FUNCIÓN DE OBTENCIÓN DE DATOS ---
 async function getComplex(slug: string) {
   const complex = await db.complex.findUnique({
     where: { slug },
