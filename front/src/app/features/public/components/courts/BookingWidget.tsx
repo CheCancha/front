@@ -467,7 +467,7 @@ const DesktopBookingWidget: React.FC<BookingWidgetProps> = ({
         </Button>
         {selectedTime && (
           <p className="text-center text-sm text-gray-600 mt-4">
-            Turno seleccionado: <strong>{selectedCourt.name}</strong> a las
+            Turno seleccionado: <strong>{selectedCourt.name}</strong> a las{''}
             <strong>{selectedTime} hs</strong>.
           </p>
         )}

@@ -1,6 +1,5 @@
 "use client";
 
-import "@/styles/day-picker.css";
 import React, { useState, useEffect, useMemo } from "react";
 import Select, {
   OptionProps,
@@ -256,20 +255,20 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   };
 
   // --- CLASES DE ESTILO ---
-  const containerClass = "w-full max-w-4xl mx-auto";
+  const containerClass = "w-full mx-auto";
   const inputClass =
-    "w-full pl-10 pr-4 py-3 border border-neutral-300 rounded-lg hover:border-brand-orange focus:border-brand-orange focus:ring-2 focus:ring-brand-orange/20 outline-none bg-white text-neutral-900 placeholder-neutral-500 transition-all text-sm";
+    "w-full pl-10 pr-4 py-3 border border-neutral-300 rounded-md hover:border-brand-orange focus:border-brand-orange focus:ring-2 focus:ring-brand-orange/20 outline-none flex items-center bg-white text-neutral-900 placeholder-neutral-500 transition-all text-[1rem]";
   const iconClass =
     "absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-500";
   const buttonClass =
-    "w-full bg-gradient-to-r from-[#e62b02] to-[#fe3719] text-white font-semibold py-3 px-6 rounded-lg flex items-center justify-center transition-all duration-300 cursor-pointer hover:brightness-110 shadow-md text-sm";
+    "w-full bg-gradient-to-r from-[#e62b02] to-[#fe3719] text-white font-semibold py-3 px-6 rounded-lg flex items-center justify-center transition-all duration-300 cursor-pointer hover:brightness-110 shadow-md";
 
   return (
     <div className={cn(containerClass, className)}>
       <form onSubmit={handleSearch} className="space-y-3 md:space-y-0">
-        <div className="flex flex-col md:grid md:grid-cols-5 gap-3">
-          <div className="flex gap-2 md:col-span-1">
-            <div className="relative flex-1">
+        <div className="flex flex-col md:grid md:grid-cols-5 lg:grid-cols-6 gap-2">
+          <div className="flex gap-2 md:col-span-1 lg:col-span-2">
+            <div className="relative flex flex-1 items-center">
               <MapPinIcon className={iconClass} />
               <input
                 type="text"
@@ -295,7 +294,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                   ) : citySuggestions.length > 0 ? (
                     <>
                       {citySuggestions.some((s) => s.type === "city") && (
-                        <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 bg-gray-50 border-b sticky top-0">
+                        <div className="px-3 py-1.5 text-sm font-semibold text-gray-500 bg-gray-50 border-b sticky top-0">
                           CIUDADES
                         </div>
                       )}
@@ -321,7 +320,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                           </div>
                         ))}
                       {citySuggestions.some((s) => s.type === "complex") && (
-                        <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 bg-gray-50 border-b sticky top-0">
+                        <div className="px-3 py-1.5 text-sm font-semibold text-gray-500 bg-gray-50 border-b sticky top-0">
                           CLUBES DEPORTIVOS
                         </div>
                       )}
@@ -401,7 +400,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                     boxShadow: state.isFocused
                       ? "0 0 0 3px rgba(249, 115, 22, 0.1)"
                       : "none",
-                    fontSize: "0.875rem",
+                    fontSize: "1rem",
                   }),
                   singleValue: (base) => ({ ...base, color: "#171717" }),
                   menu: (base) => ({
@@ -418,7 +417,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                       : "transparent",
                     color: "#171717",
                     cursor: "pointer",
-                    fontSize: "0.875rem",
+                    fontSize: "1rem",
                   }),
                   placeholder: (base) => ({ ...base, color: "#404040" }),
                 }}
@@ -490,7 +489,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                     boxShadow: state.isFocused
                       ? "0 0 0 3px rgba(249, 115, 22, 0.1)"
                       : "none",
-                    fontSize: "0.875rem",
+                    fontSize: "1rem",
                   }),
                   singleValue: (base) => ({ ...base, color: "#171717" }),
                   menu: (base) => ({
@@ -507,7 +506,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                       : "transparent",
                     color: "#171717",
                     cursor: "pointer",
-                    fontSize: "0.875rem",
+                    fontSize: "1rem",
                   }),
                   placeholder: (base) => ({ ...base, color: "#404040" }),
                 }}
