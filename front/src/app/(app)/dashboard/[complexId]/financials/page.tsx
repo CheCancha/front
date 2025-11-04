@@ -9,7 +9,7 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
-} from "@/shared/components/ui/tabs";
+} from "../../../../../shared/components/ui/tabs";
 import { AnalyticsTab } from "@/app/features/dashboard/components/analytics/AnalyticsTab";
 import { FinancialSummary } from "@/app/features/dashboard/components/financials/FinancialSummary";
 import {

@@ -19,10 +19,10 @@ import { AmenitiesForm } from "./AmenitiesForm";
 import { CancellationForm } from "./CancellationForm";
 import {
   Tabs,
+  TabsContent,
   TabsList,
   TabsTrigger,
-  TabsContent,
-} from "@/shared/components/ui/tabs";
+} from "../../../../../shared/components/ui/tabs";
 import { Button } from "@/shared/components/ui/button";
 
 type ScheduleDayKey = Exclude<keyof Schedule, "id" | "complexId">;

@@ -39,7 +39,7 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
-} from "@/shared/components/ui/tabs";
+} from "../../../../../shared/components/ui/tabs";
 import {
   ComplexWithCourts,
   CalendarEvent,
