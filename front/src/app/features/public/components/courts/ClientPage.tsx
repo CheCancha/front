@@ -78,20 +78,32 @@ const generateWeeklySchedule = (complex: ComplexProfileData) => {
     { name: "Domingo", openKey: "sundayOpen", closeKey: "sundayClose" },
   ];
 
+  const formatHourSafely = (timeStr: string): string => {
+    if (timeStr.includes(":")) {
+      const parts = timeStr.split(":");
+      const hour = parts[0].padStart(2, "0");
+      const minutes = parts[1].padStart(2, "0");
+      return `${hour}:${minutes}`;
+    }
+
+    const hour = timeStr.padStart(2, "0");
+    return `${hour}:00`;
+  };
+
   for (const day of dayOrder) {
-    // 1. Leer los valores como strings (ya no son numbers)
     const openHour = complex.schedule?.[day.openKey];
     const closeHour = complex.schedule?.[day.closeKey];
 
     let hoursString = "Cerrado";
 
-    // 2. Chequear si ambos son strings válidos
     if (typeof openHour === "string" && typeof closeHour === "string") {
-      // 3. Formatear para el usuario (ej: "27:00" -> "03:00")
-      const formattedOpen = formatHour(openHour);
-      const formattedClose = formatHour(closeHour);
+      
+      const formattedOpen = formatHourSafely(openHour);
+      const formattedClose = formatHourSafely(closeHour);
+
       hoursString = `${formattedOpen} - ${formattedClose}`;
     }
+    
     schedule.push({ day: day.name, hours: hoursString });
   }
   return schedule;
@@ -145,7 +157,7 @@ export function ClientPage({ complex }: { complex: ComplexProfileData }) {
 
   return (
     <>
-      <div className="bg-background min-h-screen overflow-hidden">
+      <div className="bg-[#f0f0ef] min-h-screen overflow-hidden">
         <Navbar />
         <main className="container mx-auto px-4 sm:px-6 pb-8 pt-20">
           <ComplexHeader
@@ -255,6 +267,7 @@ export function ClientPage({ complex }: { complex: ComplexProfileData }) {
                   ))}
                 </ul>
               </div>
+
             </div>
           </div>
 
