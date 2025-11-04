@@ -54,6 +54,7 @@ export const ScheduleForm = ({
         <SelectContent>
           <SelectItem value="30">Cada 30 minutos</SelectItem>
           <SelectItem value="60">Cada 1 hora</SelectItem>
+          <SelectItem value="90">Cada 90 min</SelectItem>
         </SelectContent>
       </Select>
       <p className="mt-2 text-sm text-gray-500">
@@ -67,7 +68,7 @@ export const ScheduleForm = ({
           const openValue = data.schedule?.[openKey];
           const closeValue = data.schedule?.[closeKey];
           const isOpen =
-            typeof openValue === "number" && typeof closeValue === "number";
+            typeof openValue === "string" && typeof closeValue === "string";
 
           return (
             <div
@@ -89,7 +90,7 @@ export const ScheduleForm = ({
 
               {/* Select de Apertura */}
               <Select
-                value={openValue ? String(openValue) : ""}
+                value={openValue || ""}
                 onValueChange={(value) => {
                   onScheduleChange(
                     openKey,
@@ -105,7 +106,7 @@ export const ScheduleForm = ({
                   {hoursOptions.map((h) => (
                     <SelectItem
                       key={`${dayName}-open-${h.value}`}
-                      value={String(h.value)}
+                      value={h.value}
                     >
                       {h.label}
                     </SelectItem>
@@ -115,7 +116,7 @@ export const ScheduleForm = ({
 
               {/* Select de Cierre */}
               <Select
-                value={closeValue ? String(closeValue) : ""}
+                value={closeValue || ""}
                 onValueChange={(value) => {
                   onScheduleChange(
                     closeKey,
@@ -131,7 +132,7 @@ export const ScheduleForm = ({
                   {hoursOptions.map((h) => (
                     <SelectItem
                       key={`${dayName}-close-${h.value}`}
-                      value={String(h.value)}
+                      value={h.value}
                     >
                       {h.label}
                     </SelectItem>

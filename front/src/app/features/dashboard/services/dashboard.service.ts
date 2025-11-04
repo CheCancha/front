@@ -1,5 +1,22 @@
 import { db } from "@/shared/lib/db";
-import { startOfDay, endOfDay, addDays } from "date-fns";
+import { BookingStatus } from "@prisma/client";
+import { startOfDay, endOfDay, addDays, getDay } from "date-fns";
+
+
+const parseHour = (
+  hourString: string | number | null | undefined
+): number | null => {
+  if (hourString === null || hourString === undefined) return null;
+  if (typeof hourString === "number") return hourString;
+  try {
+    const [hour] = hourString.split(":");
+    const hourNum = parseInt(hour, 10);
+    return isNaN(hourNum) ? null : hourNum;
+  } catch (e) {
+    return null;
+  }
+};
+
 
 export async function getComplexDataForManager(
   complexId: string,
@@ -19,10 +36,8 @@ export async function getComplexDataForManager(
       onboardingCompleted: true,
       openHour: true,
       closeHour: true,
-      // --- CAMPOS AÑADIDOS ---
       averageRating: true,
       reviewCount: true,
-      // --- RELACIONES ---
       courts: {
         include: {
           priceRules: true,
@@ -39,12 +54,11 @@ export async function getComplexDataForManager(
   // 2. Ejecutamos las consultas de reservas en paralelo para más eficiencia
   const [todayBookings, next7DaysBookings, upcomingBookings] =
     await Promise.all([
-      // Reservas de hoy
       db.booking.findMany({
         where: {
           court: { complexId },
           date: { gte: startOfToday, lte: endOfToday },
-          status: { in: ["CONFIRMADO", "COMPLETADO"] },
+          status: { in: [BookingStatus.CONFIRMADO, BookingStatus.COMPLETADO] },
         },
       }),
       // Reservas de los próximos 7 días
@@ -52,14 +66,14 @@ export async function getComplexDataForManager(
         where: {
           court: { complexId },
           date: { gte: startOfToday, lte: endOfNext7Days },
-          status: "CONFIRMADO",
+          status: BookingStatus.CONFIRMADO,
         },
       }),
       // Próximos 10 turnos confirmados
       db.booking.findMany({
         where: {
           court: { complexId },
-          status: "CONFIRMADO",
+          status: BookingStatus.CONFIRMADO,
           OR: [
             { date: { gt: startOfToday } },
             {
@@ -80,9 +94,21 @@ export async function getComplexDataForManager(
     0
   );
 
+  const todayDayOfWeek = getDay(now);
+  const dayKeys = [
+    "sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"
+  ];
+  const todayKey = dayKeys[todayDayOfWeek] as keyof typeof complex.schedule;
+
+  const openHourString = complex.schedule?.[`${todayKey}Open`] ?? complex.openHour;
+  const closeHourString = complex.schedule?.[`${todayKey}Close`] ?? complex.closeHour;
+
+  const openHour = parseHour(openHourString) ?? 9;
+  const closeHour = parseHour(closeHourString) ?? 23;
+  
   const totalHoursAvailableToday =
-    complex.courts.length *
-    ((complex.closeHour ?? 23) - (complex.openHour ?? 9));
+    complex.courts.length * (closeHour - openHour);
+
   const hoursBookedToday = todayBookings.length;
   const occupancyRate =
     totalHoursAvailableToday > 0
@@ -94,7 +120,7 @@ export async function getComplexDataForManager(
     (sum, b) => sum + b.remainingBalance,
     0
   );
-  const occupancyNext7Days = 50;
+  const occupancyNext7Days = 50; 
 
   return {
     id: complex.id,

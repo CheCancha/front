@@ -10,7 +10,12 @@ import type {
   CourtWithPriceRules,
   ValidStartTime,
 } from "@/app/(public)/canchas/[slug]/page";
-import { Clock, ArrowRight, Calendar as CalendarIcon, Tag } from "lucide-react";
+import {
+  Clock,
+  ArrowRight,
+  Calendar as CalendarIcon,
+  MapPinned,
+} from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import { Calendar } from "@/shared/components/ui/calendar";
 
@@ -73,6 +78,26 @@ const DateSlider = ({
       </div>
     </div>
   );
+};
+
+const formatHour = (hourString: string | null | undefined): string => {
+  if (!hourString) return "";
+  try {
+    const [hour, minutes] = hourString.split(":");
+    const hourNum = parseInt(hour, 10);
+
+    if (isNaN(hourNum)) return hourString;
+
+    // Si la hora es 24 o más, es transnoche
+    if (hourNum >= 24) {
+      const nextDayHour = String(hourNum % 24).padStart(2, "0");
+      return `${nextDayHour}:${minutes}`;
+    }
+
+    return hourString;
+  } catch (e) {
+    return hourString;
+  }
 };
 
 const TimeSlots = ({
@@ -141,7 +166,7 @@ const TimeSlots = ({
                   : "bg-white border-gray-200 text-gray-700 hover:border-brand-orange"
               )}
             >
-              {slot.time}
+              {formatHour(slot.time)}
             </button>
           );
         })}
@@ -229,7 +254,7 @@ const MobileBookingWidget: React.FC<BookingWidgetProps> = ({
         {club.courts.length > 1 && (
           <div>
             <h3 className="text-md font-semibold text-paragraph mb-2 flex items-center gap-2">
-              <Tag size={18} /> 2. Elegí la cancha
+              <MapPinned size={18} /> 2. Elegí la cancha
             </h3>
             <div className="flex space-x-2 overflow-x-auto">
               {club.courts.map((court) => (
@@ -376,7 +401,7 @@ const DesktopBookingWidget: React.FC<BookingWidgetProps> = ({
 
         <div>
           <label className="text-sm font-semibold text-paragraph mb-2 flex items-center gap-2">
-            <Tag size={16} /> 2. Elegí la cancha
+            <MapPinned size={17} /> 2. Elegí la cancha
           </label>
           <div className="flex flex-col space-y-2">
             {club.courts.map((court: CourtWithPriceRules) => (
@@ -409,7 +434,7 @@ const DesktopBookingWidget: React.FC<BookingWidgetProps> = ({
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2">
             {validStartTimes.map((slot) => {
               const courtStatus = slot.courts.find(
-                (c) => c.courtId === selectedCourt.id
+                (c) => c.courtId === selectedCourt!.id
               );
               const isAvailable = courtStatus?.available ?? false;
               const isSelected = selectedTime === slot.time;
@@ -417,6 +442,7 @@ const DesktopBookingWidget: React.FC<BookingWidgetProps> = ({
               const isSelectedDateToday = isToday(selectedDate);
               const currentHour = new Date().getHours();
               const currentMinute = new Date().getMinutes();
+
               const isPast = (time: string) => {
                 if (!isSelectedDateToday) return false;
                 const [slotHour, slotMinute] = time.split(":").map(Number);
@@ -444,7 +470,7 @@ const DesktopBookingWidget: React.FC<BookingWidgetProps> = ({
                       "bg-brand-orange text-white ring-2 ring-offset-2 ring-brand-orange"
                   )}
                 >
-                  {slot.time}
+                  {formatHour(slot.time)}
                 </button>
               );
             })}
@@ -467,8 +493,8 @@ const DesktopBookingWidget: React.FC<BookingWidgetProps> = ({
         </Button>
         {selectedTime && (
           <p className="text-center text-sm text-gray-600 mt-4">
-            Turno seleccionado: <strong>{selectedCourt.name}</strong> a las{''}
-            <strong>{selectedTime} hs</strong>.
+            Turno seleccionado: <strong>{selectedCourt!.name}</strong> a las{" "}
+            <strong>{formatHour(selectedTime)} hs</strong>.
           </p>
         )}
       </div>

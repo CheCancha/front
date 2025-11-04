@@ -66,7 +66,7 @@ interface SearchBarProps {
   variant?: "default" | "hero";
 }
 
-const debounce = <F extends (...args: Parameters<F>) => ReturnType<F>>(
+const debouncedSearch = <F extends (...args: Parameters<F>) => ReturnType<F>>(
   func: F,
   delay: number
 ) => {
@@ -97,7 +97,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 
   const fetchCitySuggestions = useMemo(
     () =>
-      debounce(async (query: string) => {
+      debouncedSearch(async (query: string) => {
         if (query.length < 3) {
           setCitySuggestions([]);
           setIsLoadingSuggestions(false);

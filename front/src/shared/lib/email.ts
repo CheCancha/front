@@ -19,6 +19,7 @@ type BookingWithDetailsForEmail = Booking & {
   court: Court & {
     complex: Complex & {
       manager: User;
+      contactPhone: string | null;
     };
   };
 };

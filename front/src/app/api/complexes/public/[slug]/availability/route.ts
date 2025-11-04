@@ -4,6 +4,21 @@ import { addDays, subMinutes } from "date-fns";
 import { formatInTimeZone, toDate } from "date-fns-tz";
 import { BookingStatus } from "@prisma/client";
 
+
+const parseHourString = (hourString: unknown): number | undefined => {
+  if (typeof hourString !== "string") {
+    return undefined;
+  }
+  try {
+    const [hour] = hourString.split(":");
+    const hourNum = parseInt(hour, 10);
+    return isNaN(hourNum) ? undefined : hourNum;
+  } catch (e) {
+    return undefined;
+  }
+};
+
+
 export async function GET(
   req: Request,
   context: { params: Promise<{ slug: string }> }
@@ -20,10 +35,7 @@ export async function GET(
       );
     }
 
-    //FIX: Usar la zona horaria de Argentina para consistencia
     const TIMEZONE = "America/Argentina/Buenos_Aires";
-
-    // Parsear la fecha en la zona horaria correcta
     const requestedDayStart = toDate(`${dateString}T00:00:00`, {
       timeZone: TIMEZONE,
     });
@@ -80,8 +92,6 @@ export async function GET(
     }
 
     const timeGridInterval = complex.timeSlotInterval;
-
-    // IMPORTANTE: Usar getDay() en lugar de getUTCDay() para fecha local
     const isoDayOfWeek = Number(
       formatInTimeZone(requestedDayStart, TIMEZONE, "i")
     );
@@ -97,19 +107,20 @@ export async function GET(
     ];
     const key = dayKeys[dayOfWeek];
 
-    let openHour: number | null | undefined;
-    let closeHour: number | null | undefined;
+    // --- BLOQUE LÓGICO MODIFICADO ---
+    let openHour: number | undefined;
+    let closeHour: number | undefined;
 
     if (complex.schedule) {
       const scheduleAsRecord = complex.schedule as Record<string, unknown>;
+      // Leemos los strings "18:00" y "27:00"
       const rawOpenHour = scheduleAsRecord[`${key}Open`];
       const rawCloseHour = scheduleAsRecord[`${key}Close`];
-      openHour = typeof rawOpenHour === "number" ? rawOpenHour : undefined;
-      closeHour = typeof rawCloseHour === "number" ? rawCloseHour : undefined;
+      
+      // Usamos el helper para convertirlos a números 18 y 27
+      openHour = parseHourString(rawOpenHour);
+      closeHour = parseHourString(rawCloseHour);
     }
-
-    if (openHour === undefined) openHour = complex.openHour;
-    if (closeHour === undefined) closeHour = complex.closeHour;
 
     if (typeof openHour !== "number" || typeof closeHour !== "number") {
       return NextResponse.json([]);
@@ -144,7 +155,6 @@ export async function GET(
     const closingTime = closeHour * 60;
 
     while (currentTime < closingTime) {
-      // NUEVO: Saltar horarios pasados si es hoy
       if (isToday && currentTime < currentTimeInMinutes) {
         currentTime += timeGridInterval;
         continue;
@@ -152,6 +162,8 @@ export async function GET(
 
       const hour = Math.floor(currentTime / 60);
       const minute = currentTime % 60;
+      
+      // Aquí se genera el string "real" (ej: "27:00") que el frontend espera
       const timeString = `${String(hour).padStart(2, "0")}:${String(
         minute
       ).padStart(2, "0")}`;

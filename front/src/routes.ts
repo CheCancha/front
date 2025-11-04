@@ -20,7 +20,7 @@ export const routes = {
 
     dashboard: (complexId: string) => `/dashboard/${complexId}`,
     reservations: (complexId: string) => `/dashboard/${complexId}/booking`,
-    analytics: (complexId: string) => `/dashboard/${complexId}/analytics`,
+    analytics: (complexId: string) => `/dashboard/${complexId}/financials`,
     settings: (complexId: string) => `/dashboard/${complexId}/settings`,
     marketing: (complexId: string) => `/dashboard/${complexId}/marketing`,
     customers: (complexId: string) => `/dashboard/${complexId}/customers`,

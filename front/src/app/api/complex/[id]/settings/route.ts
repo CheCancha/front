@@ -29,6 +29,7 @@ export async function GET(
         },
         images: { orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }] },
         amenities: true,
+        contactPhones: true,
       },
     });
 
@@ -53,7 +54,7 @@ export async function GET(
 
 export async function PUT(
   req: Request,
-  context: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await context.params;
@@ -68,28 +69,43 @@ export async function PUT(
     });
 
     if (!complexToUpdate) {
-      return new NextResponse("Complejo no encontrado o sin permiso.", { status: 403 });
+      return new NextResponse("Complejo no encontrado o sin permiso.", {
+        status: 403,
+      });
     }
 
     const body = await req.json();
-    console.log("✅ [SETTINGS_PUT] Body recibido en la API:", JSON.stringify(body, null, 2));
-
     const { general, courts, amenities, basicInfo } = body;
-    const newName = basicInfo?.name || complexToUpdate.name;
-    const newSlug = slugify(newName);
+
+    // 1. Separamos los teléfonos del resto de la info general
+    const { contactPhones, ...restOfBasicInfo } = basicInfo;
+
+    // 2. Calculamos el nuevo slug
+    const newSlug = slugify(restOfBasicInfo.name || complexToUpdate.name);
 
     await db.complex.update({
       where: { id: id },
       data: {
-        name: newName,
+        // 3. Aplicamos el resto de basicInfo
+        ...restOfBasicInfo,
         slug: newSlug,
-        address: basicInfo?.address,
-        city: basicInfo?.city,
-        province: basicInfo?.province,
+
+        // 4. Aplicamos los otros campos (horarios, etc.)
         openHour: general?.openHour,
         closeHour: general?.closeHour,
         amenities: { set: amenities.connect },
         courts: { create: courts.create },
+
+        // 5. Aplicamos la lógica de teléfonos que hicimos para la otra API
+        contactPhones: {
+          deleteMany: {},
+          create: contactPhones
+            ? contactPhones.map((phone: { phone: string; label?: string | null }) => ({
+                phone: phone.phone,
+                label: phone.label,
+              }))
+            : [],
+        },
       },
     });
 

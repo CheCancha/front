@@ -3,7 +3,7 @@ import { db } from "@/shared/lib/db";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/authOptions";
 import { differenceInHours } from "date-fns";
-import { formatInTimeZone } from 'date-fns-tz';
+import { formatInTimeZone } from "date-fns-tz";
 import { es } from "date-fns/locale";
 import {
   sendBookingCancelledByPlayerEmail,
@@ -18,7 +18,7 @@ export async function POST(
   context: { params: Promise<{ bookingId: string }> }
 ) {
   try {
-    const { bookingId } = await context.params; 
+    const { bookingId } = await context.params;
     const session = await getServerSession(authOptions);
     if (!session?.user?.id)
       return new NextResponse("No autenticado", { status: 401 });
@@ -29,10 +29,12 @@ export async function POST(
         user: true,
         court: {
           include: {
-            sport: true, 
+            sport: true,
+            
             complex: {
-              include: { 
-                 manager: true 
+              include: {
+                manager: true,
+                contactPhones: true,
               },
             },
           },
@@ -51,21 +53,27 @@ export async function POST(
     if (!isPlayerOwner && !isComplexManager && session.user.role !== "ADMIN")
       return new NextResponse("No autorizado", { status: 403 });
 
-    if (booking.status !== BookingStatus.CONFIRMADO && booking.status !== BookingStatus.PENDIENTE)
-      return new NextResponse("Solo se pueden cancelar reservas confirmadas o pendientes.", {
-        status: 400,
-      });
+    if (
+      booking.status !== BookingStatus.CONFIRMADO &&
+      booking.status !== BookingStatus.PENDIENTE
+    )
+      return new NextResponse(
+        "Solo se pueden cancelar reservas confirmadas o pendientes.",
+        {
+          status: 400,
+        }
+      );
 
     // --- Lógica de Cancelación ---
     const now = new Date();
-    const bookingDateTime = booking.date; 
+    const bookingDateTime = booking.date;
     const hoursDifference = differenceInHours(bookingDateTime, now);
     const cancellationPolicyHours =
       booking.court?.complex?.cancellationPolicyHours ?? 0;
 
     const refundPending =
-      booking.status === BookingStatus.CONFIRMADO && 
-      booking.depositPaid > 0 && 
+      booking.status === BookingStatus.CONFIRMADO &&
+      booking.depositPaid > 0 &&
       cancellationPolicyHours > 0 &&
       hoursDifference >= cancellationPolicyHours;
 
@@ -79,30 +87,87 @@ export async function POST(
     let notificationTitle = "";
     let notificationMessage = "";
 
-    const formattedBookingDate = formatInTimeZone(booking.date, ARGENTINA_TIME_ZONE, "dd/MM/yyyy", { locale: es });
-    const formattedBookingTime = formatInTimeZone(booking.date, ARGENTINA_TIME_ZONE, "HH:mm'hs'", { locale: es });
+    const formattedBookingDate = formatInTimeZone(
+      booking.date,
+      ARGENTINA_TIME_ZONE,
+      "dd/MM/yyyy",
+      { locale: es }
+    );
+    const formattedBookingTime = formatInTimeZone(
+      booking.date,
+      ARGENTINA_TIME_ZONE,
+      "HH:mm'hs'",
+      { locale: es }
+    );
 
     const complexName = booking.court?.complex?.name ?? "El complejo";
     const courtName = booking.court?.name ?? "la cancha";
 
+
+    const bookingForEmail = {
+      ...booking,
+      court: {
+        ...booking.court!, 
+        complex: {
+          ...booking.court!.complex!, 
+          contactPhone:
+            booking.court!.complex!.contactPhones?.[0]?.phone || null,
+        },
+      },
+    };
+    
+    if (bookingForEmail.court?.complex) {
+      bookingForEmail.court.complex.contactPhone = 
+        booking.court.complex.contactPhones?.[0]?.phone || null;
+    }
+
+
     if (isPlayerOwner) {
       // Jugador cancela -> Notificar al MANAGER
       targetUserId = booking.court?.complex?.managerId ?? null;
-      targetPlayerId = booking.court?.complex?.manager?.oneSignalPlayerId ?? null;
+      targetPlayerId =
+        booking.court?.complex?.manager?.oneSignalPlayerId ?? null;
       notificationTitle = "Reserva Cancelada por Jugador";
-      // ✅ Usar las variables formateadas correctamente
-      notificationMessage = `${booking.user?.name ?? 'Un jugador'} canceló el turno de ${courtName} del ${formattedBookingDate} a las ${formattedBookingTime}. El horario está libre.`;
-      
-      try { await sendBookingCancelledByPlayerEmail(booking); } catch (e) { console.error("Error email a manager:", e); }
+      notificationMessage = `${
+        booking.user?.name ?? "Un jugador"
+      } canceló el turno de ${courtName} del ${formattedBookingDate} a las ${formattedBookingTime}. El horario está libre.`;
 
-    } else { 
-      // Manager/Admin cancela -> Notificar al JUGADOR
+      try {
+        const bookingForEmail = {
+          ...booking,
+          court: {
+            ...booking.court!,
+            complex: {
+              ...booking.court!.complex!,
+              contactPhone:
+                booking.court!.complex!.contactPhones?.[0]?.phone || null,
+            },
+          },
+        };
+        await sendBookingCancelledByPlayerEmail(bookingForEmail);
+      } catch (e) {
+        console.error("Error email a manager:", e);
+      }
+    } else {
       targetUserId = booking.userId ?? null;
-      targetPlayerId = booking.user?.oneSignalPlayerId ?? null;
-      notificationTitle = "Tu Reserva fue Cancelada";
-      notificationMessage = `${complexName} canceló tu reserva de ${courtName} del ${formattedBookingDate} a las ${formattedBookingTime}. Contactate si tenés dudas.`;
+      notificationMessage = `${complexName} canceló tu reserva...`;
 
-       try { await sendBookingCancelledByManagerEmail(booking); } catch (e) { console.error("Error email a jugador:", e); }
+      try {
+        const bookingForEmail = {
+          ...booking,
+          court: {
+            ...booking.court!,
+            complex: {
+              ...booking.court!.complex!,
+              contactPhone:
+                booking.court!.complex!.contactPhones?.[0]?.phone || null,
+            },
+          },
+        };
+        await sendBookingCancelledByManagerEmail(bookingForEmail);
+      } catch (e) {
+        console.error("Error email a jugador:", e);
+      }
     }
 
     // Si tenemos a quién notificar (Player ID) y un usuario asociado
@@ -112,14 +177,15 @@ export async function POST(
         include_player_ids: [targetPlayerId],
         headings: { es: notificationTitle, en: notificationTitle },
         contents: { es: notificationMessage, en: notificationMessage },
-        web_url: isPlayerOwner 
+        web_url: isPlayerOwner
           ? `https://www.checancha.com/dashboard/${booking.court.complex.id}/booking`
           : `https://www.checancha.com/profile`,
-        
       };
 
       try {
-        console.log(`[CANCEL NOTIF] Intentando enviar push a ${targetPlayerId}...`);
+        console.log(
+          `[CANCEL NOTIF] Intentando enviar push a ${targetPlayerId}...`
+        );
         const oneSignalResponse = await fetch(
           "https://onesignal.com/api/v1/notifications",
           {
@@ -134,7 +200,9 @@ export async function POST(
         const responseBody = await oneSignalResponse.text();
 
         if (oneSignalResponse.ok) {
-          console.log(`✅ [CANCEL NOTIF] Push enviado con éxito a ${targetPlayerId}.`);
+          console.log(
+            `✅ [CANCEL NOTIF] Push enviado con éxito a ${targetPlayerId}.`
+          );
           await db.notification.create({
             data: {
               userId: targetUserId,
@@ -143,17 +211,24 @@ export async function POST(
               url: notificationPayload.web_url,
             },
           });
-          console.log(`✅ [CANCEL NOTIF] Notificación interna guardada para ${targetUserId}.`);
+          console.log(
+            `✅ [CANCEL NOTIF] Notificación interna guardada para ${targetUserId}.`
+          );
         } else {
           console.error(
             `❌ [CANCEL NOTIF] Error OneSignal (${oneSignalResponse.status}): ${responseBody}`
           );
         }
       } catch (pushError) {
-        console.error("❌ [CANCEL NOTIF] Error en fetch a OneSignal:", pushError);
+        console.error(
+          "❌ [CANCEL NOTIF] Error en fetch a OneSignal:",
+          pushError
+        );
       }
     } else {
-        console.log(`[CANCEL NOTIF] No se envió push: targetPlayerId (${targetPlayerId}) o targetUserId (${targetUserId}) no encontrado.`);
+      console.log(
+        `[CANCEL NOTIF] No se envió push: targetPlayerId (${targetPlayerId}) o targetUserId (${targetUserId}) no encontrado.`
+      );
     }
 
     return NextResponse.json({ success: true, message: "Reserva cancelada." });

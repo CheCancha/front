@@ -25,7 +25,7 @@ export const CreateComplexModal: React.FC<CreateComplexModalProps> = ({ isOpen, 
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[700px]"> {/* Ajusta el ancho si es necesario */}
+      <DialogContent className="sm:max-w-[700px]">
         <DialogHeader>
           <DialogTitle>Crear Nuevo Complejo (Onboarding Asistido)</DialogTitle>
           <DialogDescription>

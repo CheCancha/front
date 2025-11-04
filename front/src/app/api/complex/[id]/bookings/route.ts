@@ -2,9 +2,9 @@ import { NextResponse, type NextRequest } from "next/server";
 import { db } from "@/shared/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/authOptions";
-import { startOfDay, endOfDay, isSameDay, isBefore, parseISO, addDays } from "date-fns";
+import { startOfDay, isSameDay, isBefore, addDays, getDay } from "date-fns";
 import { toDate } from "date-fns-tz";
-import { BookingStatus } from "@prisma/client";
+import { BookingStatus, PaymentMethod } from "@prisma/client";
 
 const ARGENTINA_TIME_ZONE = "America/Argentina/Buenos_Aires";
 
@@ -88,23 +88,22 @@ export async function GET(
     const startDateString = searchParams.get("startDate");
     const endDateString = searchParams.get("endDate");
 
-   let startDate: Date; 
+    let startDate: Date;
     let endDateExclusive: Date;
 
     if (startDateString && endDateString) {
-      // ✅ WEEK VIEW (Corrected): Interpret start and end from Argentina TZ
-      startDate = toDate(`${startDateString}T00:00:00`, { timeZone: ARGENTINA_TIME_ZONE });
-      // End is the start of the day AFTER endDateString
-      const endDayStart = toDate(`${endDateString}T00:00:00`, { timeZone: ARGENTINA_TIME_ZONE });
+      startDate = toDate(`${startDateString}T00:00:00`, {
+        timeZone: ARGENTINA_TIME_ZONE,
+      });
+      const endDayStart = toDate(`${endDateString}T00:00:00`, {
+        timeZone: ARGENTINA_TIME_ZONE,
+      });
       endDateExclusive = addDays(endDayStart, 1);
-
     } else if (dateString) {
-      // ✅ DAY VIEW (Corrected): Interpret start and end from Argentina TZ
-      // startDate is midnight Argentina converted to UTC
-      startDate = toDate(`${dateString}T00:00:00`, { timeZone: ARGENTINA_TIME_ZONE }); 
-      // endDateExclusive is midnight of the NEXT day in Argentina, converted to UTC
-      endDateExclusive = addDays(startDate, 1); 
-
+      startDate = toDate(`${dateString}T00:00:00`, {
+        timeZone: ARGENTINA_TIME_ZONE,
+      });
+      endDateExclusive = addDays(startDate, 1);
     } else {
       return new NextResponse(
         "Faltan parámetros de fecha ('date' o 'startDate'/'endDate')",
@@ -112,41 +111,82 @@ export async function GET(
       );
     }
 
-    // --- DEBUG LOGS (Optional but helpful) ---
-    console.log(`[GET Bookings] Fetching for complex ${complexId}`);
-    console.log(`[GET Bookings] dateString: ${dateString}`);
-    console.log(`[GET Bookings] Querying UTC Range: ${startDate.toISOString()} to ${endDateExclusive.toISOString()}`);
-    // --- END LOGS ---
+    const whereDateClause = {
+      gte: startDate,
+      lt: endDateExclusive,
+    };
 
-    const bookings = await db.booking.findMany({
-      where: {
-        court: { complexId: complexId },
-        // ✅ CORRECTED QUERY: Uses the right UTC window
-        date: {
-          gte: startDate,      // Greater than or equal to start of ARG day (in UTC)
-          lt: endDateExclusive, // Less than start of NEXT ARG day (in UTC)
+    const [bookings, blockedSlots] = await Promise.all([
+      db.booking.findMany({
+        where: {
+          court: { complexId: complexId },
+          date: whereDateClause,
+          status: {
+            in: [
+              BookingStatus.CONFIRMADO,
+              BookingStatus.PENDIENTE,
+              BookingStatus.COMPLETADO,
+            ],
+          },
         },
-        status: {
-          in: [
-            BookingStatus.CONFIRMADO,
-            BookingStatus.PENDIENTE,
-            BookingStatus.COMPLETADO,
-          ],
+        include: {
+          court: {
+            select: { id: true, name: true, slotDurationMinutes: true },
+          },
+          user: { select: { name: true, phone: true } },
+          coupon: true,
+          fixedSlot: {
+            include: {
+              user: { select: { name: true } },
+            },
+          },
         },
-      },
-      include: {
-        court: { select: { id: true, name: true, slotDurationMinutes: true } },
-        user: { select: { name: true, phone: true } },
-        coupon: true,
-      },
-       orderBy: { // Optional: order bookings chronologically
-         date: 'asc',
-       }
+        orderBy: {
+          date: "asc",
+        },
+      }),
+
+      db.blockedSlot.findMany({
+        where: {
+          complexId: complexId,
+          date: whereDateClause,
+        },
+        include: {
+          court: { select: { id: true, name: true } },
+        },
+      }),
+    ]);
+
+    const formattedBookings = bookings.map((b) => ({
+      ...b,
+      type: "BOOKING" as const,
+      user: b.user || b.fixedSlot?.user,
+      status: b.fixedSlot
+        ? b.fixedSlot.type === "ENTRENAMIENTO"
+          ? "ENTRENAMIENTO"
+          : "ABONO"
+        : b.status,
+    }));
+
+    const formattedBlockedSlots = blockedSlots.map((b) => {
+      const [hour, minute] = b.startTime.split(":").map(Number);
+      return {
+        id: b.id,
+        type: "BLOCKED_SLOT" as const,
+        date: b.date,
+        startTime: hour,
+        startMinute: minute,
+        endTime: b.endTime,
+        courtId: b.court.id,
+        court: b.court,
+        user: { name: b.reason || "Horario Bloqueado" },
+        status: "BLOQUEADO" as const,
+      };
     });
 
-    console.log(`[GET Bookings] Found ${bookings.length} bookings for the range.`); // DEBUG LOG
+    const allEvents = [...formattedBookings, ...formattedBlockedSlots];
 
-    return NextResponse.json(bookings);
+    return NextResponse.json(allEvents);
   } catch (error) {
     console.error("💥 ERROR en GET de bookings:", error);
     return new NextResponse("Error interno del servidor", { status: 500 });
@@ -166,8 +206,219 @@ export async function POST(
     }
 
     const body = await req.json();
-    const { courtId, guestName, guestPhone, date, time, status, depositPaid } =
-      body;
+
+    // --- LÓGICA PARA CREAR UN BLOQUEO (BlockedSlot) ---
+    if (body.isBlockedSlot === true) {
+      const { courtId, date, startTime, endTime, reason } = body;
+
+      if (!courtId || !date || !startTime || !endTime) {
+        return NextResponse.json(
+          { message: "Faltan datos para crear el bloqueo" },
+          { status: 400 }
+        );
+      }
+
+      const blockDateUtc = toDate(`${date}T00:00:00`, {
+        timeZone: ARGENTINA_TIME_ZONE,
+      });
+      const startOfBlockDayUtc = startOfDay(blockDateUtc);
+
+      const [startHour, startMinute] = startTime.split(":").map(Number);
+      const [endHour, endMinute] = endTime.split(":").map(Number);
+
+      const newBlockStartMinutes = startHour * 60 + startMinute;
+      const newBlockEndMinutes = endHour * 60 + endMinute;
+
+      if (newBlockStartMinutes >= newBlockEndMinutes) {
+        return NextResponse.json(
+          { message: "La hora de inicio debe ser anterior a la hora de fin." },
+          { status: 400 }
+        );
+      }
+
+      //   VALIDACIÓN DE SOLAPAMIENTO PARA BLOQUEO
+      // 1. Chequear contra Bookings existentes
+      const existingBookings = await db.booking.findMany({
+        where: {
+          courtId,
+          date: {
+            gte: startOfBlockDayUtc,
+            lt: addDays(startOfBlockDayUtc, 1),
+          },
+          status: { not: "CANCELADO" },
+        },
+        include: { court: { select: { slotDurationMinutes: true } } },
+      });
+
+      const overlappingBooking = existingBookings.find((booking) => {
+        const existingStartMinutes =
+          booking.startTime * 60 + (booking.startMinute || 0);
+        const existingEndMinutes =
+          existingStartMinutes + booking.court.slotDurationMinutes;
+        return (
+          newBlockStartMinutes < existingEndMinutes &&
+          newBlockEndMinutes > existingStartMinutes
+        );
+      });
+
+      if (overlappingBooking) {
+        return NextResponse.json(
+          {
+            message: `Este horario se solapa con una reserva existente (${
+              overlappingBooking.guestName || "Cliente"
+            }).`,
+          },
+          { status: 409 }
+        );
+      }
+
+      // 2. Chequear contra otros Bloqueos (BlockedSlot)
+      const existingBlocks = await db.blockedSlot.findMany({
+        where: {
+          courtId,
+          date: startOfBlockDayUtc,
+        },
+      });
+
+      const overlappingBlock = existingBlocks.find((block) => {
+        const [blockStartHour, blockStartMinute] = block.startTime
+          .split(":")
+          .map(Number);
+        const [blockEndHour, blockEndMinute] = block.endTime
+          .split(":")
+          .map(Number);
+        const blockStartMinutes = blockStartHour * 60 + blockStartMinute;
+        const blockEndMinutes = blockEndHour * 60 + blockEndMinute;
+
+        return (
+          newBlockStartMinutes < blockEndMinutes &&
+          newBlockEndMinutes > blockStartMinutes
+        );
+      });
+
+      if (overlappingBlock) {
+        return NextResponse.json(
+          {
+            message: `Este horario se solapa con otro bloqueo: ${
+              overlappingBlock.reason || "Mantenimiento"
+            }`,
+          },
+          { status: 409 }
+        );
+      }
+
+      // 3. Chequear contra Abonos (FixedSlot)
+      const dayOfWeek = getDay(blockDateUtc);
+      const matchingFixedSlotRules = await db.fixedSlot.findMany({
+        where: {
+          courtId,
+          dayOfWeek,
+          startDate: { lte: blockDateUtc },
+          OR: [{ endDate: null }, { endDate: { gte: blockDateUtc } }],
+        },
+      });
+
+      const overlappingAbono = matchingFixedSlotRules.find((rule) => {
+        const [abonoStartHour, abonoStartMinute] = rule.startTime
+          .split(":")
+          .map(Number);
+        const [abonoEndHour, abonoEndMinute] = rule.endTime
+          .split(":")
+          .map(Number);
+        const abonoStartMinutes = abonoStartHour * 60 + abonoStartMinute;
+        const abonoEndMinutes = abonoEndHour * 60 + abonoEndMinute;
+
+        return (
+          newBlockStartMinutes < abonoEndMinutes &&
+          newBlockEndMinutes > abonoStartMinutes
+        );
+      });
+
+      if (overlappingAbono) {
+        return NextResponse.json(
+          { message: `Este horario está reservado por un abono fijo.` },
+          { status: 409 }
+        );
+      }
+
+      const newBlockedSlot = await db.blockedSlot.create({
+        data: {
+          complexId,
+          courtId,
+          date: blockDateUtc,
+          startTime,
+          endTime,
+          reason,
+        },
+      });
+      return NextResponse.json(newBlockedSlot, { status: 201 });
+    }
+
+    // --- LÓGICA PARA CREAR UNA RESERVA ---
+    const {
+      courtId,
+      guestName,
+      guestPhone,
+      date,
+      time,
+      status,
+      depositPaid,
+      paymentMethod,
+    } = body;
+
+    // --- LÓGICA PARA CREAR RESERVA DE ABONO (desde FixedSlot) ---
+    if (body.fixedSlotId) {
+      const fixedSlot = await db.fixedSlot.findUnique({
+        where: { id: body.fixedSlotId },
+        include: { user: true, court: true },
+      });
+
+      if (!fixedSlot) {
+        return NextResponse.json(
+          { message: "Abono fijo no encontrado" },
+          { status: 404 }
+        );
+      }
+
+      const bookingDateUtc = toDate(`${body.date}T${fixedSlot.startTime}:00`, {
+        timeZone: ARGENTINA_TIME_ZONE,
+      });
+
+      const [hour, minute] = fixedSlot.startTime.split(":").map(Number);
+
+      const newBooking = await db.$transaction(async (tx) => {
+        const createdBooking = await tx.booking.create({
+          data: {
+            courtId: fixedSlot.courtId,
+            userId: fixedSlot.userId,
+            date: bookingDateUtc,
+            startTime: hour,
+            startMinute: minute,
+            totalPrice: fixedSlot.price,
+            depositAmount: 0,
+            depositPaid: 0,
+            remainingBalance: fixedSlot.price,
+            status: BookingStatus.CONFIRMADO,
+            fixedSlotId: fixedSlot.id,
+          },
+        });
+
+        // Crear el jugador principal asociado al abono
+        await tx.bookingPlayer.create({
+          data: {
+            bookingId: createdBooking.id,
+            userId: fixedSlot.userId,
+            paymentStatus: "PENDIENTE",
+            amountPaid: 0,
+            paymentMethod: "EFECTIVO",
+          },
+        });
+
+        return createdBooking;
+      });
+
+      return NextResponse.json(newBooking, { status: 201 });
+    }
 
     if (!courtId || !guestName || !date || !time) {
       return NextResponse.json(
@@ -183,13 +434,10 @@ export async function POST(
       { timeZone: ARGENTINA_TIME_ZONE }
     );
 
-    // ⚠️ MODIFICACIÓN CLAVE: Usamos 'new Date()' directamente sin el offset.
-    // new Date() siempre retorna la hora actual del sistema en UTC.
     if (isBefore(bookingDateUtc, new Date())) {
       return NextResponse.json(
         {
           message: "No se pueden crear reservas en horarios pasados.",
-          // 💡 DEBUG: Retorna valores para verificar en la consola de tu navegador
           debug: {
             bookingUtc: bookingDateUtc.toISOString(),
             nowUtc: new Date().toISOString(),
@@ -225,10 +473,6 @@ export async function POST(
       );
     }
 
-    const newBookingStartMinutes = hour * 60 + minute;
-    const newBookingEndMinutes =
-      newBookingStartMinutes + court.slotDurationMinutes;
-
     const startOfBookingDayUtc = toDate(`${date}T00:00:00`, {
       timeZone: ARGENTINA_TIME_ZONE,
     });
@@ -236,19 +480,24 @@ export async function POST(
       timeZone: ARGENTINA_TIME_ZONE,
     });
 
+    const newBookingStartMinutes = hour * 60 + minute;
+    const newBookingEndMinutes =
+      newBookingStartMinutes + court.slotDurationMinutes;
+
+    // 1. Chequear contra Bookings existentes
     const existingBookings = await db.booking.findMany({
       where: {
         courtId,
         date: {
           gte: startOfBookingDayUtc,
-          lt: endOfBookingDayUtc,
+          lt: addDays(startOfBookingDayUtc, 1),
         },
         status: { not: "CANCELADO" },
       },
       include: { court: { select: { slotDurationMinutes: true } } },
     });
 
-    const isOverlapping = existingBookings.some((existingBooking) => {
+    const isOverlappingBooking = existingBookings.some((existingBooking) => {
       const existingStartMinutes =
         existingBooking.startTime * 60 + (existingBooking.startMinute || 0);
       const existingEndMinutes =
@@ -259,32 +508,129 @@ export async function POST(
       );
     });
 
-    if (isOverlapping) {
+    if (isOverlappingBooking) {
       return NextResponse.json(
         { message: "El horario para esta cancha ya está ocupado." },
-        {
-          status: 409,
-        }
+        { status: 409 }
       );
+    }
+
+    // 2. Chequear contra Bloqueos (BlockedSlot)
+    const overlappingBlock = await db.blockedSlot.findFirst({
+      where: {
+        courtId,
+        date: startOfBookingDayUtc,
+      },
+    });
+
+    if (overlappingBlock) {
+      const [blockStartHour, blockStartMinute] = overlappingBlock.startTime
+        .split(":")
+        .map(Number);
+      const [blockEndHour, blockEndMinute] = overlappingBlock.endTime
+        .split(":")
+        .map(Number);
+      const blockStartMinutes = blockStartHour * 60 + blockStartMinute;
+      const blockEndMinutes = blockEndHour * 60 + blockEndMinute;
+
+      const isOverlappingBlock =
+        newBookingStartMinutes < blockEndMinutes &&
+        newBookingEndMinutes > blockStartMinutes;
+
+      if (isOverlappingBlock) {
+        return NextResponse.json(
+          {
+            message: `Este horario está bloqueado por: ${
+              overlappingBlock.reason || "Mantenimiento"
+            }`,
+          },
+          { status: 409 }
+        );
+      }
+    }
+
+    // 3. Chequear contra Abonos (FixedSlot)
+    const dayOfWeek = getDay(bookingDateUtc);
+    const matchingFixedSlotRule = await db.fixedSlot.findFirst({
+      where: {
+        courtId,
+        dayOfWeek,
+        startDate: { lte: bookingDateUtc },
+        OR: [{ endDate: null }, { endDate: { gte: bookingDateUtc } }],
+      },
+    });
+
+    if (matchingFixedSlotRule) {
+      const [abonoStartHour, abonoStartMinute] = matchingFixedSlotRule.startTime
+        .split(":")
+        .map(Number);
+      const [abonoEndHour, abonoEndMinute] = matchingFixedSlotRule.endTime
+        .split(":")
+        .map(Number);
+      const abonoStartMinutes = abonoStartHour * 60 + abonoStartMinute;
+      const abonoEndMinutes = abonoEndHour * 60 + abonoEndMinute;
+
+      const isOverlappingAbono =
+        newBookingStartMinutes < abonoEndMinutes &&
+        newBookingEndMinutes > abonoStartMinutes;
+
+      if (isOverlappingAbono) {
+        return NextResponse.json(
+          { message: `Este horario está reservado por un abono fijo.` },
+          { status: 409 }
+        );
+      }
     }
 
     const totalPrice = applicableRule.price;
     const amountPaid = depositPaid || 0;
 
-    const newBooking = await db.booking.create({
-      data: {
-        courtId,
-        guestName,
-        guestPhone,
-        date: bookingDateUtc,
-        startTime: hour,
-        startMinute: minute,
-        totalPrice,
-        depositAmount: 0, // depositAmount se podría usar para "seña requerida", lo dejamos en 0 por ahora.
-        depositPaid: amountPaid,
-        remainingBalance: totalPrice - amountPaid,
-        status: (status || "PENDIENTE") as BookingStatus,
-      },
+    const newBooking = await db.$transaction(async (tx) => {
+      const createdBooking = await tx.booking.create({
+        data: {
+          courtId,
+          guestName,
+          guestPhone,
+          date: bookingDateUtc,
+          startTime: hour,
+          startMinute: minute,
+          totalPrice,
+          depositAmount: 0,
+          depositPaid: amountPaid,
+          remainingBalance: totalPrice - amountPaid,
+          status: (status || "PENDIENTE") as BookingStatus,
+          paymentMethod: (paymentMethod as PaymentMethod) || null,
+        },
+      });
+
+      // 4. CREAR BOOKING PLAYER PARA EL CLIENTE PRINCIPAL
+      const player = await tx.bookingPlayer.create({
+        data: {
+          bookingId: createdBooking.id,
+          guestName: guestName,
+          amountPaid: amountPaid,
+          paymentStatus: amountPaid > 0 ? "PAGADO" : "PENDIENTE",
+          paymentMethod:
+            amountPaid > 0 ? (paymentMethod as PaymentMethod) : null,
+        },
+      });
+
+      // 5. CREAR TRANSACCIÓN DE CAJA (SI HAY PAGO INICIAL)
+      if (amountPaid > 0 && paymentMethod) {
+        await tx.transaction.create({
+          data: {
+            complexId: complexId,
+            amount: amountPaid,
+            type: "INGRESO",
+            source: "RESERVA",
+            paymentMethod: paymentMethod as PaymentMethod,
+            description: `Seña inicial por ${guestName}`,
+            bookingPlayerId: player.id,
+          },
+        });
+      }
+
+      return createdBooking;
     });
 
     const bookingWithCourt = await db.booking.findUnique({
@@ -293,6 +639,7 @@ export async function POST(
         court: {
           select: { id: true, name: true, slotDurationMinutes: true },
         },
+        players: true,
       },
     });
 
@@ -332,33 +679,50 @@ export async function PATCH(
       return new NextResponse("Falta el ID de la reserva", { status: 400 });
     }
 
+    // --- LÓGICA DE ACTUALIZACIÓN DE BOOKING ---
     const existingBooking = await db.booking.findUnique({
       where: { id: bookingId },
-      select: { totalPrice: true },
+      select: { totalPrice: true, status: true, fixedSlotId: true },
     });
 
     if (!existingBooking) {
       return new NextResponse("Reserva no encontrada", { status: 404 });
     }
 
-    if (typeof updateData.depositPaid === "number") {
-      updateData.remainingBalance =
-        existingBooking.totalPrice - updateData.depositPaid;
+    if (existingBooking.fixedSlotId) {
+      // Solo bloquear si efectivamente se intenta modificar estructura del turno
+      const restrictedKeys = ["courtId", "time", "date", "totalPrice"];
+      const hasRestrictedUpdate = Object.keys(updateData).some((key) =>
+        restrictedKeys.includes(key)
+      );
+
+      if (hasRestrictedUpdate) {
+        return new NextResponse(
+          "No se pueden modificar detalles de horario/cancha de un Abono Fijo.",
+          { status: 403 }
+        );
+      }
     }
 
+    // Prevenir que se pisen datos clave
     delete updateData.courtId;
     delete updateData.time;
     delete updateData.date;
     delete updateData.totalPrice;
 
+    const dataToUpdate = Object.fromEntries(
+      Object.entries(updateData).filter(([key, value]) => value !== undefined)
+    );
+
     const updatedBooking = await db.booking.update({
       where: { id: bookingId },
-      data: updateData,
+      data: dataToUpdate,
       include: {
         court: {
           select: { id: true, name: true, slotDurationMinutes: true },
         },
         user: { select: { name: true, phone: true } },
+        players: true,
       },
     });
 

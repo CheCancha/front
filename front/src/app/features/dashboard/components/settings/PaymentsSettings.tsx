@@ -18,7 +18,6 @@ import type { Complex } from "@prisma/client";
 import {
   AlertTriangle,
   CheckCircle,
-  ExternalLink,
   RefreshCw,
   XCircle,
 } from "lucide-react"; 

@@ -6,7 +6,8 @@ import { CourtWithRelations, NewCourt } from "@/shared/entities/complex/types";
 import { Sport } from "@prisma/client";
 import {
   durationOptions,
-  hoursOptions,
+  // --- ELIMINADO ---
+  // hoursOptions,
 } from "@/shared/constants/dashboard-settings";
 import {
   Select,
@@ -18,6 +19,18 @@ import {
   SelectValue,
 } from "@/shared/components/ui/select";
 import { Input } from "@/shared/components/ui/inputshadcn";
+
+const priceHoursOptions = Array.from({ length: 30 }, (_, i) => {
+  let label = `${String(i).padStart(2, "0")}:00`;
+  if (i >= 24) {
+    const nextDayHour = String(i % 24).padStart(2, "0");
+    label = `${nextDayHour}:00`;
+  }
+  return {
+    value: i, 
+    label: label,
+  };
+});
 
 interface Props {
   court: CourtWithRelations | NewCourt;
@@ -49,19 +62,23 @@ export const CourtFormRow = ({
   const groupedHours = [
     {
       label: "Madrugada",
-      options: hoursOptions.filter((h) => h.value >= 0 && h.value <= 6),
+      options: priceHoursOptions.filter((h) => h.value >= 0 && h.value <= 6),
     },
     {
       label: "Mañana",
-      options: hoursOptions.filter((h) => h.value >= 7 && h.value <= 12),
+      options: priceHoursOptions.filter((h) => h.value >= 7 && h.value <= 12),
     },
     {
       label: "Tarde",
-      options: hoursOptions.filter((h) => h.value >= 13 && h.value <= 19),
+      options: priceHoursOptions.filter((h) => h.value >= 13 && h.value <= 19),
     },
     {
       label: "Noche",
-      options: hoursOptions.filter((h) => h.value >= 20 && h.value <= 23),
+      options: priceHoursOptions.filter((h) => h.value >= 20 && h.value <= 23),
+    },
+    {
+      label: "Transnoche (Día Siguiente)",
+      options: priceHoursOptions.filter((h) => h.value >= 24),
     },
   ];
 
@@ -161,7 +178,7 @@ export const CourtFormRow = ({
                   <SelectTrigger className="bg-white text-xs">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="max-h-[200px] overflow-y-auto">
+                  <SelectContent className="max-h-[280px] overflow-y-auto">
                     {groupedHours.map((group) => (
                       <SelectGroup key={`start-group-${group.label}`}>
                         <SelectLabel>{group.label}</SelectLabel>
@@ -189,7 +206,7 @@ export const CourtFormRow = ({
                   <SelectTrigger className="bg-white text-xs">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="max-h-[200px] overflow-y-auto">
+                  <SelectContent className="max-h-[280px] overflow-y-auto">
                     {groupedHours.map((group) => (
                       <SelectGroup key={`end-group-${group.label}`}>
                         <SelectLabel>{group.label}</SelectLabel>

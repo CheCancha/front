@@ -1,10 +1,26 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts";
+import {
+  Bar,
+  BarChart,
+  ResponsiveContainer,
+  XAxis,
+  YAxis,
+  Tooltip,
+} from "recharts";
 import { ChevronDown, Frown } from "lucide-react";
-import { format, startOfMonth, endOfMonth, subQuarters, startOfYear, endOfYear, getWeekOfMonth } from "date-fns";
+import {
+  format,
+  startOfMonth,
+  endOfMonth,
+  startOfYear,
+  endOfYear,
+  getWeekOfMonth,
+} from "date-fns";
 import { cn } from "@/shared/lib/utils";
+import { AnalyticsData } from "@/app/features/dashboard/services/analytics.service";
+
 
 // --- TIPOS ---
 type ChartData = {
@@ -14,7 +30,7 @@ type ChartData = {
 
 // --- COMPONENTES AUXILIARES ---
 const SalesChartSkeleton = () => (
-  <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm animate-pulse">
+  <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm animate-pulse">
     <div className="flex justify-between mb-4">
       <div className="h-8 bg-gray-200 rounded-md w-1/3"></div>
       <div className="h-8 bg-gray-200 rounded-md w-1/4"></div>
@@ -27,7 +43,9 @@ const NoDataMessage = () => (
   <div className="h-[350px] flex flex-col items-center justify-center text-center text-gray-500">
     <Frown className="h-12 w-12 mb-2" />
     <h4 className="font-semibold">No hay datos de ingresos</h4>
-    <p className="text-sm">No se encontraron ventas para el período seleccionado.</p>
+    <p className="text-sm">
+      No se encontraron ventas para el período seleccionado.
+    </p>
   </div>
 );
 
@@ -43,20 +61,20 @@ const WeekSelector = ({
 }) => (
   <div className="border-b border-gray-200 mb-4 overflow-x-auto whitespace-nowrap">
     <div className="flex space-x-2">
-        {Array.from({ length: numberOfWeeks }).map((_, index) => (
+      {Array.from({ length: numberOfWeeks }).map((_, index) => (
         <button
-            key={index}
-            onClick={() => onWeekChange(index)}
-            className={cn(
+          key={index}
+          onClick={() => onWeekChange(index)}
+          className={cn(
             "px-3 py-2 text-sm font-medium transition-colors shrink-0",
             selectedWeek === index
-                ? "border-b-2 border-#fe4321 text-#ff0000" //brand-orange
-                : "text-gray-500 hover:text-gray-700"
-            )}
+              ? "border-b-2 border-#fe4321 text-#ff0000" //brand-orange
+              : "text-gray-500 hover:text-gray-700"
+          )}
         >
-            Semana {index + 1}
+          Semana {index + 1}
         </button>
-        ))}
+      ))}
     </div>
   </div>
 );
@@ -80,11 +98,6 @@ export function SalesChart({ complexId }: { complexId: string }) {
     const getDatesFromRange = () => {
       const now = new Date();
       switch (dateRange) {
-        case "Último Trimestre":
-          return {
-            start: format(startOfMonth(subQuarters(now, 1)), "yyyy-MM-dd"),
-            end: format(endOfMonth(subQuarters(now, 1)), "yyyy-MM-dd"),
-          };
         case "Este Año":
           return {
             start: format(startOfYear(now), "yyyy-MM-dd"),
@@ -104,21 +117,27 @@ export function SalesChart({ complexId }: { complexId: string }) {
       setError(null);
       const { start, end } = getDatesFromRange();
       try {
-        const res = await fetch(`/api/complex/${complexId}/financials?startDate=${start}&endDate=${end}`);
+        const res = await fetch(
+          `/api/complex/${complexId}/analytics?startDate=${start}&endDate=${end}`
+        );
         if (!res.ok) {
           throw new Error("No se pudo cargar el reporte de ingresos.");
         }
-        const data: ChartData[] = await res.json();
+        const apiData: AnalyticsData = await res.json();
+        const chartData = apiData.charts.lineChartData;
+
         if (dateRange === "Este Mes") {
-          setMonthlyData(data);
+          setMonthlyData(chartData);
           const currentWeekIndex = getWeekOfMonth(new Date()) - 1;
           setSelectedWeek(currentWeekIndex);
         } else {
-          setDisplayedData(data);
+          setDisplayedData(chartData);
           setMonthlyData([]);
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Ocurrió un error desconocido.");
+        setError(
+          err instanceof Error ? err.message : "Ocurrió un error desconocido."
+        );
       } finally {
         setIsLoading(false);
       }
@@ -147,11 +166,15 @@ export function SalesChart({ complexId }: { complexId: string }) {
   }
 
   return (
-    <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+    <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
         <div>
-          <h3 className="text-lg font-switzer font-semibold">Reporte de Ingresos</h3>
-          <p className="text-sm text-gray-500">Analiza los ingresos por períodos.</p>
+          <h3 className="text-lg font-switzer font-semibold">
+            Reporte de Ingresos
+          </h3>
+          <p className="text-sm text-gray-500">
+            Analiza los ingresos por períodos.
+          </p>
         </div>
         <div className="relative">
           <select
@@ -160,7 +183,6 @@ export function SalesChart({ complexId }: { complexId: string }) {
             className="appearance-none cursor-pointer bg-white border border-gray-300 rounded-lg py-2 pl-3 pr-8 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-brand-blue"
           >
             <option>Este Mes</option>
-            <option>Último Trimestre</option>
             <option>Este Año</option>
           </select>
           <ChevronDown className="h-4 w-4 absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
@@ -210,7 +232,8 @@ export function SalesChart({ complexId }: { complexId: string }) {
                 }).format(value)
               }
             />
-            <Bar dataKey="total" fill="#fe4321" radius={[4, 4, 0, 0]} /> {/* //brand-orange */}
+            <Bar dataKey="total" fill="#fe4321" radius={[4, 4, 0, 0]} />{" "}
+            {/* //brand-orange */}
           </BarChart>
         </ResponsiveContainer>
       ) : (

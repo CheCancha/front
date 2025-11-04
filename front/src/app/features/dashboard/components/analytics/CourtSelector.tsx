@@ -59,7 +59,6 @@ export function CourtSelector({
       </PopoverTrigger>
       <PopoverContent className="w-[250px] p-0">
         <Command>
-          {/* <CommandInput placeholder="Buscar cancha..." /> */}
           <CommandList>
             <CommandEmpty>No se encontraron canchas.</CommandEmpty>
             <CommandGroup>

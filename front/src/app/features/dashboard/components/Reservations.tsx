@@ -125,7 +125,7 @@ export function Reservations({ complexId }: { complexId: string }) {
         {bookings.map((res) => (
           <li key={res.id} className="py-3 flex justify-between items-center">
             <div className="flex items-center gap-4">
-              <div className="text-center w-12 shrink-0">
+              <div className="text-center w-18 shrink-0">
                 <p className="font-bold text-sm uppercase text-brand-orange">
                   {formatDateLabel(res.date)}
                 </p>
@@ -152,7 +152,7 @@ export function Reservations({ complexId }: { complexId: string }) {
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border p-6 flex flex-col h-full max-h-[500px] lg:max-h-full">
+    <div className="bg-white rounded-2xl shadow-sm border p-4 flex flex-col h-full max-h-[500px] lg:max-h-full">
       <h2 className="text-lg font-switzer font-semibold mb-4">Próximos 10 Turnos</h2>
       {renderContent()}
     </div>

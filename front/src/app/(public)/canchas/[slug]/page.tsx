@@ -52,6 +52,7 @@ async function getComplex(slug: string) {
           createdAt: "desc",
         },
       },
+      contactPhones: true,
     },
   });
   return complex;

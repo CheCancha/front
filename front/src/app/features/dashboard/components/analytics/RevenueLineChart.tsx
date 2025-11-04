@@ -10,7 +10,6 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { format } from "date-fns";
 
 type ChartData = {
   name: string; 
@@ -19,12 +18,12 @@ type ChartData = {
 
 export function RevenueLineChart({ data }: { data: ChartData[] }) {
   const formatXAxis = (tickItem: string) => {
-    return format(new Date(tickItem), "dd/MM");
-  };
+    return tickItem; 
+  };
 
-  const formatYAxis = (tickItem: number) => {
-    return `$${(tickItem / 1000).toLocaleString("es-AR")}k`;
-  };
+  const formatYAxis = (tickItem: number) => {
+    return `$${(tickItem / 1000).toLocaleString("es-AR")}k`;
+  };
 
   const formatTooltip = (value: number) => {
     return new Intl.NumberFormat("es-AR", {

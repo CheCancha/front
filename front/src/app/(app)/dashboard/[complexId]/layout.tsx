@@ -39,7 +39,7 @@ export default async function DashboardComplexLayout({
     complex.subscriptionStatus === "EN_PRUEBA";
 
   const proRoutes = [
-    `/dashboard/${complexId}/analytics`,
+    `/dashboard/${complexId}/financials`,
     `/dashboard/${complexId}/marketing`,
     `/dashboard/${complexId}/customers`,
   ];

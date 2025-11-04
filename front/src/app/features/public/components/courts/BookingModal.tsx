@@ -27,6 +27,7 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
 } from "@/shared/components/ui/alert-dialog";
+import { formatHour } from "@/shared/helper/formatHour";
 
 // --- TIPOS ---
 type Club = {
@@ -70,11 +71,16 @@ const calculateEndTime = (
   durationMinutes: number
 ): string => {
   if (!startTime || !durationMinutes) return "";
+
   const [hours, minutes] = startTime.split(":").map(Number);
   const totalStartMinutes = hours * 60 + minutes;
   const totalEndMinutes = totalStartMinutes + durationMinutes;
-  const endHours = Math.floor(totalEndMinutes / 60);
-  const endMinutes = totalEndMinutes % 60;
+
+  const wrappedEndMinutes = totalEndMinutes % (24 * 60);
+
+  const endHours = Math.floor(wrappedEndMinutes / 60);
+  const endMinutes = wrappedEndMinutes % 60;
+
   return `${String(endHours).padStart(2, "0")}:${String(endMinutes).padStart(
     2,
     "0"
@@ -388,7 +394,7 @@ export default function BookingModal({
                     <Clock className="w-5 h-5 text-brand-orange" />
                     <p>
                       <span className="font-semibold">
-                        {time} a{" "}
+                        {formatHour(time)} a{" "}
                         {calculateEndTime(
                           time,
                           court?.slotDurationMinutes || 60
@@ -534,11 +540,6 @@ export default function BookingModal({
                   )}
                 </div>
               </div>
-              {/*
-               * ====================================================================
-               * FIN DE LA MODIFICACIÓN
-               * ====================================================================
-               */}
             </motion.div>
           </motion.div>
         )}

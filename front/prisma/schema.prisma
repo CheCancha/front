@@ -32,14 +32,68 @@ enum DiscountType {
   FIXED_AMOUNT
 }
 
+enum Role {
+  USER
+  MANAGER
+  ADMIN
+}
+
+enum BookingStatus {
+  CONFIRMADO
+  COMPLETADO
+  CANCELADO
+  PENDIENTE
+}
+
+enum FixedSlotType {
+  CLIENTE_FIJO // Abono de cliente
+  ENTRENAMIENTO // Clase/Entrenamiento
+  MANTENIMIENTO // Bloqueo recurrente del club
+}
+
+enum BookingPaymentStatus {
+  PENDIENTE
+  PAGADO
+}
+
+enum PaymentMethod {
+  ONLINE
+  EFECTIVO
+  TRANSFERENCIA
+  OTRO
+}
+
+enum CashRegisterStatus {
+  ABIERTA
+  CERRADA
+}
+
+enum TransactionType {
+  INGRESO
+  EGRESO
+}
+
+enum TransactionSource {
+  RESERVA // Pago de una cancha
+  VENTA_PRODUCTO // Venta del POS
+  GASTO // Pago a proveedor, compra, etc.
+  AJUSTE_INICIAL // El fondo de caja
+  AJUSTE_MANUAL // Ajuste de sobrante/faltante
+  OTRO
+}
+
+// =================================
+// MODELOS
+// =================================
+
 model SubscriptionPlanDetails {
-  id                String    @id @default(cuid())
-  plan              SubscriptionPlan 
-  cycle             SubscriptionCycle
-  price             Int 
-  mp_plan_id        String    @unique
-  isActive          Boolean   @default(true)
-  createdAt         DateTime  @default(now())
+  id         String            @id @default(cuid())
+  plan       SubscriptionPlan
+  cycle      SubscriptionCycle
+  price      Int
+  mp_plan_id String            @unique
+  isActive   Boolean           @default(true)
+  createdAt  DateTime          @default(now())
 }
 
 model Notification {
@@ -57,22 +111,26 @@ model Notification {
 }
 
 model User {
-  id               String              @id @default(cuid())
-  name             String
-  phone            String?             @unique
-  role             Role                @default(USER)
-  hashedPassword   String?
-  createdAt        DateTime            @default(now())
-  updatedAt        DateTime            @updatedAt
-  email            String              @unique
-  image            String?
-  oneSignalPlayerId String?   @unique
-  notifications    Notification[]
-  accounts         Account[]
-  bookings         Booking[]
-  managedComplex   Complex?            @relation("ManagedBy")
-  passwordResetToken PasswordResetToken?
-  reviews          Review[]
+  id                          String                @id @default(cuid())
+  name                        String
+  phone                       String?               @unique
+  role                        Role                  @default(USER)
+  hashedPassword              String?
+  createdAt                   DateTime              @default(now())
+  updatedAt                   DateTime              @updatedAt
+  email                       String                @unique
+  image                       String?
+  oneSignalPlayerId           String?               @unique
+  notifications               Notification[]
+  accounts                    Account[]
+  bookings                    Booking[]
+  managedComplex              Complex?              @relation("ManagedBy")
+  passwordResetToken          PasswordResetToken?
+  reviews                     Review[]
+  fixedSlots                  FixedSlot[]
+  sales                       Sale[]
+  playedBookings              BookingPlayer[]
+  managedCashRegisterSessions CashRegisterSession[]
 }
 
 model PasswordResetToken {
@@ -103,7 +161,6 @@ model Account {
   @@index([userId])
 }
 
-
 model Review {
   id        String   @id @default(cuid())
   rating    Int
@@ -111,17 +168,16 @@ model Review {
   createdAt DateTime @default(now())
 
   complexId String
-  complex   Complex  @relation(fields: [complexId], references: [id], onDelete: Cascade)
+  complex   Complex @relation(fields: [complexId], references: [id], onDelete: Cascade)
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  bookingId String   @unique
-  booking   Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  bookingId String  @unique
+  booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 
   @@index([complexId])
   @@index([userId])
 }
-
 
 model Coupon {
   id            String       @id @default(cuid())
@@ -138,74 +194,97 @@ model Coupon {
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 
-  bookings    Booking[]
+  bookings Booking[]
 
   @@unique([complexId, code])
   @@index([complexId])
 }
 
 model Complex {
-  id                      String   @id @default(cuid())
-  name                    String
-  slug                    String   @unique
-  address                 String
-  city                    String
-  province                String
-  managerId               String   @unique
-  onboardingCompleted     Boolean  @default(false)
-  openHour                Int?
-  closeHour               Int?
-  courtCount              Int?
-  timeSlotInterval        Int      @default(30)
-  amenities               Amenity[]
+  id                  String  @id @default(cuid())
+  name                String
+  slug                String  @unique
+  address             String
+  city                String
+  province            String
+  managerId           String  @unique
+  onboardingCompleted Boolean @default(false)
+
+  // --- (Horarios Transnoche) ---
+  openHour  String? // Era Int?
+  closeHour String? // Era Int?
+
+  courtCount       Int?
+  timeSlotInterval Int       @default(30)
+  amenities        Amenity[]
   // Geolocalización para mapas
-  latitude                Float?
-  longitude               Float?
-  contactPhone            String? 
-  contactEmail            String? 
-  instagramHandle         String?
-  facebookUrl             String?
-  
+  latitude         Float?
+  longitude        Float?
+
+  contactPhones ContactPhone[]
+
+  contactEmail    String?
+  instagramHandle String?
+  facebookUrl     String?
+
   // Política de Cancelación en horas.
-  cancellationPolicyHours Int    @default(24)
+  cancellationPolicyHours Int @default(24)
 
   // Mercado Pago
-  mp_access_token         String?
-  mp_refresh_token        String?
-  mp_public_key           String?
-  mp_user_id              String?
-  mp_connected_at         DateTime?
-  reviews                 Review[]
+  mp_access_token  String?
+  mp_refresh_token String?
+  mp_public_key    String?
+  mp_user_id       String?
+  mp_connected_at  DateTime?
+  reviews          Review[]
 
   // Relaciones
-  manager                 User     @relation("ManagedBy", fields: [managerId], references: [id])
-  courts                  Court[]
-  images                  Image[]
-  schedule                Schedule?
-  
-// SUSCRIPCIÓN
-  inscriptionRequest      InscriptionRequest? @relation(fields: [inscriptionRequestId], references: [id])
-  inscriptionRequestId    String?             @unique
-  subscriptionPlan        SubscriptionPlan    @default(FREE)
-  subscriptionStatus      SubscriptionStatus  @default(EN_PRUEBA)
-  subscriptionCycle       SubscriptionCycle?                     
-  trialEndsAt             DateTime?
-  subscribedAt            DateTime?
-  currentPeriodEndsAt     DateTime?  
-  mp_subscription_id      String?             @unique 
+  manager      User          @relation("ManagedBy", fields: [managerId], references: [id])
+  courts       Court[]
+  images       Image[]
+  schedule     Schedule?
+  blockedSlots BlockedSlot[]
+  fixedSlots   FixedSlot[]
 
-  averageRating           Float    @default(0)
-  reviewCount             Int      @default(0)
-  coupons                 Coupon[]
+  cashRegisterSessions CashRegisterSession[]
+  transactions         Transaction[]
+  products             Product[]
+  productCategories    ProductCategory[]
+  sales                Sale[]
+
+  // SUSCRIPCIÓN
+  inscriptionRequest   InscriptionRequest? @relation(fields: [inscriptionRequestId], references: [id])
+  inscriptionRequestId String?             @unique
+  subscriptionPlan     SubscriptionPlan    @default(FREE)
+  subscriptionStatus   SubscriptionStatus  @default(EN_PRUEBA)
+  subscriptionCycle    SubscriptionCycle?
+  trialEndsAt          DateTime?
+  subscribedAt         DateTime?
+  currentPeriodEndsAt  DateTime?
+  mp_subscription_id   String?             @unique
+
+  averageRating Float    @default(0)
+  reviewCount   Int      @default(0)
+  coupons       Coupon[]
 
   @@index([managerId])
 }
 
+model ContactPhone {
+  id        String  @id @default(cuid())
+  complexId String
+  complex   Complex @relation(fields: [complexId], references: [id], onDelete: Cascade)
+  phone     String
+  label     String? // "WhatsApp", "Fijo", "Reservas"
+
+  @@index([complexId])
+}
+
 model Amenity {
-  id        String    @id @default(cuid())
-  name      String
-  slug      String    @unique
-  icon      String?
+  id   String  @id @default(cuid())
+  name String
+  slug String  @unique
+  icon String?
 
   complexes Complex[]
 }
@@ -232,82 +311,285 @@ model Sport {
 }
 
 model Court {
-  id                  String      @id @default(cuid())
+  id                  String        @id @default(cuid())
   name                String
-  sportId             String      @default("cmfsf71vz0000i02g5a2vvvgd")
-  sport               Sport       @relation(fields: [sportId], references: [id])
-  slotDurationMinutes Int         @default(60)
+  sportId             String        @default("cmfsf71vz0000i02g5a2vvvgd")
+  sport               Sport         @relation(fields: [sportId], references: [id])
+  slotDurationMinutes Int           @default(60)
   complexId           String
   bookings            Booking[]
-  complex             Complex     @relation(fields: [complexId], references: [id], onDelete: Cascade)
+  complex             Complex       @relation(fields: [complexId], references: [id], onDelete: Cascade)
   priceRules          PriceRule[]
+  blockedSlots        BlockedSlot[]
+  fixedSlots          FixedSlot[]
 
   @@index([complexId])
   @@index([sportId])
 }
 
+model BlockedSlot {
+  id        String   @id @default(cuid())
+  date      DateTime
+  startTime String
+  endTime   String
+  reason    String? // "Mantenimiento", "Uso personal", etc.
+
+  court     Court   @relation(fields: [courtId], references: [id])
+  courtId   String
+  complex   Complex @relation(fields: [complexId], references: [id])
+  complexId String
+
+  @@index([courtId, date])
+}
+
+// Modelo para ABONOS
+model FixedSlot {
+  id        String    @id @default(cuid())
+  dayOfWeek Int // 0=Domingo, 1=Lunes, 2=Martes...
+  startTime String // "20:00"
+  endTime   String // "21:00"
+  startDate DateTime // Desde cuándo aplica esta regla
+  endDate   DateTime?
+
+  user      User    @relation(fields: [userId], references: [id])
+  userId    String
+  court     Court   @relation(fields: [courtId], references: [id])
+  courtId   String
+  complex   Complex @relation(fields: [complexId], references: [id])
+  complexId String
+
+  generatedBookings Booking[]
+
+  notes String? // "Abono de Juan - paga en efectivo"
+  price Int     @default(0) // El precio del abono (para mostrar)
+
+  type FixedSlotType @default(CLIENTE_FIJO)
+
+  @@index([courtId])
+}
+
 model Schedule {
-  id             String    @id @default(cuid())
-  mondayOpen     Int?
-  mondayClose    Int?
-  tuesdayOpen    Int?
-  tuesdayClose   Int?
-  wednesdayOpen  Int?
-  wednesdayClose Int?
-  thursdayOpen   Int?
-  thursdayClose  Int?
-  fridayOpen     Int?
-  fridayClose    Int?
-  saturdayOpen   Int?
-  saturdayClose  Int?
-  sundayOpen     Int?
-  sundayClose    Int?
-  complexId      String    @unique
-  complex        Complex   @relation(fields: [complexId], references: [id], onDelete: Cascade)
+  id String @id @default(cuid())
+
+  // --- (Horarios Transnoche) ---
+  mondayOpen     String?
+  mondayClose    String?
+  tuesdayOpen    String?
+  tuesdayClose   String?
+  wednesdayOpen  String?
+  wednesdayClose String?
+  thursdayOpen   String?
+  thursdayClose  String?
+  fridayOpen     String?
+  fridayClose    String?
+  saturdayOpen   String?
+  saturdayClose  String?
+  sundayOpen     String?
+  sundayClose    String?
+
+  complexId String  @unique
+  complex   Complex @relation(fields: [complexId], references: [id], onDelete: Cascade)
 }
 
 model Booking {
-  id                 String        @id @default(cuid())
-  date               DateTime
-  startTime          Int
-  startMinute        Int           @default(0)
-  totalPrice         Int
-  depositAmount      Int
-  depositPaid        Int
-  remainingBalance   Int
-  status             BookingStatus @default(PENDIENTE)
-  createdAt          DateTime      @default(now())
-  courtId            String
-  userId             String?
-  court              Court         @relation(fields: [courtId], references: [id], onDelete: Cascade)
-  user               User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
-  guestName          String?
-  
-  guestPhone         String?
-  refundPending      Boolean       @default(false)
+  id               String        @id @default(cuid())
+  date             DateTime
+  startTime        Int
+  startMinute      Int           @default(0)
+  totalPrice       Int
+  depositAmount    Int
+  depositPaid      Int
+  totalPaid        Int           @default(0)
+  remainingBalance Int
+  status           BookingStatus @default(PENDIENTE)
+  createdAt        DateTime      @default(now())
+  courtId          String
+  userId           String?
+  court            Court         @relation(fields: [courtId], references: [id], onDelete: Cascade)
+  user             User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  guestName        String?
 
-  paymentId          String?
-  review             Review?
-  hasReview          Boolean       @default(false)
-  
-  couponId  String?
-  coupon    Coupon?  @relation(fields: [couponId], references: [id], onDelete: SetNull)
+  guestPhone    String?
+  refundPending Boolean @default(false)
+
+  paymentId String?
+  review    Review?
+  hasReview Boolean @default(false)
+
+  couponId String?
+  coupon   Coupon? @relation(fields: [couponId], references: [id], onDelete: SetNull)
+
+  fixedSlot   FixedSlot? @relation(fields: [fixedSlotId], references: [id], onDelete: SetNull)
+  fixedSlotId String?
 
   reminderSent Boolean @default(false)
-  // @@unique([courtId, date, startTime])
+
+  // --- Para Mejora #4 (Seguimiento de Pago por Jugador) ---
+  players       BookingPlayer[]
+  paymentMethod PaymentMethod?
+
+  @@index([fixedSlotId])
+  // @@unique([courtId, date, startTime]) // Comentado en tu original, lo mantengo
   @@index([courtId])
   @@index([userId])
   @@index([date])
 }
 
+// Representa un turno de caja (ej. "Turno Mañana Lunes")
+model CashRegisterSession {
+  id        String  @id @default(cuid())
+  complexId String
+  complex   Complex @relation(fields: [complexId], references: [id], onDelete: Cascade)
+
+  managerId String // El ID del User (admin) que abre la caja
+  manager   User   @relation(fields: [managerId], references: [id], onDelete: Restrict)
+
+  startedAt DateTime  @default(now())
+  endedAt   DateTime?
+
+  status CashRegisterStatus @default(ABIERTA)
+
+  openingBalance  Int // "Fondo inicial" o "Arranque de caja"
+  closingBalance  Int? // "Plata contada al cerrar"
+  expectedBalance Int? // "Lo que debería haber" (calculado)
+  difference      Int? // "Sobrante / Faltante"
+
+  transactions Transaction[] // Todas las transacciones de este turno
+  notes        String? // "Sobraron $100 porque faltó cambio"
+
+  @@index([complexId])
+  @@index([managerId])
+}
+
+// --- Para Mejora #5 (Módulo de Caja/POS) ---
+// El "libro diario": CADA movimiento de plata que ocurre
+model Transaction {
+  id        String  @id @default(cuid())
+  complexId String
+  complex   Complex @relation(fields: [complexId], references: [id], onDelete: Cascade)
+
+  // Vinculado al turno de caja que la registró
+  cashRegisterSessionId String?
+  cashRegisterSession   CashRegisterSession? @relation(fields: [cashRegisterSessionId], references: [id], onDelete: Cascade)
+
+  type          TransactionType
+  source        TransactionSource
+  paymentMethod PaymentMethod
+  amount        Int
+  description   String
+  createdAt     DateTime          @default(now())
+
+  // --- Vínculos Opcionales ---
+  bookingPlayerId String?
+  bookingPlayer   BookingPlayer? @relation(fields: [bookingPlayerId], references: [id], onDelete: SetNull)
+
+  // Si fue una venta de productos
+  saleId String? @unique
+  sale   Sale?   @relation(fields: [saleId], references: [id], onDelete: SetNull)
+
+  @@index([complexId])
+  @@index([cashRegisterSessionId])
+}
+
+model BookingPlayer {
+  id        String  @id @default(cuid())
+  bookingId String
+  booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  guestName String?
+
+  paymentStatus BookingPaymentStatus @default(PENDIENTE)
+  amountPaid    Int                  @default(0)
+  paymentMethod PaymentMethod?
+
+  createdAt DateTime @default(now())
+
+  // --- se vincula con la transacción de caja ---
+  transactions Transaction[]
+
+  @@index([bookingId])
+  @@index([userId])
+}
+
+// --- Para Mejora #5 (POS - Venta de Productos) ---
+model Product {
+  id        String  @id @default(cuid())
+  complexId String
+  complex   Complex @relation(fields: [complexId], references: [id], onDelete: Cascade)
+
+  name        String // "Coca-Cola 500ml"
+  description String?
+  price       Int
+  stock       Int?
+  isActive    Boolean @default(true)
+
+  categoryId String?
+  category   ProductCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  saleItems SaleItem[]
+
+  @@index([complexId])
+  @@index([categoryId])
+}
+
+// --- Para Mejora #5 (POS - Categorías) ---
+model ProductCategory {
+  id        String    @id @default(cuid())
+  complexId String
+  complex   Complex   @relation(fields: [complexId], references: [id], onDelete: Cascade)
+  name      String // "Bebidas", "Snacks", "Accesorios"
+  products  Product[]
+
+  @@unique([complexId, name])
+}
+
+// --- Para Mejora #5 (POS - Agrupador de Venta) ---
+// Representa un "ticket" o "venta" de varios productos
+model Sale {
+  id        String  @id @default(cuid())
+  complexId String
+  complex   Complex @relation(fields: [complexId], references: [id], onDelete: Cascade)
+  userId    String?
+  user      User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  totalAmount Int
+  createdAt   DateTime @default(now())
+
+  items       SaleItem[] // Los items de este ticket
+  transaction Transaction? // La transacción que registra el ingreso de esta venta
+
+  @@index([complexId])
+  @@index([userId])
+}
+
+// --- Para Mejora #5 (POS - Líneas del Ticket) ---
+model SaleItem {
+  id     String @id @default(cuid())
+  saleId String
+  sale   Sale   @relation(fields: [saleId], references: [id], onDelete: Cascade)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  quantity  Int
+  unitPrice Int // Guarda el precio al momento de la venta (histórico)
+  total     Int
+
+  @@index([saleId])
+  @@index([productId])
+}
+
 model PriceRule {
-  id            String  @id @default(cuid())
+  id            String @id @default(cuid())
   startTime     Int
   endTime       Int
   price         Int
-  depositAmount Float   @default(0)
+  depositAmount Float  @default(0)
   courtId       String
-  court         Court   @relation(fields: [courtId], references: [id], onDelete: Cascade)
+  court         Court  @relation(fields: [courtId], references: [id], onDelete: Cascade)
 
   @@index([courtId])
 }
@@ -324,21 +606,8 @@ model InscriptionRequest {
   sports        String
   selectedPlan  String
   selectedCycle String?
-  status        String   @default("PENDIENTE") 
+  status        String   @default("PENDIENTE")
   createdAt     DateTime @default(now())
 
-  complex       Complex?
-}
-
-enum Role {
-  USER
-  MANAGER
-  ADMIN
-}
-
-enum BookingStatus {
-  CONFIRMADO
-  COMPLETADO
-  CANCELADO
-  PENDIENTE
+  complex Complex?
 }

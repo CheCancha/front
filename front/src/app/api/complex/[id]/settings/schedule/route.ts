@@ -8,24 +8,60 @@ import { checkOnboarding } from "@/shared/lib/checkOnboarding";
 const settingsSchema = z.object({
   schedule: z
     .object({
-      mondayOpen: z.number().nullable().optional(),
-      mondayClose: z.number().nullable().optional(),
-      tuesdayOpen: z.number().nullable().optional(),
-      tuesdayClose: z.number().nullable().optional(),
-      wednesdayOpen: z.number().nullable().optional(),
-      wednesdayClose: z.number().nullable().optional(),
-      thursdayOpen: z.number().nullable().optional(),
-      thursdayClose: z.number().nullable().optional(),
-      fridayOpen: z.number().nullable().optional(),
-      fridayClose: z.number().nullable().optional(),
-      saturdayOpen: z.number().nullable().optional(),
-      saturdayClose: z.number().nullable().optional(),
-      sundayOpen: z.number().nullable().optional(),
-      sundayClose: z.number().nullable().optional(),
+      mondayOpen: z.string().nullable().optional(),
+      mondayClose: z.string().nullable().optional(),
+      tuesdayOpen: z.string().nullable().optional(),
+      tuesdayClose: z.string().nullable().optional(),
+      wednesdayOpen: z.string().nullable().optional(),
+      wednesdayClose: z.string().nullable().optional(),
+      thursdayOpen: z.string().nullable().optional(),
+      thursdayClose: z.string().nullable().optional(),
+      fridayOpen: z.string().nullable().optional(),
+      fridayClose: z.string().nullable().optional(),
+      saturdayOpen: z.string().nullable().optional(),
+      saturdayClose: z.string().nullable().optional(),
+      sundayOpen: z.string().nullable().optional(),
+      sundayClose: z.string().nullable().optional(),
     })
     .optional(),
-  timeSlotInterval: z.literal(30).or(z.literal(60)).optional(),
+  timeSlotInterval: z.literal(30).or(z.literal(60)).or(z.literal(90)).optional(),
 });
+
+// --- 1. AÑADÍ ESTA FUNCIÓN GET ---
+export async function GET(
+  req: Request,
+  context: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await context.params;
+    // Reutilizamos tu lógica de autorización
+    const { error } = await authorizeAndVerify(id);
+    if (error) return error;
+
+    // Buscamos solo la data que necesita el formulario de Abonos
+    const complexConfig = await db.complex.findUnique({
+      where: { id },
+      select: {
+        timeSlotInterval: true, // El intervalo (30, 60, 90)
+        schedule: true,         // El objeto de horarios (mondayOpen, etc.)
+      },
+    });
+
+    if (!complexConfig) {
+      return new NextResponse("Complejo no encontrado", { status: 404 });
+    }
+
+    // Devolvemos la configuración
+    return NextResponse.json({
+      schedule: complexConfig.schedule,
+      timeSlotInterval: complexConfig.timeSlotInterval,
+    });
+
+  } catch (error) {
+    console.error("[SETTINGS_SCHEDULE_GET]", error);
+    return new NextResponse("Error interno del servidor", { status: 500 });
+  }
+}
 
 export async function PUT(
   req: Request,

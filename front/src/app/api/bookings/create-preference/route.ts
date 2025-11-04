@@ -5,7 +5,13 @@ import { db } from "@/shared/lib/db";
 import { getMercadoPagoPreferenceClient } from "@/shared/lib/mercadopago";
 import { endOfDay, format, startOfDay } from "date-fns";
 import { toDate } from "date-fns-tz";
-import { Booking, BookingStatus, Court, Coupon } from "@prisma/client";
+import {
+  Booking,
+  BookingStatus,
+  Court,
+  Coupon,
+  PaymentMethod,
+} from "@prisma/client";
 import SimpleCrypto from "simple-crypto-js";
 import { z } from "zod";
 
@@ -15,17 +21,16 @@ const ARGENTINA_TIME_ZONE = "America/Argentina/Buenos_Aires";
 const createBookingSchema = z.object({
   complexId: z.string().min(1),
   courtId: z.string().min(1),
-  date: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, {
-      message: "El formato de fecha debe ser YYYY-MM-DD",
-    }),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, {
+    message: "El formato de fecha debe ser YYYY-MM-DD",
+  }),
   time: z.string().regex(/^\d{2}:\d{2}$/),
   price: z.number().min(0),
   depositAmount: z.number().min(0),
   guestName: z.string().optional(),
   guestPhone: z.string().optional(),
   couponCode: z.string().optional(),
+  paymentMethod: z.nativeEnum(PaymentMethod).optional(),
 });
 
 type BookingRequest = z.infer<typeof createBookingSchema>;
@@ -58,6 +63,24 @@ function getMercadoPagoCredentials(complex: {
   return { accessToken, publicKey };
 }
 
+function normalizeHourString(hourStr: string): {
+  dateShift: number;
+  formatted: string;
+} {
+  const [h, m] = hourStr.split(":").map(Number);
+  if (h < 24) return { dateShift: 0, formatted: hourStr };
+
+  const normalizedHours = h % 24;
+  const daysToAdd = Math.floor(h / 24);
+
+  return {
+    dateShift: daysToAdd,
+    formatted: `${String(normalizedHours).padStart(2, "0")}:${String(
+      m
+    ).padStart(2, "0")}`,
+  };
+}
+
 // --- 2. Transacción de Base de Datos ---
 async function createPendingBookingInTransaction(
   data: BookingRequest,
@@ -65,9 +88,13 @@ async function createPendingBookingInTransaction(
   court: Court,
   coupon: Coupon | null
 ): Promise<Booking> {
-  const bookingDate = toDate(`${data.date}T${data.time}:00`, {
+  const { dateShift, formatted } = normalizeHourString(data.time);
+  const bookingDate = toDate(`${data.date}T${formatted}:00`, {
     timeZone: ARGENTINA_TIME_ZONE,
   });
+
+  // si cruzó la medianoche, sumamos un día
+  if (dateShift > 0) bookingDate.setDate(bookingDate.getDate() + dateShift);
   const startOfBookingDay = startOfDay(bookingDate);
   const endOfBookingDay = endOfDay(bookingDate);
 
@@ -137,6 +164,7 @@ async function createPendingBookingInTransaction(
         remainingBalance: data.price,
         status: BookingStatus.PENDIENTE,
         couponId: coupon?.id,
+        paymentMethod: data.paymentMethod || null,
         ...(userId
           ? { userId: userId }
           : { guestName: data.guestName, guestPhone: data.guestPhone }),

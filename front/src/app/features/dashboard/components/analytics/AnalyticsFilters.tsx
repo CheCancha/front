@@ -14,8 +14,10 @@ type Court = {
 // El componente ahora necesita recibir las canchas disponibles
 export function AnalyticsFilters({
   availableCourts,
+  isLoading,
 }: {
   availableCourts: Court[];
+  isLoading?: boolean;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -52,8 +54,6 @@ export function AnalyticsFilters({
     if (range?.to) {
       params.set("to", format(range.to, "yyyy-MM-dd"));
     } else {
-      // Si no hay 'to', se puede borrar o poner el mismo que 'from'
-      // Por simplicidad, lo borramos.
       params.delete("to");
     }
     router.push(`${pathname}?${params.toString()}`);
@@ -64,9 +64,8 @@ export function AnalyticsFilters({
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-4 p-4 bg-white rounded-lg border shadow-sm">
+    <div className="flex flex-wrap items-center gap-4 py-2 px-4 bg-white rounded-lg border shadow-sm">
       <p className="font-medium text-sm text-gray-600">Filtrar por:</p>
-      {/* --- REEMPLAZO DEL COMPONENTE --- */}
       <DatePickerWithRange date={dateRange} onDateChange={handleDateChange} />
       <CourtSelector
         courts={availableCourts}

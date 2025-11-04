@@ -22,7 +22,7 @@ import {
   TabsList,
   TabsTrigger,
   TabsContent,
-} from "@/shared/components/ui/Tabs";
+} from "@/shared/components/ui/tabs";
 import { Button } from "@/shared/components/ui/button";
 
 type ScheduleDayKey = Exclude<keyof Schedule, "id" | "complexId">;
@@ -114,7 +114,44 @@ export const ComplexSettings = () => {
     });
   };
 
-  // Manejador para la política de cancelación.
+  const handlePhoneChange = (
+    index: number,
+    field: "phone" | "label",
+    value: string
+  ) => {
+    setData((prev) => {
+      if (!prev) return null;
+      const newPhones = [...(prev.contactPhones || [])];
+      newPhones[index] = { ...newPhones[index], [field]: value };
+      return { ...prev, contactPhones: newPhones };
+    });
+  };
+
+  const handleAddPhone = () => {
+    setData((prev) => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        contactPhones: [
+          ...(prev.contactPhones || []),
+          { id: `new-${Date.now()}`, phone: "", label: "", complexId: prev.id },
+        ],
+      };
+    });
+  };
+
+  const handleRemovePhone = (indexToRemove: number) => {
+    setData((prev) => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        contactPhones: (prev.contactPhones || []).filter(
+          (_, index) => index !== indexToRemove
+        ),
+      };
+    });
+  };
+
   const handleCancellationPolicyChange = (value: number) => {
     setData((prev) => {
       if (!prev) return null;
@@ -155,17 +192,35 @@ export const ComplexSettings = () => {
     });
   };
 
-  const handleScheduleDayChange = (
-    dayKey: ScheduleDayKey,
-    value: string | null
-  ) => {
+  const handleScheduleChange = (key: ScheduleDayKey, value: string | null) => {
     setData((prev) => {
       if (!prev) return null;
-      const newSchedule = {
-        ...(prev.schedule || { complexId: complexId }),
-        [dayKey]: value ? parseInt(value) : null,
+      const currentSchedule = prev.schedule || {
+        id: "",
+        complexId: prev.id,
+        mondayOpen: null,
+        mondayClose: null,
+        tuesdayOpen: null,
+        tuesdayClose: null,
+        wednesdayOpen: null,
+        wednesdayClose: null,
+        thursdayOpen: null,
+        thursdayClose: null,
+        fridayOpen: null,
+        fridayClose: null,
+        saturdayOpen: null,
+        saturdayClose: null,
+        sundayOpen: null,
+        sundayClose: null,
       };
-      return { ...prev, schedule: newSchedule as Schedule };
+
+      return {
+        ...prev,
+        schedule: {
+          ...currentSchedule,
+          [key]: value,
+        },
+      };
     });
   };
 
@@ -424,7 +479,7 @@ export const ComplexSettings = () => {
                 address: data.address,
                 city: data.city,
                 province: data.province,
-                contactPhone: data.contactPhone,
+                contactPhones: data.contactPhones,
                 contactEmail: data.contactEmail,
                 instagramHandle: data.instagramHandle,
                 facebookUrl: data.facebookUrl,
@@ -596,7 +651,7 @@ export const ComplexSettings = () => {
             <TabsTrigger
               key={tab.id}
               value={tab.id}
-              className="flex-shrink-0 px-4 py-2"
+              className="shrink-0 px-4 py-2"
             >
               {tab.label}
             </TabsTrigger>
@@ -607,7 +662,13 @@ export const ComplexSettings = () => {
         <div className="bg-white p-4 sm:p-8 rounded-lg border shadow-sm">
           <form onSubmit={handleSubmit} className="space-y-8">
             <TabsContent value="general" className="mt-0">
-              <GeneralInfoForm data={data} onChange={handleBasicInfoChange} />
+              <GeneralInfoForm
+                data={data}
+                onChange={handleBasicInfoChange}
+                onPhoneChange={handlePhoneChange}
+                onAddPhone={handleAddPhone}
+                onRemovePhone={handleRemovePhone}
+              />
             </TabsContent>
 
             <TabsContent value="amenities" className="mt-0">
@@ -621,8 +682,8 @@ export const ComplexSettings = () => {
             <TabsContent value="schedule" className="mt-0">
               <ScheduleForm
                 data={data}
+                onScheduleChange={handleScheduleChange}
                 onComplexChange={handleComplexChange}
-                onScheduleChange={handleScheduleDayChange}
               />
             </TabsContent>
 

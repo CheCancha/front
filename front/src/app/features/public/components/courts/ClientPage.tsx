@@ -18,6 +18,7 @@ import type {
   Schedule,
 } from "@/app/(public)/canchas/[slug]/page";
 import { ImageCarousel } from "./ImageCarousel";
+import { formatHour } from "@/shared/helper/formatHour";
 
 const Map = dynamic(
   () => import("@/app/features/public/components/courts/Map"),
@@ -60,6 +61,7 @@ export const ComplexHeader = ({
   </section>
 );
 
+
 const generateWeeklySchedule = (complex: ComplexProfileData) => {
   const schedule = [];
   const dayOrder: {
@@ -77,16 +79,18 @@ const generateWeeklySchedule = (complex: ComplexProfileData) => {
   ];
 
   for (const day of dayOrder) {
-    const specificOpenHour = complex.schedule?.[day.openKey] as number | null;
-    const specificCloseHour = complex.schedule?.[day.closeKey] as number | null;
-    const openHour = specificOpenHour ?? complex.openHour;
-    const closeHour = specificCloseHour ?? complex.closeHour;
+    // 1. Leer los valores como strings (ya no son numbers)
+    const openHour = complex.schedule?.[day.openKey];
+    const closeHour = complex.schedule?.[day.closeKey];
 
     let hoursString = "Cerrado";
-    if (typeof openHour === "number" && typeof closeHour === "number") {
-      hoursString = `${String(openHour).padStart(2, "0")}:00 - ${String(
-        closeHour
-      ).padStart(2, "0")}:00`;
+
+    // 2. Chequear si ambos son strings válidos
+    if (typeof openHour === "string" && typeof closeHour === "string") {
+      // 3. Formatear para el usuario (ej: "27:00" -> "03:00")
+      const formattedOpen = formatHour(openHour);
+      const formattedClose = formatHour(closeHour);
+      hoursString = `${formattedOpen} - ${formattedClose}`;
     }
     schedule.push({ day: day.name, hours: hoursString });
   }
@@ -134,7 +138,7 @@ export function ClientPage({ complex }: { complex: ComplexProfileData }) {
   const todayIndex = (getDay(new Date()) + 6) % 7;
 
   const hasContactInfo =
-    complex.contactPhone ||
+    (complex.contactPhones && complex.contactPhones.length > 0) ||
     complex.contactEmail ||
     complex.instagramHandle ||
     complex.facebookUrl;
@@ -152,7 +156,6 @@ export function ClientPage({ complex }: { complex: ComplexProfileData }) {
 
           <div className="lg:flex lg:gap-8 lg:items-start">
             {/* --- COLUMNA PRINCIPAL (izquierda en desktop) --- */}
-            {/* En móvil, esto ocupa todo el ancho. En desktop, 2/3 del espacio. */}
             <div className="lg:w-2/3 space-y-8">
               <BookingWidget
                 club={complex}
@@ -172,13 +175,18 @@ export function ClientPage({ complex }: { complex: ComplexProfileData }) {
                     Contacto y Redes
                   </h3>
                   <div className="space-y-3">
-                    {complex.contactPhone && (
+                    {(complex.contactPhones || []).map((phone) => (
                       <InfoItem
+                        key={phone.id}
                         icon={Phone}
-                        text={complex.contactPhone}
-                        href={`tel:${complex.contactPhone}`}
+                        text={
+                          phone.label
+                            ? `${phone.label}: ${phone.phone}`
+                            : phone.phone
+                        }
+                        href={`tel:${phone.phone}`}
                       />
-                    )}
+                    ))}
                     {complex.contactEmail && (
                       <InfoItem
                         icon={Mail}
@@ -264,7 +272,6 @@ export function ClientPage({ complex }: { complex: ComplexProfileData }) {
               </div>
             </div>
           )}
-          
         </main>
         <Footer />
       </div>
