@@ -1,10 +1,7 @@
 import { Separator } from "@/shared/components/ui/separator";
 import {
   SheetClose,
-  SheetDescription,
   SheetFooter,
-  SheetHeader,
-  SheetTitle,
 } from "@/shared/components/ui/sheet";
 import { BookingPlayerWithUser } from "@/shared/entities/booking/bookingTypes";
 import { BookingWithDetails } from "@/shared/entities/complex/types";
@@ -55,7 +52,6 @@ export const BookingViewManager = memo(
     isLoadingPlayers,
     totalPagadoFinal,
     saldoPendienteFinal,
-    onBookingUpdate,
     onPaymentStart,
     onDeletePlayer,
     onAddPlayer,
@@ -63,7 +59,6 @@ export const BookingViewManager = memo(
     onCompleteBooking,
     customerName,
     customerPhone,
-    paymentMethodNames,
   }: BookingViewManagerProps) => {
     return (
       <>

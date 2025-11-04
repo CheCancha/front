@@ -33,8 +33,6 @@ interface NewExpenseModalProps {
 }
 
 export const NewExpenseModal: React.FC<NewExpenseModalProps> = ({
-  isOpen,
-  onClose,
   onSubmit,
   isSubmitting,
 }) => {

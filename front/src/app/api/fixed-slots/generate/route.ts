@@ -5,7 +5,6 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/authOptions";
 import { addDays, getDay, startOfDay } from "date-fns";
 import { toDate } from "date-fns-tz";
-import { BookingStatus, PaymentMethod } from "@prisma/client";
 
 const ARGENTINA_TIME_ZONE = "America/Argentina/Buenos_Aires";
 

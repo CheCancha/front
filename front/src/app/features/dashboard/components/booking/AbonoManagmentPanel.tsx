@@ -533,7 +533,7 @@ export function AbonoManagmentPanel({
       // Ahora 'dayStatus' está declarado ANTES y se puede usar
       if (!dayStatus[dayIndex]) return [];
 
-      const keys = dayIndexMapping[dayIndex]; // <-- 'dayIndexMapping' existe
+      const keys = dayIndexMapping[dayIndex];
       if (!schedule || !keys) continue;
 
       const openStr = schedule[keys.open] ?? defaultOpen;

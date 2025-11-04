@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { db } from "@/shared/lib/db";
 import { Prisma, PriceRule, Schedule } from "@prisma/client";
 import { z } from "zod";
-import { addDays, getDay } from "date-fns";
+import { addDays } from "date-fns";
 import { formatInTimeZone, toDate } from "date-fns-tz";
 
 const searchSchema = z.object({
@@ -98,7 +98,7 @@ function findNextAvailableSlots(
 
   const timeInterval = complex.timeSlotInterval || 30;
   const totalSlotsInDay = (closeHour - openHour) * (60 / timeInterval);
-  const availableSlots: AvailableSlot[] = [];
+  // const availableSlots: AvailableSlot[] = [];
 
   const availabilityMap = new Map<string, boolean[]>();
   complex.courts.forEach((court) => {
@@ -230,16 +230,16 @@ export async function GET(req: NextRequest) {
       ? toDate(`${date}T00:00:00`, { timeZone: ARGENTINA_TIME_ZONE })
       : null;
 
-    const bookingsInclude = searchDateStart
-      ? {
-          where: {
-            date: {
-              gte: searchDateStart,
-              lt: addDays(searchDateStart, 1),
-            },
-          },
-        }
-      : true;
+    // const bookingsInclude = searchDateStart
+    //   ? {
+    //       where: {
+    //         date: {
+    //           gte: searchDateStart,
+    //           lt: addDays(searchDateStart, 1),
+    //         },
+    //       },
+    //     }
+    //   : true;
 
     const whereClause: Prisma.ComplexWhereInput = {
       onboardingCompleted: true,

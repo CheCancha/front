@@ -14,7 +14,6 @@ type Court = {
 // El componente ahora necesita recibir las canchas disponibles
 export function AnalyticsFilters({
   availableCourts,
-  isLoading,
 }: {
   availableCourts: Court[];
   isLoading?: boolean;

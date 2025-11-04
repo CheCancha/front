@@ -1,6 +1,6 @@
 "use client";
 
-import { startOfMonth, endOfMonth, parseISO, format, startOfToday, endOfToday } from "date-fns";
+import { parseISO, format, startOfToday, endOfToday } from "date-fns";
 import { AnalyticsFilters } from "@/app/features/dashboard/components/analytics/AnalyticsFilters";
 import React, { useState, useCallback, useEffect, useMemo } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
