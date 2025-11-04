@@ -95,7 +95,6 @@ export function AbonoManagmentPanel({
   const [newDays, setNewDays] = useState<number[]>([]);
   const [newTime, setNewTime] = useState<string>("");
   const [newPrice, setNewPrice] = useState<string>("0");
-  const [newPaymentMethod, setNewPaymentMethod] = useState<string>("");
   const [newNotes, setNewNotes] = useState<string>("");
   const [newType, setNewType] = useState<FixedSlotType>(
     FixedSlotType.CLIENTE_FIJO
@@ -203,21 +202,19 @@ export function AbonoManagmentPanel({
   };
 
   const handleCreateAbono = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (
-      newDays.length === 0 ||
-      !selectedUser ||
-      !newCourt ||
-      !newTime ||
-      !newType ||
-      !newPrice ||
-      !newPaymentMethod
-    ) {
-      toast.error(
-        "Completá todos los campos: Cliente, Cancha, Día, Hora, Tipo, Precio y Método de Pago."
-      );
-      return;
-    }
+    e.preventDefault();
+    if (
+      newDays.length === 0 ||
+      !selectedUser ||
+      !newCourt ||
+      !newTime ||
+      !newType
+    ) {
+      toast.error(
+        "Completá todos los campos: Cliente, Cancha, Día, Hora y Tipo."
+      );
+      return;
+    }
     setIsFormLoading(true);
 
     const selectedCourt = courts.find((c) => c.id === newCourt);
@@ -279,12 +276,10 @@ export function AbonoManagmentPanel({
         );
 
         if (conflictResponse) {
-          // Si hay un 409, mostramos el modal con el mensaje del backend
           const errorMessage = await conflictResponse.text();
           setConflictMessage(errorMessage);
           setIsConflictModalOpen(true);
         } else {
-          // Para cualquier otro error (500, etc.), mostramos un toast
           toast.error(`Error al crear ${failedResponses.length} regla(s).`);
         }
       }
@@ -292,6 +287,7 @@ export function AbonoManagmentPanel({
       // 5b. Manejar éxitos (si hubo alguno)
       if (successfulResponses.length > 0) {
         toast.success(`Se crearon ${successfulResponses.length} regla(s).`);
+
         const newRules = await Promise.all(
           successfulResponses.map((res) => res.json() as Promise<FixedSlotRule>)
         );
@@ -300,7 +296,8 @@ export function AbonoManagmentPanel({
         toast.success("Generando los primeros 4 turnos...");
         await handleGenerateTurns(newRuleIds, null);
 
-        onAbonosUpdated(); // Actualizamos la lista
+        onAbonosUpdated();
+        fetchAbonos();
       }
 
       // 5c. Solo limpiar el formulario si TODO salió bien
@@ -451,7 +448,7 @@ export function AbonoManagmentPanel({
       setIsLoadingConfig(true);
       try {
         // Usamos la ruta GET que acabamos de crear
-        const res = await fetch(`/api/complex/${complexId}/settings/schedule`); // <-- RUTA
+        const res = await fetch(`/api/complex/${complexId}/settings/schedule`);
         if (!res.ok) {
           throw new Error("No se pudo cargar la configuración del complejo.");
         }
@@ -567,13 +564,11 @@ export function AbonoManagmentPanel({
   const dayLabels = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 
   const isFormValid =
-    selectedUser !== null &&
-    newCourt !== "" &&
-    newDays.length > 0 &&
-    newTime !== "" &&
-    !!newType &&
-    newPrice !== "" &&
-    newPaymentMethod !== "";
+    selectedUser !== null &&
+    newCourt !== "" &&
+    newDays.length > 0 &&
+    newTime !== "" &&
+    !!newType;
 
   return (
     <>
@@ -709,7 +704,7 @@ export function AbonoManagmentPanel({
                         className={cn(
                           "px-3 py-2 rounded-md text-sm font-medium",
                           isSelected
-                            ? "bg-brand-blue text-white"
+                            ? "bg-brand-dark text-white"
                             : "bg-gray-100 text-gray-700 hover:bg-gray-200",
                           (!isDayOpen || isLoadingConfig) &&
                             "opacity-50 cursor-not-allowed bg-gray-50 text-gray-400"

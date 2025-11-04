@@ -3,7 +3,6 @@ import { db } from "@/shared/lib/db";
 
 export async function checkOnboarding(complexId: string) {
   try {
-    console.log(`[Onboarding Check] Verificando estado para el complejo: ${complexId}`);
 
     const complex = await db.complex.findUnique({
       where: { id: complexId },
@@ -37,7 +36,6 @@ export async function checkOnboarding(complexId: string) {
     // 3. Condición: ¿Está conectado a Mercado Pago?
     const isMpConnected = complex.mp_connected_at !== null;
 
-    console.log(`[Onboarding Check] Resultados para ${complexId}: Canchas=${hasCourts}, Horarios=${!!hasSchedule}, MP Conectado=${isMpConnected}`);
 
     // Si todas las condiciones se cumplen Y el onboarding aún no está completo...
     if (hasCourts && hasSchedule && isMpConnected && !complex.onboardingCompleted) {

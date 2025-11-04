@@ -16,28 +16,17 @@ export const ImageCarousel: React.FC<ImageCarouselProps> = ({ images }) => {
   const [direction, setDirection] = useState<1 | -1>(1);
   const hasMultipleImages = images.length > 1;
 
-  // Logs para depuración
-  useEffect(() => {
-    console.log(
-      "[CAROUSEL] Mostrando imagen:",
-      currentIndex,
-      images[currentIndex]?.url
-    );
-  }, [currentIndex, images]);
-
   // --- Navegación manual ---
   const prevSlide = () => {
     if (!hasMultipleImages) return;
     setDirection(-1);
     setCurrentIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
-    console.log("[CAROUSEL] Click → Anterior");
   };
 
   const nextSlide = () => {
     if (!hasMultipleImages) return;
     setDirection(1);
     setCurrentIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
-    console.log("[CAROUSEL] Click → Siguiente");
   };
 
   // --- Cambio automático cada 15s ---
@@ -46,10 +35,6 @@ export const ImageCarousel: React.FC<ImageCarouselProps> = ({ images }) => {
     const interval = setInterval(() => {
       setDirection(1);
       setCurrentIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
-      console.log(
-        "[CAROUSEL] Cambio automático →",
-        new Date().toLocaleTimeString()
-      );
     }, 15000);
     return () => clearInterval(interval);
   }, [images.length, hasMultipleImages]);
@@ -115,7 +100,6 @@ export const ImageCarousel: React.FC<ImageCarouselProps> = ({ images }) => {
             <button
               key={index}
               onClick={() => {
-                console.log("[CAROUSEL] Click en punto →", index);
                 setDirection(index > currentIndex ? 1 : -1);
                 setCurrentIndex(index);
               }}

@@ -71,7 +71,7 @@ export const CalendarToolbar: React.FC<CalendarToolbarProps> = ({
             <Button
               variant={"outline"}
               className={cn(
-                "w-[180px] justify-start text-left font-normal",
+                "w-[150px] justify-start text-left font-normal",
                 !currentDate && "text-muted-foreground"
               )}
             >

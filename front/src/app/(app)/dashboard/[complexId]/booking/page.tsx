@@ -275,14 +275,6 @@ export default function BookingCalendarPage() {
     }
   }, [complex, currentDate, view, fetchBookingsForDate]);
 
-  useEffect(() => {
-    console.log(
-      "%cCAMBIO DE ESTADO: isModalOpen ahora es:",
-      "font-weight: bold;",
-      isModalOpen
-    );
-  }, [isModalOpen]);
-
   // --- HANDLERS de Interacción ---
   const handleRefresh = useCallback(() => {
     toast.success("Actualizando calendario...");
@@ -469,7 +461,7 @@ export default function BookingCalendarPage() {
           </TabsTrigger>
           <TabsTrigger value="abonos">
             <Users className="mr-2 h-4 w-4" />
-            Gestión de Turnos Fijos
+            Turnos Fijos
           </TabsTrigger>
         </TabsList>
 

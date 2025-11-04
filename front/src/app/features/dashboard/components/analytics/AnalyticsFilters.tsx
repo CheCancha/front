@@ -32,7 +32,6 @@ export function AnalyticsFilters({
       ? { from: parseISO(currentFrom), to: parseISO(currentTo) }
       : undefined;
 
-  // --- Lógica para actualizar la URL cuando cambian los filtros ---
   const updateSearchParams = (key: string, value: string | null) => {
     const params = new URLSearchParams(searchParams.toString());
     if (value) {

@@ -1,7 +1,7 @@
 importScripts("https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js");
 
 self.addEventListener("notificationdisplay", (event) => {
-  console.log("🟢 Notificación mostrada:", event.notification);
+  // console.log("🟢 Notificación mostrada:", event.notification);
   const data = event.notification.data || {};
 
   // opcional: enviar evento al backend
@@ -18,7 +18,7 @@ self.addEventListener("notificationdisplay", (event) => {
 });
 
 self.addEventListener("notificationclick", (event) => {
-  console.log("🟠 Notificación clickeada:", event.notification);
+  // console.log("🟠 Notificación clickeada:", event.notification);
   event.notification.close();
 
   const targetUrl =

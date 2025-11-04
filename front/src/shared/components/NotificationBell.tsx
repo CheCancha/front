@@ -72,7 +72,6 @@ export function NotificationBell({ isTransparent }: NotificationBellProps) {
 
   useEffect(() => {
     const listener = () => {
-        console.log("🔔 Evento 'new-notification' recibido, refrescando...");
         mutate();
     };
     window.addEventListener("new-notification", listener);

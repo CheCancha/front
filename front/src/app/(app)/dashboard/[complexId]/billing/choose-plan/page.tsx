@@ -54,10 +54,10 @@ export default function ChoosePlanPage() {
       const response = await fetch('/api/subscription-plans');
       if (!response.ok) throw new Error("No se pudieron cargar los planes.");
       const data = await response.json();
-      console.log('Datos recibidos de la API:', data);
+      // console.log('Datos recibidos de la API:', data);
 
       const availablePlans = data.filter((plan: SubscriptionPlanDetails) => plan.plan in planFeatures);
-      console.log('Planes después del filtro:', availablePlans); 
+      // console.log('Planes después del filtro:', availablePlans);
 
       setPlans(availablePlans);
     } catch (err) {

@@ -16,8 +16,6 @@ const postReviewSchema = z.object({
 export async function POST(req: Request) {
   // --- LOG AÑADIDO: Capturamos el cuerpo primero para poder loguearlo en caso de error ---
   const body = await req.json();
-  console.log("\n--- [REVIEWS_POST] Petición recibida ---");
-  console.log("[REVIEWS_POST] Cuerpo (payload):", JSON.stringify(body, null, 2));
 
   try {
     // --- 2. Autenticación de Usuario ---
@@ -27,20 +25,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
     const userId = session.user.id;
-    console.log(`[REVIEWS_POST] Usuario autenticado: ${userId}`);
 
     // --- 3. Validación de la Entrada ---
     const validation = postReviewSchema.safeParse(body);
     if (!validation.success) {
       // --- LOG AÑADIDO: Mostramos el error exacto de Zod ---
-      console.error("[REVIEWS_POST] ¡Fallo de validación!", validation.error.flatten());
       return NextResponse.json({ error: "Datos inválidos", issues: validation.error.issues }, { status: 400 });
     }
-    console.log("[REVIEWS_POST] Validación de datos exitosa.");
     const { bookingId, complexId, rating, comment } = validation.data;
 
     // --- 4. Verificación de Permisos y Estado ---
-    console.log(`[REVIEWS_POST] Verificando reserva ID: ${bookingId}`);
     const bookingToReview = await db.booking.findUnique({
       where: { id: bookingId },
     });
@@ -61,23 +55,19 @@ export async function POST(req: Request) {
       console.error(`[REVIEWS_POST] Error de duplicado: La reserva ${bookingId} ya tiene una calificación.`);
       return NextResponse.json({ error: "Esta reserva ya fue calificada anteriormente." }, { status: 409 });
     }
-    console.log("[REVIEWS_POST] Verificaciones de permiso y estado pasadas.");
 
     // --- 5. Transacción en la Base de Datos ---
-    console.log("[REVIEWS_POST] Iniciando transacción en la base de datos...");
     const newReview = await db.$transaction(async (prisma) => {
       // a) Crear la nueva reseña
       const review = await prisma.review.create({
         data: { rating, comment, userId, complexId, bookingId },
       });
-      console.log(`[DB_TX] Reseña creada con ID: ${review.id}`);
 
       // b) Marcar la reserva como que ya tiene una reseña
       await prisma.booking.update({
         where: { id: bookingId },
         data: { hasReview: true },
       });
-      console.log(`[DB_TX] Reserva ${bookingId} marcada con hasReview = true.`);
 
       // c) Recalcular el puntaje promedio y el contador de reseñas del complejo
       const stats = await prisma.review.aggregate({
@@ -85,7 +75,6 @@ export async function POST(req: Request) {
         _avg: { rating: true },
         _count: { id: true },
       });
-      console.log(`[DB_TX] Nuevas estadísticas para complejo ${complexId}: Rating Promedio = ${stats._avg.rating}, Total Reviews = ${stats._count.id}`);
 
       await prisma.complex.update({
         where: { id: complexId },
@@ -94,7 +83,6 @@ export async function POST(req: Request) {
 
       return review;
     });
-    console.log("[REVIEWS_POST] Transacción completada exitosamente.");
 
     // --- 6. Respuesta Exitosa ---
     return NextResponse.json(newReview, { status: 201 });
