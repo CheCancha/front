@@ -5,6 +5,8 @@ import { z } from "zod";
 import { addDays } from "date-fns";
 import { formatInTimeZone, toDate } from "date-fns-tz";
 
+export const dynamic = 'force-dynamic';
+
 const searchSchema = z.object({
   city: z.string().optional(),
   sport: z.string().optional(),
@@ -44,13 +46,23 @@ type AvailableSlot = {
 function getPriceRuleForTime(
   court: { priceRules: PriceRule[] },
   timeString: string
-): PriceRule | undefined {
-  if (!court.priceRules || court.priceRules.length === 0) return undefined;
+): PriceRule | { price: number; depositAmount: number } {
+  
+  
   const [hour] = timeString.split(":").map(Number);
-  const rule = court.priceRules.find(
-    (r) => hour >= r.startTime && hour < r.endTime
-  );
-  return rule || court.priceRules[0];
+
+  if (court.priceRules && court.priceRules.length > 0) {
+    const rule = court.priceRules.find(
+      (r) => hour >= r.startTime && hour < r.endTime
+    );
+    
+    if (rule) {
+      return rule;
+    }
+  }
+
+  console.warn(`  -> [getPriceRuleForTime] No se encontró regla para ${timeString}. Devolviendo precio 0.`);
+  return { price: 0, depositAmount: 0 };
 }
 
 function findNextAvailableSlots(
@@ -67,9 +79,10 @@ function findNextAvailableSlots(
     formatInTimeZone(searchDate, ARGENTINA_TIME_ZONE, "yyyy-MM-dd") ===
     formatInTimeZone(now, ARGENTINA_TIME_ZONE, "yyyy-MM-dd");
 
-  const dayOfWeek = Number(
-    formatInTimeZone(searchDate, ARGENTINA_TIME_ZONE, "w")
+  const isoDayOfWeek = Number(
+    formatInTimeZone(searchDate, ARGENTINA_TIME_ZONE, "i")
   );
+  const dayOfWeek = isoDayOfWeek % 7;
   const dayKeys = [
     "sunday",
     "monday",
@@ -86,38 +99,46 @@ function findNextAvailableSlots(
 
   const openKey = `${key}Open` as keyof Schedule;
   const closeKey = `${key}Close` as keyof Schedule;
-  const openHourForDay = schedule[openKey] as number | null;
-  const closeHourForDay = schedule[closeKey] as number | null;
 
-  if (openHourForDay == null || closeHourForDay == null) {
-    return [];
+  // 1. Leemos los horarios como STRINGS
+  const openHourString = schedule[openKey] as string | null;
+  const closeHourString = schedule[closeKey] as string | null;
+
+  // 2. Chequeamos si el día está cerrado
+  if (openHourString == null || closeHourString == null) {
+    console.warn(`[${complex.name}] Día cerrado, no hay horarios.`);
+    return []; 
+  }
+
+  // 3. Parseamos el STRING a NÚMERO (ej: "12:00" -> 12)
+  const openHour = parseInt(openHourString.split(":")[0], 10);
+  const closeHour = parseInt(closeHourString.split(":")[0], 10);
+  
+  // 4. Chequeo de seguridad por si el parseo falla
+  if (isNaN(openHour) || isNaN(closeHour)) {
+     console.error(`[${complex.name}] Horarios inválidos: ${openHourString}, ${closeHourString}`);
+     return [];
   }
 
-  const openHour = openHourForDay;
-  const closeHour = closeHourForDay;
-
-  const timeInterval = complex.timeSlotInterval || 30;
-  const totalSlotsInDay = (closeHour - openHour) * (60 / timeInterval);
-  // const availableSlots: AvailableSlot[] = [];
+  // Ahora el resto de la función usará 'openHour' y 'closeHour' como NÚMEROS
+  const timeInterval = complex.timeSlotInterval || 30;
+  const totalSlotsInDay = (closeHour - openHour) * (60 / timeInterval);
 
   const availabilityMap = new Map<string, boolean[]>();
   complex.courts.forEach((court) => {
     const courtSlots = new Array(totalSlotsInDay).fill(true);
 
     court.bookings?.forEach((booking) => {
-      // Filtrar por status si es necesario (ya lo hace la query de Prisma ahora)
-
       const startIdx =
         (booking.startTime * 60 + (booking.startMinute || 0) - openHour * 60) /
         timeInterval;
 
-      // Determinar cuántos slots de 'timeInterval' ocupa esta reserva
       const slotsToBook = court.slotDurationMinutes / timeInterval;
 
       for (let i = 0; i < slotsToBook; i++) {
-        const slotIndex = Math.floor(startIdx + i); // Asegurarse de que sea entero
+        const slotIndex = Math.floor(startIdx + i);
         if (slotIndex >= 0 && slotIndex < totalSlotsInDay) {
-          courtSlots[slotIndex] = false; // Marcar como ocupado
+          courtSlots[slotIndex] = false;
         }
       }
     });
@@ -131,7 +152,6 @@ function findNextAvailableSlots(
   const startTimeInMinutes = isToday
     ? Math.max(
         openHour * 60,
-        // Redondear hacia ARRIBA al próximo intervalo
         Math.ceil(currentTimeInMinutes / timeInterval) * timeInterval
       )
     : openHour * 60;
@@ -182,7 +202,9 @@ function findNextAvailableSlots(
 
       if (canBook) {
         const priceRule = getPriceRuleForTime(court, timeString);
-        if (!priceRule) continue;
+        if (!priceRule) {
+            continue; 
+        }
 
         const cleanCourtData: CourtInfo = {
           id: court.id,
@@ -206,8 +228,7 @@ function findNextAvailableSlots(
       }
     }
   }
-
-  return availableSlotsResult.slice(0, count);
+  return availableSlotsResult;
 }
 
 // --- Recuerda corregir la consulta de Prisma en GET para filtrar bookings ---
