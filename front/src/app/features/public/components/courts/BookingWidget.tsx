@@ -184,9 +184,9 @@ const MobileBookingWidget: React.FC<BookingWidgetProps> = ({
 }) => {
   const [selectedCourt, setSelectedCourt] =
     useState<CourtWithPriceRules | null>(club.courts[0] || null);
-  const [selectedTime, setSelectedTime] = useState<string | null>(null);
-  const [validStartTimes, setValidStartTimes] = useState<ValidStartTime[]>([]);
-  const [isAvailabilityLoading, setIsAvailabilityLoading] = useState(true);
+    const [validStartTimes, setValidStartTimes] = useState<ValidStartTime[]>([]);
+    const [isAvailabilityLoading, setIsAvailabilityLoading] = useState(true);
+    const [selectedTime, setSelectedTime] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchAvailability = async () => {
@@ -304,7 +304,7 @@ const MobileBookingWidget: React.FC<BookingWidgetProps> = ({
                     useGrouping: false,
                     minimumFractionDigits: 0,
                     maximumFractionDigits: 0,
-                  }).format(selectedPriceRule.price)}
+                  }).format(selectedPriceRule.depositAmount)}
                 </p>
               </div>
               <Button size="lg" onClick={handleProceedToBooking}>

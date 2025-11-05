@@ -52,23 +52,6 @@ export async function GET(
       },
     });
 
-    // 3. FILTRAR TRANSACCIONES CANCELADAS
-    // const validTransactions = allTransactions.filter((tx) => {
-      // Si la transacción es de una reserva (tiene bookingPlayer)
-      // if (
-      //   tx.source === "RESERVA" &&
-      //   tx.bookingPlayer &&
-      //   tx.bookingPlayer.booking
-      // ) {
-      //   // La contamos SOLO si la reserva NO está cancelada
-      //   return tx.bookingPlayer.booking.status !== BookingStatus.CANCELADO;
-      // }
-
-      // Si es un GASTO o VENTA_PRODUCTO, siempre la contamos
-      // (A menos que implementemos devoluciones de productos)
-    //   return true;
-    // });
-
     // --- 4. CALCULAR KPIS (usando 'validTransactions') ---
     const kpis: { ingresos: number; egresos: number; neto: number } = {
       ingresos: 0,

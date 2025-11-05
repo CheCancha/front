@@ -47,13 +47,13 @@ type SummaryResponse = {
 };
 
 // --- Helper de Formato de Moneda ---
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat("es-AR", {
-    style: "currency",
-    currency: "ARS",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
+const formatCurrency = (valueInCents: number) => 
+  new Intl.NumberFormat("es-AR", {
+    style: "currency",
+    currency: "ARS",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(valueInCents / 100);
 
 // --- Componente de Tarjeta KPI ---
 const KpiCard = memo(

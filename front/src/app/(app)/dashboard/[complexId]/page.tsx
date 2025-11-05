@@ -61,7 +61,7 @@ export default async function DashboardPage({
         />
         <MetricCard
           title="Ingresos del Día"
-          value={formatCurrency(complexData.totalIncomeToday)}
+          value={formatCurrency(complexData.netIncomeToday)}
           icon={<DollarSign />}
         />
         <MetricCard

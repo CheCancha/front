@@ -156,7 +156,7 @@ export async function getComplexDataForManager(
     name: complex.name,
     onboardingCompleted: complex.onboardingCompleted,
     reservationsToday: todayBookings.length,
-    totalIncomeToday: netIncomeToday,
+    netIncomeToday: netIncomeToday,
     occupancyRate,
     reservationsNext7Days,
     pendingIncomeNext7Days, 

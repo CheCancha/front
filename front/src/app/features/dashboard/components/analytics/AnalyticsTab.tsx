@@ -132,7 +132,7 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({
     <div className="space-y-6">
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          title="Ingresos Totales"
+          title="Balance Neto"
           value={formatCurrency(kpis.totalIncome.value)}
           icon={DollarSign}
           change={formatChange(kpis.totalIncome.change)}

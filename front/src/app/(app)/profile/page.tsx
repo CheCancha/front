@@ -14,7 +14,7 @@ import {
   AlertTriangle,
   BellRing,
 } from "lucide-react";
-import { toast, Toaster } from "react-hot-toast";
+import { toast } from "react-hot-toast";
 import { PasswordInput } from "@/shared/components/ui/Input";
 import { format, differenceInHours, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
@@ -333,7 +333,6 @@ export default function ProfilePage() {
 
   return (
     <>
-      <Toaster position="bottom-center" />
       <div className="min-h-screen p-4 sm:p-6">
         <main className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Columna Izquierda: Perfil y Seguridad */}

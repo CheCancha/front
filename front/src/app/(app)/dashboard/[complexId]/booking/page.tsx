@@ -277,7 +277,6 @@ export default function BookingCalendarPage() {
 
   // --- HANDLERS de Interacción ---
   const handleRefresh = useCallback(() => {
-    toast.success("Actualizando calendario...");
     fetchBookingsForDate(currentDate, view);
   }, [currentDate, view, fetchBookingsForDate]);
 
