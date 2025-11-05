@@ -30,7 +30,7 @@ export function CourtRevenuePieChart({ data }: { data: ChartData[] }) {
       currency: "ARS",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
-    }).format(value);
+    }).format(value / 100);
   };
 
   return (

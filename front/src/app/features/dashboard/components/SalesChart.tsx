@@ -233,7 +233,7 @@ export function SalesChart({ complexId }: { complexId: string }) {
                   currency: "ARS",
                   minimumFractionDigits: 0,
                   maximumFractionDigits: 0,
-                }).format(value)
+                }).format(value / 100)
               }
             />
             <Bar dataKey="total" fill="#fe4321" radius={[4, 4, 0, 0]} />{" "}
