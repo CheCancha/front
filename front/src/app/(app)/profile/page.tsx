@@ -64,11 +64,11 @@ const StatCard = ({
   value: string | number;
 }) => (
   <div className="flex items-center p-4 bg-white border rounded-xl">
-    <div className="p-3 mr-4 text-orange-500 bg-orange-100 rounded-full">
+    <div className="p-3 mr-4 text-brand-orange bg-brand-orange/10 rounded-full">
       <Icon className="w-6 h-6" />
     </div>
     <div>
-      <p className="text-sm font-medium text-gray-500">{label}</p>
+      <p className="text-sm font-medium text-paragraph">{label}</p>
       <p className="text-2xl font-semibold text-brand-dark">{value}</p>
     </div>
   </div>
@@ -151,19 +151,31 @@ export default function ProfilePage() {
     now.setHours(0, 0, 0, 0);
 
     switch (bookingFilter) {
+      case "PróximAS": // (Tuve que corregir un typo de tu código original aquí)
       case "Próximas":
-        return userBookings.filter(
-          (b) => b.status === "CONFIRMADO" && new Date(b.date) >= now
+        return (
+          userBookings
+            .filter((b) => b.status === "CONFIRMADO" && new Date(b.date) >= now)
+            // --- AÑADIDO: Ordena de más próxima a más lejana ---
+            .sort(
+              (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+            )
         );
-      case "Completadas":
-        return userBookings.filter((b) => b.status === "COMPLETADO");
+
       case "Historial":
-        return userBookings.filter(
+        const historyBookings = userBookings.filter(
           (b) =>
+            b.status === "COMPLETADO" ||
             b.status === "CANCELADO" ||
             b.status === "PENDIENTE" ||
             (b.status === "CONFIRMADO" && new Date(b.date) < now)
         );
+
+        historyBookings.sort(
+          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+        );
+        return historyBookings;
+
       default:
         return userBookings;
     }
@@ -372,7 +384,7 @@ export default function ProfilePage() {
               </form>
             </div>
 
-            {/* Tarjeta de Información Personal */}
+            {/* Tarjeta de Notificaciones */}
             <div className="bg-white p-6 rounded-2xl border">
               <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
                 <BellRing size={20} /> Notificaciones
@@ -380,7 +392,7 @@ export default function ProfilePage() {
               <NotificationToggle initialState={isNotificationsEnabled} />
             </div>
 
-            {/* Tarjeta de Seguridad */}
+            {/* Tarjeta de Contraseña */}
             <div className="bg-white p-6 rounded-2xl border">
               <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
                 <ShieldCheck size={20} /> Seguridad
@@ -446,9 +458,10 @@ export default function ProfilePage() {
             )}
             <div className="bg-white p-6 rounded-2xl border">
               <h2 className="text-xl font-semibold mb-4">Mis Reservas</h2>
+
               <div className="border-b border-gray-200 mb-4">
                 <nav className="-mb-px flex space-x-6" aria-label="Tabs">
-                  {["Próximas", "Completadas", "Historial"].map((tab) => (
+                  {["Próximas", "Historial"].map((tab) => (
                     <button
                       key={tab}
                       onClick={() => setBookingFilter(tab)}
@@ -497,18 +510,17 @@ export default function ProfilePage() {
                         >
                           {booking.status}
                         </span>
-                        {/* Botón de Cancelar para reservas próximas */}       
                         {bookingFilter === "Próximas" && (
                           <Button
                             variant="destructive"
                             size="sm"
                             onClick={() => handleOpenCancelModal(booking)}
                           >
-                            Cancelar                
+                            Cancelar
                           </Button>
                         )}
-                        {/* Botón de Calificar para reservas completadas */}
-                        {bookingFilter === "Completadas" &&
+                        {bookingFilter === "Historial" &&
+                          booking.status === "COMPLETADO" &&
                           !booking.hasReview && (
                             <Button
                               variant="outline"
@@ -640,7 +652,7 @@ export default function ProfilePage() {
 
           <div className="flex justify-end gap-3">
             <Button variant="ghost" onClick={() => setIsRatingModalOpen(false)}>
-            Cancelar
+              Cancelar
             </Button>
             <Button
               onClick={handlePostReview}
