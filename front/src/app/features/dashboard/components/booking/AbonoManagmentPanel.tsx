@@ -241,6 +241,11 @@ export function AbonoManagmentPanel({
       endMinute
     ).padStart(2, "0")}`;
 
+    console.log(
+      `[Log 1 - Panel de Abono] Enviando al API (en pesos):`,
+      Number(newPrice)
+    );
+
     try {
       const creationPromises = newDays.map((dayIndex) => {
         return fetch("/api/fixed-slots", {
@@ -293,7 +298,7 @@ export function AbonoManagmentPanel({
 
       // 5b. Manejar éxitos (si hubo alguno)
       if (successfulResponses.length > 0) {
-        toast.success(`Se crearon ${successfulResponses.length} regla(s).`);
+        toast.success(`Se creó un turno fijo con éxito!.`);
 
         const newRules = await Promise.all(
           successfulResponses.map((res) => res.json() as Promise<FixedSlotRule>)

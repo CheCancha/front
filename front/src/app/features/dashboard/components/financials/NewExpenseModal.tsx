@@ -47,6 +47,7 @@ export const NewExpenseModal: React.FC<NewExpenseModalProps> = ({
   );
 
   const handleSubmit = (e: React.FormEvent) => {
+    console.log(`[Log 2 - NewExpenseModal] El modal va a ENVIAR:`, amount);
     e.preventDefault();
     const numericAmount = parseFloat(amount);
     if (isNaN(numericAmount) || numericAmount <= 0) {

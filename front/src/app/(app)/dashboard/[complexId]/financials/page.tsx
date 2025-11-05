@@ -89,6 +89,7 @@ export default function FinancialsPage() {
   }, [complexId, from, to]);
 
 
+
   const fetchSummaryData = useCallback(async () => {
    if (!complexId || !from || !to) return;
 
@@ -123,12 +124,18 @@ export default function FinancialsPage() {
       source: TransactionSource;
       paymentMethod: PaymentMethod;
     }) => {
+      
+      console.log(
+        `[Log 2 - FinancialsPage] handleAddExpense RECIBIÓ (en pesos):`,
+        formData.amount
+      );
+
       setIsSubmitting(true);
       try {
         const res = await fetch(`/api/complex/${complexId}/financials`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
+          body: JSON.stringify({ // <-- Se envía 499000 (pesos)
             ...formData,
             type: TransactionType.EGRESO,
           }),

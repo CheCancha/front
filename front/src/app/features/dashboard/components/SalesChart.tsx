@@ -218,7 +218,7 @@ export function SalesChart({ complexId }: { complexId: string }) {
               fontSize={12}
               tickLine={false}
               axisLine={false}
-              tickFormatter={(value) => `$${value / 1000}k`}
+              tickFormatter={(value) => `$${value / 100000}k`}
             />
             <Tooltip
               cursor={{ fill: "rgba(239, 246, 255, 0.5)" }}

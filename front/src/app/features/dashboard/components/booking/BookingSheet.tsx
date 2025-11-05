@@ -2,7 +2,13 @@
 
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/shared/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/shared/components/ui/sheet";
 import { BookingStatus, PaymentMethod } from "@prisma/client";
 import { toast } from "react-hot-toast";
 import {
@@ -89,6 +95,11 @@ const BookingSheet: React.FC<BookingSheetProps> = ({
     }
 
     if (booking) {
+      console.log(
+        `[BookingSheet] Abriendo modal para reserva existente. 
+        ID: ${booking.id}, 
+        totalPrice (en BD/centavos): ${booking.totalPrice}`
+      );
       setIsLoadingPlayers(true);
       fetch(`/api/bookings/${booking.id}/players`)
         .then((res) => res.json())
@@ -303,9 +314,9 @@ const BookingSheet: React.FC<BookingSheetProps> = ({
           `[LOG-COMPLETAR] (Flujo Unificado) Asignando ${remainingToPay} a jugador ID: ${mainPlayer.id}`
         );
         try {
-          // Siempre llamamos a handlePaymentSubmit, que crea la Transaction
+          const amountInPesos = remainingToPay / 100;
           await handlePaymentSubmit({
-            amount: remainingToPay,
+            amount: amountInPesos,
             paymentMethod: PaymentMethod.EFECTIVO,
             bookingPlayerId: mainPlayer.id,
           });
@@ -313,7 +324,7 @@ const BookingSheet: React.FC<BookingSheetProps> = ({
         } catch (error) {
           toast.dismiss(loadingToastId);
           console.log("[LOG-COMPLETAR] PAGO FINAL (Jugador) FALLÓ.");
-          return; // Detiene la ejecución
+          return;
         }
       } else {
         // --- CASO 2 (AHORA ES UN ERROR) ---
@@ -346,7 +357,6 @@ const BookingSheet: React.FC<BookingSheetProps> = ({
     <>
       <Sheet open={isOpen} onOpenChange={onClose}>
         <SheetContent className="flex flex-col w-full sm:max-w-lg">
-
           <SheetHeader className="p-4 border-b">
             <SheetTitle>
               {/* Usamos tus variables para poner el título dinámicamente */}

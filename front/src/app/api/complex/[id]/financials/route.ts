@@ -170,10 +170,12 @@ export async function POST(
        return new NextResponse("Las devoluciones de reservas deben hacerse desde el módulo de reservas.", { status: 400 });
     }
 
+    const amountInCents = Math.round(Number(amount) * 100);
+
     const newTransaction = await db.transaction.create({
       data: {
         complexId: complexId,
-        amount: Number(amount),
+        amount: amountInCents,
         type: type as TransactionType,
         source: source as TransactionSource,
         paymentMethod: paymentMethod as PaymentMethod,

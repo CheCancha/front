@@ -586,7 +586,7 @@ export async function POST(
       }
     }
 
-    const totalPriceInCents = (applicableRule.price || 0) * 100;
+    const totalPriceInCents = (applicableRule.price || 0);
     const amountPaidInCents = (depositPaid || 0) * 100;
 
     const newBooking = await db.$transaction(async (tx) => {

@@ -331,7 +331,7 @@ export default function BookingCalendarPage() {
       const body: {
         bookingId: string;
         status: "COMPLETADO" | "CANCELADO";
-        depositPaid?: number; // Re-habilitamos este campo
+        depositPaid?: number;
       } = { bookingId, status };
 
       if (
@@ -343,9 +343,6 @@ export default function BookingCalendarPage() {
         console.log("[LOG-EXECUTE] Añadiendo pago final al body:", body);
       }
 
-      console.log(
-        "[LOG-EXECUTE] Llamando a API PATCH /api/complex/.../bookings"
-      );
       const response = await fetch(`/api/complex/${complexId}/bookings`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -362,21 +359,14 @@ export default function BookingCalendarPage() {
         console.error("[LOG-EXECUTE] Detalle del error:", errorText);
         throw new Error("No se pudo actualizar la reserva.");
       }
-
-      console.log("[LOG-EXECUTE] API PATCH exitosa.");
-      toast.success("Reserva actualizada.");
       closeModal();
       await fetchBookingsForDate(currentDate, view);
-      console.log("[LOG-EXECUTE] Modal cerrado y calendario refrescado.");
     } catch (error) {
-      console.error("[LOG-EXECUTE] Error en el bloque CATCH:", error);
       toast.error(
         error instanceof Error ? error.message : "Error desconocido."
       );
     } finally {
-      console.log("[LOG-EXECUTE] Bloque FINALLY ejecutado.");
       if (loadingToastId) {
-        console.log(`[LOG-EXECUTE] Cerrando toast ID: ${loadingToastId}`);
         toast.dismiss(loadingToastId);
       }
     }

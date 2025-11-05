@@ -34,6 +34,8 @@ export async function POST(req: NextRequest) {
       return new NextResponse("El monto debe ser positivo", { status: 400 });
     }
 
+    const amountInCents = Math.round(amount * 100);
+
     // 4. TRANSACCIÓN PRINCIPAL
     const updatedPlayer = await db.$transaction(
       async (tx) => {
@@ -64,13 +66,13 @@ export async function POST(req: NextRequest) {
         }
 
         // b. Validar que el pago no supere el saldo
-        if (amount > booking.remainingBalance) {
+        if (amountInCents > booking.remainingBalance) {
           throw new Error("El monto excede el saldo pendiente.");
         }
 
-        // 🧮 Cálculo del nuevo estado financiero
-        const newDepositPaid = booking.depositPaid + amount;
-        const newRemainingBalance = booking.remainingBalance - amount;
+        // Cálculo del nuevo estado financiero
+        const newDepositPaid = booking.depositPaid + amountInCents;
+        const newRemainingBalance = booking.remainingBalance - amountInCents;
         const isFullyPaid = newRemainingBalance <= 0;
 
         // c. Actualizar Booking
@@ -87,7 +89,7 @@ export async function POST(req: NextRequest) {
         const updatedPlayer = await tx.bookingPlayer.update({
           where: { id: bookingPlayerId },
           data: {
-            amountPaid: { increment: amount },
+            amountPaid: { increment: amountInCents },
             paymentMethod,
             paymentStatus: isFullyPaid ? "PAGADO" : "PENDIENTE",
           },
@@ -97,14 +99,14 @@ export async function POST(req: NextRequest) {
         });
 
         // e. Crear transacción individual por este pago
-        const playerName = player.user?.name || player.guestName || "Jugador";
+       const playerName = player.user?.name || player.guestName || "Jugador";
         const courtName = booking.court.name;
         const description = `Pago ${playerName} (Res. ${courtName})`;
 
         await tx.transaction.create({
           data: {
             complexId: booking.court.complexId,
-            amount,
+            amount: amountInCents,
             type: TransactionType.INGRESO,
             source: TransactionSource.RESERVA,
             paymentMethod,

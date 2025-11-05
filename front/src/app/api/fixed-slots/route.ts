@@ -79,6 +79,17 @@ export async function POST(req: NextRequest) {
   const parsedDayOfWeek = parseInt(dayOfWeek, 10);
   const parsedPrice = parseInt(price, 10) || 0;
 
+  const priceInCents = Math.round(parsedPrice * 100);
+
+  console.log(
+    `[Log 2 - API fixed-slots] Recibido 'price' (en pesos):`,
+    priceInCents
+  );
+  console.log(
+    `[Log 3 - API fixed-slots] 'parsedPrice' (en pesos):`,
+    parsedPrice
+  );
+
   // --- CÁLCULO DE MINUTOS PARA VALIDACIÓN DE HORARIO ---
   const [newStartH, newStartM] = startTime.split(":").map(Number);
   const [newEndH, newEndM] = endTime.split(":").map(Number);
@@ -203,7 +214,7 @@ export async function POST(req: NextRequest) {
             startTime,
             endTime,
             startDate: startDateUtc,
-            price: parsedPrice,
+            price: priceInCents,
             notes,
             type: type,
         },
