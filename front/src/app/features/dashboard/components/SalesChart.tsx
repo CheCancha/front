@@ -21,7 +21,6 @@ import {
 import { cn } from "@/shared/lib/utils";
 import { AnalyticsData } from "@/app/features/dashboard/services/analytics.service";
 
-
 // --- TIPOS ---
 type ChartData = {
   name: string;
@@ -124,7 +123,12 @@ export function SalesChart({ complexId }: { complexId: string }) {
           throw new Error("No se pudo cargar el reporte de ingresos.");
         }
         const apiData: AnalyticsData = await res.json();
-        const chartData = apiData.charts.lineChartData;
+        const chartData: ChartData[] = apiData.charts.lineChartData.map(
+          (d) => ({
+            name: d.name,
+            total: d.balance,
+          })
+        );
 
         if (dateRange === "Este Mes") {
           setMonthlyData(chartData);
@@ -167,7 +171,7 @@ export function SalesChart({ complexId }: { complexId: string }) {
 
   return (
     <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
         <div>
           <h3 className="text-lg font-switzer font-semibold">
             Reporte de Ingresos

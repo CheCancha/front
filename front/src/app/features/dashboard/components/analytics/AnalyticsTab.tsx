@@ -4,11 +4,11 @@ import React, { useEffect, useState, memo } from "react";
 import { format } from "date-fns"; // Corregido: 'format' viene de 'date-fns'
 import { DollarSign, BookCheck, Users, BarChart } from "lucide-react";
 import { Skeleton } from "@/shared/components/ui/skeleton";
-import { RevenueLineChart } from "./RevenueLineChart";
+import { RevenueBarChart } from "./RevenueBarChart";
 import { CourtRevenuePieChart } from "./CourtRevenuePieChart";
 import { PeakHoursHeatmap } from "./PeakHoursHeatmap";
 import { AnalyticsTables } from "./AnalyticsTable";
-import type { AnalyticsData } from "@/app/features/dashboard/services/analytics.service"; 
+import type { AnalyticsData } from "@/app/features/dashboard/services/analytics.service";
 
 interface AnalyticsTabProps {
   complexId: string;
@@ -84,7 +84,7 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // --- CARGA DE DATOS (AHORA EN EL CLIENTE) ---
+  // --- CARGA DE DATOS ---
   useEffect(() => {
     setIsLoading(true);
 
@@ -112,7 +112,7 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({
     };
 
     fetchData();
-  }, [complexId, startDate, endDate, courtIds]); // Se recarga si cambian los filtros
+  }, [complexId, startDate, endDate, courtIds]);
 
   if (isLoading) {
     return <AnalyticsSkeleton />;
@@ -164,7 +164,7 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({
             Evolución de Ingresos
           </h3>
           {charts.lineChartData.length > 0 ? (
-            <RevenueLineChart data={charts.lineChartData} />
+            <RevenueBarChart data={charts.lineChartData} />
           ) : (
             <div className="h-80 flex items-center justify-center bg-gray-50 rounded-md">
               <p className="text-gray-500">No hay datos suficientes.</p>

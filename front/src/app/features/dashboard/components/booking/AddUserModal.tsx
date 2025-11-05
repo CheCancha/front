@@ -16,7 +16,7 @@ import { toast } from "react-hot-toast";
 import { User } from "@prisma/client";
 import { Loader2 } from "lucide-react";
 
-type ClientUser = Pick<User, "id" | "name" >;
+type ClientUser = Pick<User, "id" | "name">;
 
 interface AddUserModalProps {
   isOpen: boolean;
@@ -24,10 +24,22 @@ interface AddUserModalProps {
   onUserCreated: (newUser: ClientUser) => void;
 }
 
-export function AddUserModal({ isOpen, onClose, onUserCreated }: AddUserModalProps) {
+export function AddUserModal({
+  isOpen,
+  onClose,
+  onUserCreated,
+}: AddUserModalProps) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleClose = () => {
+    setName("");
+    setPhone("");
+    setError(null);
+    onClose();
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,7 +47,7 @@ export function AddUserModal({ isOpen, onClose, onUserCreated }: AddUserModalPro
       toast.error("El nombre es obligatorio.");
       return;
     }
-    
+    setError(null);
     setIsSubmitting(true);
     try {
       const response = await fetch("/api/users", {
@@ -51,25 +63,25 @@ export function AddUserModal({ isOpen, onClose, onUserCreated }: AddUserModalPro
 
       const newUser = await response.json();
       toast.success("Cliente creado con éxito.");
-      onUserCreated(newUser); 
-      
-      setName("");
-      setPhone("");
-
+      onUserCreated(newUser);
+      handleClose();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Error desconocido");
+      const errorMessage =
+        error instanceof Error ? error.message : "Error desconocido";
+      setError(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Crear Nuevo Cliente</DialogTitle>
           <DialogDescription>
-            Creá un nuevo cliente &quot;invitado&quot; para asignarle turnos fijos.
+            Creá un nuevo cliente &quot;invitado&quot; para asignarle turnos
+            fijos.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -93,12 +105,19 @@ export function AddUserModal({ isOpen, onClose, onUserCreated }: AddUserModalPro
               placeholder="Ej: 3491547021"
             />
           </div>
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-md p-3 flex items-center gap-2">
+              <span>{error}</span>
+            </div>
+          )}
           <DialogFooter>
-            <Button variant="outline" type="button" onClick={onClose}>
+            <Button variant="outline" type="button" onClick={handleClose}>
               Cancelar
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isSubmitting && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
               Guardar Cliente
             </Button>
           </DialogFooter>

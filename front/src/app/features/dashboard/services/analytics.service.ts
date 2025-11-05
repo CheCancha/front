@@ -24,7 +24,9 @@ interface AnalyticsKpis {
 
 interface LineChartPoint {
   name: string;
-  total: number;
+  ingresos: number;
+  egresos: number;
+  balance: number;
 }
 
 interface PieChartSlice {
@@ -215,15 +217,18 @@ export async function getAnalyticsData({
   );
 
   // --- 4. Calcular KPIs ---
-  const calculateFinancialKpis = (
-    transactions: typeof validCurrentTransactions
-  ) => {
-    const totalIncome = transactions
-      .filter((tx) => tx.type === TransactionType.INGRESO)
+   const calculateFinancialKpis = (
+    transactions: typeof validCurrentTransactions
+  ) => {
+    const totalIncome = transactions
+      .filter((tx) => tx.type === TransactionType.INGRESO)
+      .reduce((sum, t) => sum + t.amount, 0);
+    const totalExpense = transactions
+      .filter((tx) => tx.type === TransactionType.EGRESO)
       .reduce((sum, t) => sum + t.amount, 0);
-    // (Podríamos añadir egresos aquí si el KPI lo necesitara)
-    return { totalIncome };
-  };
+      
+    return { totalIncome: totalIncome - totalExpense }; 
+  };
 
   // Función para KPIs basados en Bookings (Operativo)
   const calculateOperationalKpis = (bookings: BookingWithCourtAndUser[]) => {
@@ -298,48 +303,73 @@ export async function getAnalyticsData({
     analyzedCourtsCount
   );
 
-  // GRÁFICO DE LÍNEA (BASADO EN TRANSACCIONES VÁLIDAS)
-  let formattedData: { name: string; total: number }[] = [];
-  const differenceInDays =
-    (endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24);
+  // GRÁFICO DE LÍNEA 
+  let formattedData: LineChartPoint[] = []; // <-- Tipo actualizado
+  const differenceInDays =
+    (endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24);
 
-  if (differenceInDays < 32) {
-    // Lógica Diaria
-    const days = eachDayOfInterval({ start: startDate, end: endDate });
-    const dailyIncome: { [key: string]: number } = {};
+  if (differenceInDays < 32) {
+    // Lógica Diaria
+    const days = eachDayOfInterval({ start: startDate, end: endDate });
+    // --- CORRECCIÓN: Objeto para guardar ambas métricas ---
+    const dailyData: { [key: string]: { ingresos: number; egresos: number } } = {};
 
-    for (const transaction of currentPeriodTransactions) {
-      const dayKey = format(transaction.createdAt, "dd/MM");
-      dailyIncome[dayKey] = (dailyIncome[dayKey] || 0) + transaction.amount;
-    }
+    for (const transaction of validCurrentTransactions) {
+      const dayKey = format(transaction.createdAt, "dd/MM");
+      
+      // Inicializar el día si no existe
+      if (!dailyData[dayKey]) {
+        dailyData[dayKey] = { ingresos: 0, egresos: 0 };
+      }
 
-    formattedData = days.map((day) => {
-      const dayKey = format(day, "dd/MM");
-      return {
-        name: format(day, "d MMM", { locale: es }),
-        total: dailyIncome[dayKey] || 0,
-      };
-    });
-  } else {
-    // Lógica Mensual
-    const months = eachMonthOfInterval({ start: startDate, end: endDate });
-    const monthlyIncome: { [key: string]: number } = {};
+      if (transaction.type === TransactionType.INGRESO) {
+        dailyData[dayKey].ingresos += transaction.amount;
+      } else if (transaction.type === TransactionType.EGRESO) {
+        dailyData[dayKey].egresos += transaction.amount;
+      }
+    }
 
-    for (const transaction of currentPeriodTransactions) {
-      const monthKey = format(transaction.createdAt, "yyyy-MM");
-      monthlyIncome[monthKey] =
-        (monthlyIncome[monthKey] || 0) + transaction.amount;
-    }
+    formattedData = days.map((day) => {
+      const dayKey = format(day, "dd/MM");
+      const data = dailyData[dayKey] || { ingresos: 0, egresos: 0 };
+      return {
+        name: format(day, "d MMM", { locale: es }),
+        ingresos: data.ingresos,
+        egresos: data.egresos,
+        balance: data.ingresos - data.egresos,
+      };
+    });
+  } else {
+    // Lógica Mensual
+    const months = eachMonthOfInterval({ start: startDate, end: endDate });
+    const monthlyData: { [key: string]: { ingresos: number; egresos: number } } = {};
 
-    formattedData = months.map((month) => {
-      const monthKey = format(month, "yyyy-MM");
-      return {
-        name: format(month, "MMM", { locale: es }),
-        total: monthlyIncome[monthKey] || 0,
-      };
-    });
-  }
-  const lineChartData = formattedData;
+    for (const transaction of validCurrentTransactions) {
+      const monthKey = format(transaction.createdAt, "yyyy-MM");
+
+      if (!monthlyData[monthKey]) {
+        monthlyData[monthKey] = { ingresos: 0, egresos: 0 };
+      }
+
+      if (transaction.type === TransactionType.INGRESO) {
+        monthlyData[monthKey].ingresos += transaction.amount;
+      } else if (transaction.type === TransactionType.EGRESO) {
+        monthlyData[monthKey].egresos += transaction.amount;
+      }
+    }
+
+    formattedData = months.map((month) => {
+      const monthKey = format(month, "yyyy-MM");
+      const data = monthlyData[monthKey] || { ingresos: 0, egresos: 0 };
+      return {
+        name: format(month, "MMM", { locale: es }),
+        ingresos: data.ingresos,
+        egresos: data.egresos,
+        balance: data.ingresos - data.egresos,
+      };
+    });
+  }
+  const lineChartData = formattedData;
 
   // Gráfico de Torta: Ingresos por cancha
   const courtIncome = new Map<string, { name: string; total: number }>();
@@ -363,7 +393,7 @@ export async function getAnalyticsData({
   }
   const pieChartData = Array.from(courtIncome.values()).map((item) => ({
     name: item.name,
-    value: item.total, // El gráfico de torta espera 'value'
+    value: item.total,
   }));
 
   const heatmapData: { [day: number]: { [hour: number]: number } } = {};

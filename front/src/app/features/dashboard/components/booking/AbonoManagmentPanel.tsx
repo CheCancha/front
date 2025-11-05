@@ -94,7 +94,7 @@ export function AbonoManagmentPanel({
   const [newCourt, setNewCourt] = useState<string>("");
   const [newDays, setNewDays] = useState<number[]>([]);
   const [newTime, setNewTime] = useState<string>("");
-  const [newPrice, setNewPrice] = useState<string>("0");
+  const [newPrice, setNewPrice] = useState<string>("");
   const [newNotes, setNewNotes] = useState<string>("");
   const [newType, setNewType] = useState<FixedSlotType>(
     FixedSlotType.CLIENTE_FIJO
@@ -177,7 +177,7 @@ export function AbonoManagmentPanel({
     setNewCourt("");
     setNewDays([]);
     setNewTime("");
-    setNewPrice("0");
+    setNewPrice("");
     setNewNotes("");
     setNewType(FixedSlotType.CLIENTE_FIJO);
   };
@@ -203,19 +203,26 @@ export function AbonoManagmentPanel({
 
   const handleCreateAbono = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (
+    
+    const numericPrice = parseFloat(newPrice);
+    if (newPrice !== "" && (isNaN(numericPrice) || numericPrice < 0)) {
+      toast.error("El precio debe ser un número válido (ej: 5000).");
+      return;
+    }
+    if (
       newDays.length === 0 ||
       !selectedUser ||
       !newCourt ||
       !newTime ||
-      !newType
+      !newType ||
+      newPrice === ""
     ) {
       toast.error(
-        "Completá todos los campos: Cliente, Cancha, Día, Hora y Tipo."
+        "Completá todos los campos: Cliente, Cancha, Día, Hora, Tipo y Precio."
       );
       return;
     }
-    setIsFormLoading(true);
+    setIsFormLoading(true);
 
     const selectedCourt = courts.find((c) => c.id === newCourt);
     if (!selectedCourt) {
@@ -241,7 +248,7 @@ export function AbonoManagmentPanel({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             complexId,
-            userId: selectedUser.id,
+            userId: selectedUser?.id,
             courtId: newCourt,
             dayOfWeek: dayIndex,
             startTime: newTime,
@@ -293,7 +300,6 @@ export function AbonoManagmentPanel({
         );
         const newRuleIds = newRules.map((rule) => rule.id);
 
-        toast.success("Generando los primeros 4 turnos...");
         await handleGenerateTurns(newRuleIds, null);
 
         onAbonosUpdated();
@@ -564,11 +570,12 @@ export function AbonoManagmentPanel({
   const dayLabels = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 
   const isFormValid =
-    selectedUser !== null &&
-    newCourt !== "" &&
-    newDays.length > 0 &&
-    newTime !== "" &&
-    !!newType;
+    selectedUser !== null &&
+    newCourt !== "" &&
+    newDays.length > 0 &&
+    newTime !== "" &&
+    newPrice !== "" &&
+    !!newType;
 
   return (
     <>
@@ -784,6 +791,17 @@ export function AbonoManagmentPanel({
                   </SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="price">Precio del Turno</Label>
+              <Input
+                id="price"
+                type="number"
+                value={newPrice}
+                onChange={(e) => setNewPrice(e.target.value)}
+                placeholder="Ej: 5000"
+              />
             </div>
 
             <div className="space-y-2">

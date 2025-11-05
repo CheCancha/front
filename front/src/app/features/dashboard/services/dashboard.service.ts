@@ -1,7 +1,6 @@
 import { db } from "@/shared/lib/db";
-import { BookingStatus } from "@prisma/client";
+import { BookingStatus, TransactionType } from "@prisma/client";
 import { startOfDay, endOfDay, addDays, getDay } from "date-fns";
-
 
 const parseHour = (
   hourString: string | number | null | undefined
@@ -16,7 +15,6 @@ const parseHour = (
     return null;
   }
 };
-
 
 export async function getComplexDataForManager(
   complexId: string,
@@ -51,61 +49,92 @@ export async function getComplexDataForManager(
     return null;
   }
 
-  // 2. Ejecutamos las consultas de reservas en paralelo para más eficiencia
-  const [todayBookings, next7DaysBookings, upcomingBookings] =
-    await Promise.all([
-      db.booking.findMany({
-        where: {
-          court: { complexId },
-          date: { gte: startOfToday, lte: endOfToday },
-          status: { in: [BookingStatus.CONFIRMADO, BookingStatus.COMPLETADO] },
+  const [
+    todayBookings,
+    next7DaysBookings,
+    upcomingBookings,
+    todayTransactions,
+  ] = await Promise.all([
+    db.booking.findMany({
+      where: {
+        court: { complexId },
+        date: { gte: startOfToday, lte: endOfToday },
+        status: { in: [BookingStatus.CONFIRMADO, BookingStatus.COMPLETADO] },
+      },
+    }),
+    db.booking.findMany({
+      where: {
+        court: { complexId },
+        date: { gte: startOfToday, lte: endOfNext7Days },
+        status: { in: [BookingStatus.CONFIRMADO, BookingStatus.PENDIENTE] },
+      },
+    }), 
+    db.booking.findMany({
+      where: {
+        court: { complexId },
+        status: BookingStatus.CONFIRMADO,
+        OR: [
+          { date: { gt: startOfToday } },
+          {
+            date: startOfToday,
+            startTime: { gte: now.getHours() },
+          },
+        ],
+      },
+      orderBy: [{ date: "asc" }, { startTime: "asc" }],
+      take: 10,
+      include: { court: { select: { name: true } } },
+    }),
+    db.transaction.findMany({
+      where: {
+        complexId: complexId,
+        createdAt: { gte: startOfToday, lte: endOfToday },
+      },
+      include: {
+        bookingPlayer: {
+          include: { booking: { select: { status: true } } },
         },
-      }),
-      // Reservas de los próximos 7 días
-      db.booking.findMany({
-        where: {
-          court: { complexId },
-          date: { gte: startOfToday, lte: endOfNext7Days },
-          status: BookingStatus.CONFIRMADO,
-        },
-      }),
-      // Próximos 10 turnos confirmados
-      db.booking.findMany({
-        where: {
-          court: { complexId },
-          status: BookingStatus.CONFIRMADO,
-          OR: [
-            { date: { gt: startOfToday } },
-            {
-              date: startOfToday,
-              startTime: { gte: now.getHours() },
-            },
-          ],
-        },
-        orderBy: [{ date: "asc" }, { startTime: "asc" }],
-        take: 10,
-        include: { court: { select: { name: true } } },
-      }),
-    ]);
+      },
+    }),
+  ]);
 
   // 3. Calculamos todos los KPIs
-  const totalIncomeToday = todayBookings.reduce(
-    (sum, b) => sum + b.totalPrice,
-    0
-  );
+  const validTodayTransactions = todayTransactions.filter((tx) => {
+    if (tx.bookingPlayer && tx.bookingPlayer.booking) {
+      return tx.bookingPlayer.booking.status !== BookingStatus.CANCELADO;
+    }
+    return true;
+  });
+
+  // Calculamos Ingresos Brutos (el número correcto de "Ingresos del Día")
+  const totalIncomeToday = validTodayTransactions
+    .filter((tx) => tx.type === TransactionType.INGRESO)
+    .reduce((sum, tx) => sum + tx.amount, 0);
+
+  const totalExpenseToday = validTodayTransactions
+    .filter((tx) => tx.type === TransactionType.EGRESO)
+    .reduce((sum, tx) => sum + tx.amount, 0);
+  const netIncomeToday = totalIncomeToday - totalExpenseToday;
 
   const todayDayOfWeek = getDay(now);
   const dayKeys = [
-    "sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"
+    "sunday",
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
   ];
   const todayKey = dayKeys[todayDayOfWeek] as keyof typeof complex.schedule;
 
-  const openHourString = complex.schedule?.[`${todayKey}Open`] ?? complex.openHour;
-  const closeHourString = complex.schedule?.[`${todayKey}Close`] ?? complex.closeHour;
+  const openHourString =
+    complex.schedule?.[`${todayKey}Open`] ?? complex.openHour;
+  const closeHourString =
+    complex.schedule?.[`${todayKey}Close`] ?? complex.closeHour;
 
   const openHour = parseHour(openHourString) ?? 9;
   const closeHour = parseHour(closeHourString) ?? 23;
-  
   const totalHoursAvailableToday =
     complex.courts.length * (closeHour - openHour);
 
@@ -120,27 +149,23 @@ export async function getComplexDataForManager(
     (sum, b) => sum + b.remainingBalance,
     0
   );
-  const occupancyNext7Days = 50; 
+  const occupancyNext7Days = 50;
 
   return {
-    id: complex.id,
-    name: complex.name,
-    onboardingCompleted: complex.onboardingCompleted,
-    // KPIs del día
-    reservationsToday: todayBookings.length,
-    totalIncomeToday,
-    occupancyRate,
-    // KPIs de la próxima semana
-    reservationsNext7Days,
-    pendingIncomeNext7Days,
-    occupancyNext7Days,
-    // Reviews
-    averageRating: complex.averageRating,
-    reviewCount: complex.reviewCount,
-    // Próximos turnos
-    upcomingBookings: upcomingBookings.map((b) => ({
-      id: b.id,
-      guestName: b.guestName || "Usuario",
+    id: complex.id,
+    name: complex.name,
+    onboardingCompleted: complex.onboardingCompleted,
+    reservationsToday: todayBookings.length,
+    totalIncomeToday: netIncomeToday,
+    occupancyRate,
+    reservationsNext7Days,
+    pendingIncomeNext7Days, 
+    occupancyNext7Days,
+    averageRating: complex.averageRating,
+    reviewCount: complex.reviewCount,
+    upcomingBookings: upcomingBookings.map((b) => ({
+      id: b.id,
+      guestName: b.guestName || "Usuario",
       courtName: b.court.name,
       date: b.date,
       startTime: `${String(b.startTime).padStart(2, "0")}:${String(

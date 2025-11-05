@@ -6,6 +6,7 @@ import GoogleAnalytics from "@/shared/components/GoogleAnalytics";
 import { Suspense } from "react";
 import { SearchStateInitializer } from "@/shared/components/SearchStateInitializer";
 import Script from "next/script";
+import { Toaster } from "react-hot-toast";
 
 export const metadata: Metadata = {
   title: {
@@ -98,6 +99,12 @@ export default function RootLayout({
 
         <GoogleAnalytics />
         <SmoothScroller />
+        <Toaster 
+          position="top-center"
+          toastOptions={{
+            duration: 3000,
+          }}
+        />
         <Providers>{children}</Providers>
       </body>
     </html>
