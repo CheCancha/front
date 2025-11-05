@@ -50,6 +50,7 @@
     "formik": "^2.4.6",
     "framer-motion": "^12.23.12",
     "leaflet": "^1.9.4",
+    "leaflet-gesture-handling": "^1.2.2",
     "lucide-react": "^0.540.0",
     "mercadopago": "^2.9.0",
     "next": "15.4.7",

@@ -281,9 +281,6 @@ const SearchResultsComponent = () => {
     setIsModalOpen(true);
   };
 
-  const handleMarkerClick = (club: Club) => {
-    router.push(routes.public.complexProfile(club.slug));
-  };
 
   if (!dateParam) {
      return (
@@ -367,7 +364,6 @@ const SearchResultsComponent = () => {
               ) : (
                 <ComplexesMap
                   complexes={complexes}
-                  onMarkerClick={handleMarkerClick}
                 />
               )}
             </motion.div>
