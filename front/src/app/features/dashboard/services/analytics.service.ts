@@ -195,11 +195,10 @@ export async function getAnalyticsData({
         ) {
           return tx.bookingPlayer.booking.status !== BookingStatus.CANCELADO;
         }
-        return true; // Contar Egresos y Ventas de Cantina
+        return true;
       })
       .filter((tx) => {
-        // Filtrar por courtIds si aplica
-        if (!courtIds) return true; // Si no hay filtro de cancha, incluir todo
+        if (!courtIds) return true;
         if (tx.bookingPlayer && tx.bookingPlayer.booking) {
           return courtIds.includes(tx.bookingPlayer.booking.courtId);
         }
@@ -304,14 +303,14 @@ export async function getAnalyticsData({
   );
 
   // GRÁFICO DE LÍNEA 
-  let formattedData: LineChartPoint[] = []; // <-- Tipo actualizado
+  let formattedData: LineChartPoint[] = [];
   const differenceInDays =
     (endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24);
 
   if (differenceInDays < 32) {
     // Lógica Diaria
     const days = eachDayOfInterval({ start: startDate, end: endDate });
-    // --- CORRECCIÓN: Objeto para guardar ambas métricas ---
+    // --- Objeto para guardar ambas métricas ---
     const dailyData: { [key: string]: { ingresos: number; egresos: number } } = {};
 
     for (const transaction of validCurrentTransactions) {

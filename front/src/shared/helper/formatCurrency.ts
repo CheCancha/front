@@ -4,4 +4,4 @@ export const formatCurrency = (value: number) =>
     currency: "ARS",
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(value);
+  }).format(value / 100);

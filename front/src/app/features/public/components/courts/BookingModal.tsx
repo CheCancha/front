@@ -28,6 +28,7 @@ import {
   AlertDialogFooter,
 } from "@/shared/components/ui/alert-dialog";
 import { formatHour } from "@/shared/helper/formatHour";
+import { formatCurrency } from "@/shared/helper/formatCurrency";
 
 // --- TIPOS ---
 type Club = {
@@ -97,13 +98,6 @@ const getPriceForTime = (court: Court, time: string) => {
   );
   return rule || court.priceRules[0] || { price: 0, depositAmount: 0 };
 };
-
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat("es-AR", {
-    style: "currency",
-    currency: "ARS",
-    minimumFractionDigits: 0,
-  }).format(value);
 
 // --- Componente Principal del Modal ---
 export default function BookingModal({

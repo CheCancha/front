@@ -304,7 +304,7 @@ const MobileBookingWidget: React.FC<BookingWidgetProps> = ({
                     useGrouping: false,
                     minimumFractionDigits: 0,
                     maximumFractionDigits: 0,
-                  }).format(selectedPriceRule.depositAmount)}
+                  }).format(selectedPriceRule.depositAmount / 100)}
                 </p>
               </div>
               <Button size="lg" onClick={handleProceedToBooking}>

@@ -12,7 +12,6 @@ import {
 import { format, isSameDay } from "date-fns";
 import { es } from "date-fns/locale";
 
-// Mueve esta constante aquí
 const statusColors: Record<string, string> = {
   CONFIRMADO: "bg-green-100 text-green-800 border-l-4 border-green-500",
   PENDIENTE: "bg-yellow-100 text-yellow-800 border-l-4 border-yellow-500",
@@ -175,7 +174,7 @@ export const BookingCalendarView: React.FC<BookingCalendarViewProps> = ({
                           <span className="font-bold text-sm self-end">
                             {eventStartingNow.type === "BOOKING" &&
                               (
-                                eventStartingNow.depositPaid ?? 0
+                                (eventStartingNow.depositPaid ?? 0) / 100
                               ).toLocaleString("es-AR", {
                                 style: "currency",
                                 currency: "ARS",

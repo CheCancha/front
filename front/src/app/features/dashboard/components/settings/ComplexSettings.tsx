@@ -290,10 +290,18 @@ export const ComplexSettings = () => {
     const updateRulesForCourt = <T extends NewCourt | CourtWithRelations>(
       court: T
     ): T => {
+      let valueToStore = value;
+
+      if (field === "price" || field === "depositAmount") {
+        valueToStore = Math.round(value * 100);
+      }
       const updatedRules = court.priceRules.map((rule) => {
+        console.log(
+        `Actualizando Regla: CourtID=${courtId}, RuleID=${ruleId}, Campo=${field}, ValorOriginal=${value}, ValorGuardado=${valueToStore}`
+      );
         const currentRuleId = "tempId" in rule ? rule.tempId : rule.id;
         if (currentRuleId === ruleId) {
-          return { ...rule, [field]: value };
+          return { ...rule, [field]: valueToStore };
         }
         return rule;
       });
@@ -430,7 +438,6 @@ export const ComplexSettings = () => {
     e.preventDefault();
     if (!data || !originalData) return;
     setIsSaving(true);
-    toast.loading("Guardando cambios...");
 
     try {
       if (activeTab === "images") {

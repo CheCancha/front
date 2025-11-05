@@ -106,7 +106,7 @@ export async function getComplexDataForManager(
     return true;
   });
 
-  // Calculamos Ingresos Brutos (el número correcto de "Ingresos del Día")
+  // Calculamos Ingresos Brutos
   const totalIncomeToday = validTodayTransactions
     .filter((tx) => tx.type === TransactionType.INGRESO)
     .reduce((sum, tx) => sum + tx.amount, 0);

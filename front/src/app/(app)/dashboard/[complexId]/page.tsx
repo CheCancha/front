@@ -15,6 +15,7 @@ import { MetricCard } from "@/app/features/dashboard/components/MetricCard";
 import { SalesChart } from "@/app/features/dashboard/components/SalesChart";
 import { Reservations } from "@/app/features/dashboard/components/Reservations";
 import { OnboardingPrompt } from "@/app/features/dashboard/components/OnboardingPrompt";
+import { formatCurrency } from "@/shared/helper/formatCurrency";
 
 export default async function DashboardPage({
   params,
@@ -36,15 +37,6 @@ export default async function DashboardPage({
   if (!complexData) {
     return notFound();
   }
-
-  // --- Funciones para formatear los valores ---
-  const formatCurrency = (amount: number) =>
-    new Intl.NumberFormat("es-AR", {
-      style: "currency",
-      currency: "ARS",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
 
   return (
     <div className="flex-1 space-y-6 mx-auto">

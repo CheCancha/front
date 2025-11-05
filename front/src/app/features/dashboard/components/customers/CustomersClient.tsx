@@ -14,13 +14,7 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { User, Phone, Calendar, Hash, DollarSign, Search } from "lucide-react";
 import { Input } from "@/shared/components/ui/inputshadcn";
-
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat("es-AR", {
-    style: "currency",
-    currency: "ARS",
-    minimumFractionDigits: 0,
-  }).format(value);
+import { formatCurrency } from "@/shared/helper/formatCurrency";
 
 export function CustomersClient({ customers }: { customers: CustomerData[] }) {
   const [searchTerm, setSearchTerm] = useState("");

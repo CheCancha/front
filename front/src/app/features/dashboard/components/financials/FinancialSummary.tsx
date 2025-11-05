@@ -17,6 +17,7 @@ import {
   BookingStatus,
 } from "@prisma/client";
 import { Skeleton } from "@/shared/components/ui/skeleton";
+import { formatCurrency } from "@/shared/helper/formatCurrency";
 
 // --- TIPOS (Definir la estructura de la respuesta de la API) ---
 type KpiData = {
@@ -39,21 +40,14 @@ type TransactionData = {
   source: string;
   status: BookingStatus | TransactionType | null;
 };
-type SummaryResponse = {
+
+export type SummaryResponse = {
   kpis: KpiData;
   byPaymentMethod: GroupedData[];
   bySource: GroupedData[];
   recentTransactions: TransactionData[];
 };
 
-// --- Helper de Formato de Moneda ---
-const formatCurrency = (valueInCents: number) => 
-  new Intl.NumberFormat("es-AR", {
-    style: "currency",
-    currency: "ARS",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(valueInCents / 100);
 
 // --- Componente de Tarjeta KPI ---
 const KpiCard = memo(
@@ -103,57 +97,18 @@ const FinancialSummarySkeleton = () => (
 );
 
 interface FinancialSummaryProps {
-  complexId: string;
-  startDate: Date;
-  endDate: Date;
+  data: SummaryResponse | null;
+  isLoading: boolean;
+  error: string | null;
 }
 
 // --- COMPONENTE PRINCIPAL ---
 export const FinancialSummary: React.FC<FinancialSummaryProps> = ({
-  complexId,
-  startDate,
-  endDate,
+  data,
+  isLoading,
+  error,
 }) => {
-  const [data, setData] = useState<SummaryResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   
-
-  const fetchSummaryData = useCallback(async () => {
-    if (!complexId || !startDate || !endDate) {
-      setIsLoading(false);
-      setError("ID del complejo o rango de fechas no proporcionado.");
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-    const start = format(startDate, "yyyy-MM-dd");
-    const end = format(endDate, "yyyy-MM-dd");
-
-    try {
-      const res = await fetch(
-        `/api/complex/${complexId}/financials?startDate=${start}&endDate=${end}`
-      );
-      if (!res.ok) {
-        throw new Error("No se pudo cargar el resumen financiero.");
-      }
-      const summary: SummaryResponse = await res.json();
-      setData(summary);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Ocurrió un error desconocido."
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  }, [complexId, startDate, endDate]);
-
-  useEffect(() => {
-    fetchSummaryData();
-  }, [fetchSummaryData]);
-
-
   if (isLoading) {
     return <FinancialSummarySkeleton />;
   }

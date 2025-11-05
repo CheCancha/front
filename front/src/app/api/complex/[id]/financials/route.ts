@@ -144,8 +144,8 @@ export async function POST(
 
     const {
       amount,
-      type, // INGRESO o EGRESO
-      source, // GASTO, DEVOLUCION, OTRO, etc.
+      type, 
+      source,
       paymentMethod,
       description,
     } = body;

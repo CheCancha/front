@@ -386,7 +386,11 @@ export async function POST(
 
       const [hour, minute] = fixedSlot.startTime.split(":").map(Number);
 
+      
       const newBooking = await db.$transaction(async (tx) => {
+
+        const priceInCents = (fixedSlot.price || 0) * 100;
+
         const createdBooking = await tx.booking.create({
           data: {
             courtId: fixedSlot.courtId,
@@ -394,10 +398,10 @@ export async function POST(
             date: bookingDateUtc,
             startTime: hour,
             startMinute: minute,
-            totalPrice: fixedSlot.price,
+            totalPrice: priceInCents,
             depositAmount: 0,
             depositPaid: 0,
-            remainingBalance: fixedSlot.price,
+            remainingBalance: priceInCents,
             status: BookingStatus.CONFIRMADO,
             fixedSlotId: fixedSlot.id,
           },
@@ -582,8 +586,8 @@ export async function POST(
       }
     }
 
-    const totalPrice = applicableRule.price;
-    const amountPaid = depositPaid || 0;
+    const totalPriceInCents = (applicableRule.price || 0) * 100;
+    const amountPaidInCents = (depositPaid || 0) * 100;
 
     const newBooking = await db.$transaction(async (tx) => {
       const createdBooking = await tx.booking.create({
@@ -594,10 +598,10 @@ export async function POST(
           date: bookingDateUtc,
           startTime: hour,
           startMinute: minute,
-          totalPrice,
+          totalPrice: totalPriceInCents,
           depositAmount: 0,
-          depositPaid: amountPaid,
-          remainingBalance: totalPrice - amountPaid,
+          depositPaid: amountPaidInCents,
+          remainingBalance: totalPriceInCents - amountPaidInCents,
           status: (status || "PENDIENTE") as BookingStatus,
           paymentMethod: (paymentMethod as PaymentMethod) || null,
         },
@@ -608,19 +612,19 @@ export async function POST(
         data: {
           bookingId: createdBooking.id,
           guestName: guestName,
-          amountPaid: amountPaid,
-          paymentStatus: amountPaid > 0 ? "PAGADO" : "PENDIENTE",
+          amountPaid: amountPaidInCents,
+          paymentStatus: amountPaidInCents > 0 ? "PAGADO" : "PENDIENTE",
           paymentMethod:
-            amountPaid > 0 ? (paymentMethod as PaymentMethod) : null,
+            amountPaidInCents > 0 ? (paymentMethod as PaymentMethod) : null,
         },
       });
 
-      // 5. CREAR TRANSACCIÓN DE CAJA (SI HAY PAGO INICIAL)
-      if (amountPaid > 0 && paymentMethod) {
+      // 5. CREAR TRANSACCIÓN DE CAJA
+      if (amountPaidInCents > 0 && paymentMethod) {
         await tx.transaction.create({
           data: {
             complexId: complexId,
-            amount: amountPaid,
+            amount: amountPaidInCents,
             type: "INGRESO",
             source: "RESERVA",
             paymentMethod: paymentMethod as PaymentMethod,

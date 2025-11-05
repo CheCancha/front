@@ -9,6 +9,7 @@ import { CourtRevenuePieChart } from "./CourtRevenuePieChart";
 import { PeakHoursHeatmap } from "./PeakHoursHeatmap";
 import { AnalyticsTables } from "./AnalyticsTable";
 import type { AnalyticsData } from "@/app/features/dashboard/services/analytics.service";
+import { formatCurrency } from "@/shared/helper/formatCurrency";
 
 interface AnalyticsTabProps {
   complexId: string;
@@ -43,14 +44,6 @@ const StatCard = memo(
   )
 );
 StatCard.displayName = "StatCard";
-
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat("es-AR", {
-    style: "currency",
-    currency: "ARS",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
 
 const formatChange = (change: number) => {
   if (change === 0) return "sin cambios";

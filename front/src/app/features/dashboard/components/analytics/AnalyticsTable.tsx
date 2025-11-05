@@ -1,11 +1,6 @@
 "use client";
 
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat("es-AR", {
-    style: "currency",
-    currency: "ARS",
-    minimumFractionDigits: 0,
-  }).format(value);
+import { formatCurrency } from "@/shared/helper/formatCurrency";
 
 type TopCustomer = { name: string; bookingsCount: number; totalSpent: number };
 type CourtBreakdown = {

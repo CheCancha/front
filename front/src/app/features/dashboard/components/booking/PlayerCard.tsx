@@ -1,8 +1,6 @@
 import React, { memo } from "react";
 import { Button } from "@/shared/components/ui/button";
 import { X } from "lucide-react";
-
-// Importa los tipos y helpers que necesitas
 import { BookingPlayerWithUser } from "@/shared/entities/booking/bookingTypes";
 import { formatCurrency } from "@/shared/helper/formatCurrency";
 import { cn } from "@/shared/lib/utils";

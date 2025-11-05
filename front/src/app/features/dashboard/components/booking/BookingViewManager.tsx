@@ -115,8 +115,8 @@ export const BookingViewManager = memo(
 
               {booking.depositPaid > 0 && (
                 <InfoRow icon={DollarSign} label="Seña">
-                  <span className="font-bold text-green-600">
-                    {formatCurrency(booking.totalPaid)}
+                  <span className="font-bold text-brand-dark">
+                    {formatCurrency(booking.depositPaid)}
                   </span>
                 </InfoRow>
               )}

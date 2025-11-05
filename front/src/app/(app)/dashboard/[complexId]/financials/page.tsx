@@ -3,15 +3,18 @@
 import { parseISO, format, startOfToday, endOfToday } from "date-fns";
 import { AnalyticsFilters } from "@/app/features/dashboard/components/analytics/AnalyticsFilters";
 import React, { useState, useCallback, useEffect, useMemo } from "react";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from "../../../../../shared/components/ui/tabs";
+} from "@/shared/components/ui/tabs";
 import { AnalyticsTab } from "@/app/features/dashboard/components/analytics/AnalyticsTab";
-import { FinancialSummary } from "@/app/features/dashboard/components/financials/FinancialSummary";
+import {
+  FinancialSummary,
+  SummaryResponse,
+} from "@/app/features/dashboard/components/financials/FinancialSummary";
 import {
   PaymentMethod,
   TransactionSource,
@@ -29,33 +32,34 @@ type Court = { id: string; name: string };
 export default function FinancialsPage() {
   const params = useParams();
   const searchParams = useSearchParams();
-  const router = useRouter();
   const complexId = params.complexId as string;
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [data, setData] = useState<SummaryResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // --- LÓGICA DE FILTROS---
   const from = useMemo(() => {
-    const fromParam = searchParams.get("from");
-    return fromParam ? parseISO(fromParam) : startOfToday();
-  }, [searchParams]);
+    const fromParam = searchParams.get("from");
+    return fromParam ? parseISO(fromParam) : startOfToday();
+  }, [searchParams]);
 
-  const to = useMemo(() => {
-    const toParam = searchParams.get("to");
-    return toParam ? parseISO(toParam) : endOfToday();
-  }, [searchParams]);
+  const to = useMemo(() => {
+    const toParam = searchParams.get("to");
+    return toParam ? parseISO(toParam) : endOfToday();
+  }, [searchParams]);
 
-  const courtIds = useMemo(() => {
-    const courtIdsParam = searchParams.get("courtIds");
-    return courtIdsParam ? courtIdsParam.split(",") : undefined;
-  }, [searchParams]);
+  const courtIds = useMemo(() => {
+    const courtIdsParam = searchParams.get("courtIds");
+    return courtIdsParam ? courtIdsParam.split(",") : undefined;
+  }, [searchParams]);
 
-  const [availableCourts, setAvailableCourts] = useState<Court[]>([]);
-  const [isLoadingCourts, setIsLoadingCourts] = useState(true);
+  const [availableCourts, setAvailableCourts] = useState<Court[]>([]);
+  const [isLoadingCourts, setIsLoadingCourts] = useState(true);
 
   useEffect(() => {
     if (!complexId) return;
-
     const fetchCourts = async () => {
       setIsLoadingCourts(true);
       try {
@@ -84,7 +88,34 @@ export default function FinancialsPage() {
     fetchCourts();
   }, [complexId, from, to]);
 
-  // --- HANDLER DE GASTOS (Movido aquí) ---
+
+  const fetchSummaryData = useCallback(async () => {
+   if (!complexId || !from || !to) return;
+
+    setIsLoading(true);
+    setError(null);
+    const start = format(from, "yyyy-MM-dd");
+    const end = format(to, "yyyy-MM-dd");
+
+    try {
+      const res = await fetch(
+        `/api/complex/${complexId}/financials?startDate=${start}&endDate=${end}`
+      );
+      if (!res.ok) {
+        throw new Error("No se pudo cargar el resumen financiero.");
+      }
+      const summary: SummaryResponse = await res.json();
+      setData(summary);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Ocurrió un error desconocido."
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }, [complexId, from, to]);
+
+    // --- HANDLER DE GASTOS (Movido aquí) ---
   const handleAddExpense = useCallback(
     async (formData: {
       amount: number;
@@ -110,15 +141,20 @@ export default function FinancialsPage() {
 
         toast.success("Gasto registrado con éxito.");
         setIsExpenseModalOpen(false);
-        router.refresh();
+        fetchSummaryData();
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Error desconocido.");
       } finally {
         setIsSubmitting(false);
       }
     },
-    [complexId, router]
+    [complexId]
   );
+
+  useEffect(() => {
+    fetchSummaryData();
+  }, [fetchSummaryData]);
+
 
   return (
     <div className="space-y-6">
@@ -162,11 +198,7 @@ export default function FinancialsPage() {
         </TabsContent>
         {/* --- PESTAÑA 2: CAJA --- */}
         <TabsContent value="cashflow" className="space-y-4">
-          <FinancialSummary
-            complexId={complexId}
-            startDate={from}
-            endDate={to}
-          />
+          <FinancialSummary data={data} isLoading={isLoading} error={error} />
         </TabsContent>
       </Tabs>
     </div>

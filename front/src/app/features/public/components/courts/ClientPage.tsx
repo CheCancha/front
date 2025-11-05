@@ -35,10 +35,14 @@ const Map = dynamic(
 export const ComplexHeader = ({
   name,
   address,
+  city,
+  province,
   images,
 }: {
   name: string;
   address: string;
+  city: string;
+  province: string;
   images: PrismaImage[];
 }) => (
   <section className="relative mb-2 md:mb-12 rounded-2xl overflow-hidden h-64 md:h-96">
@@ -55,12 +59,11 @@ export const ComplexHeader = ({
         className="text-lg text-gray-200 flex items-center gap-2 mt-1"
         style={{ textShadow: "1px 1px 2px rgba(0,0,0,0.8)" }}
       >
-        <MapPin size={18} /> {address}
+        <MapPin size={18} /> {address}. {city}, {province}
       </p>
     </div>
   </section>
 );
-
 
 const generateWeeklySchedule = (complex: ComplexProfileData) => {
   const schedule = [];
@@ -85,13 +88,12 @@ const generateWeeklySchedule = (complex: ComplexProfileData) => {
     let hoursString = "Cerrado";
 
     if (typeof openHour === "string" && typeof closeHour === "string") {
-      
       const formattedOpen = formatHourSafely(openHour);
       const formattedClose = formatHourSafely(closeHour);
 
       hoursString = `${formattedOpen} - ${formattedClose}`;
     }
-    
+
     schedule.push({ day: day.name, hours: hoursString });
   }
   return schedule;
@@ -151,6 +153,8 @@ export function ClientPage({ complex }: { complex: ComplexProfileData }) {
           <ComplexHeader
             name={complex.name}
             address={complex.address}
+            city={complex.city}
+            province={complex.province}
             images={complex.images}
           />
 
@@ -255,7 +259,6 @@ export function ClientPage({ complex }: { complex: ComplexProfileData }) {
                   ))}
                 </ul>
               </div>
-
             </div>
           </div>
 
