@@ -18,7 +18,7 @@ import type {
   Schedule,
 } from "@/app/(public)/canchas/[slug]/page";
 import { ImageCarousel } from "./ImageCarousel";
-import { formatHour } from "@/shared/helper/formatHour";
+import { formatHourSafely } from "@/shared/helper/formatHour";
 
 const Map = dynamic(
   () => import("@/app/features/public/components/courts/Map"),
@@ -77,18 +77,6 @@ const generateWeeklySchedule = (complex: ComplexProfileData) => {
     { name: "Sábado", openKey: "saturdayOpen", closeKey: "saturdayClose" },
     { name: "Domingo", openKey: "sundayOpen", closeKey: "sundayClose" },
   ];
-
-  const formatHourSafely = (timeStr: string): string => {
-    if (timeStr.includes(":")) {
-      const parts = timeStr.split(":");
-      const hour = parts[0].padStart(2, "0");
-      const minutes = parts[1].padStart(2, "0");
-      return `${hour}:${minutes}`;
-    }
-
-    const hour = timeStr.padStart(2, "0");
-    return `${hour}:00`;
-  };
 
   for (const day of dayOrder) {
     const openHour = complex.schedule?.[day.openKey];
