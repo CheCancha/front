@@ -95,11 +95,6 @@ const BookingSheet: React.FC<BookingSheetProps> = ({
     }
 
     if (booking) {
-      console.log(
-        `[BookingSheet] Abriendo modal para reserva existente. 
-        ID: ${booking.id}, 
-        totalPrice (en BD/centavos): ${booking.totalPrice}`
-      );
       setIsLoadingPlayers(true);
       fetch(`/api/bookings/${booking.id}/players`)
         .then((res) => res.json())
@@ -277,22 +272,19 @@ const BookingSheet: React.FC<BookingSheetProps> = ({
     if (!booking) {
       console.log("[LOG-COMPLETAR] ERROR: Booking no definido.");
       return;
-    } // 1. Obtener el monto pendiente de pago (calculado en el useMemo)
+    } 
 
     if (isLoadingPlayers) {
       toast.error("Espera a que los jugadores terminen de cargar.");
-      console.log("[LOG-COMPLETAR] FLUJO DETENIDO: isLoadingPlayers es true.");
       return;
     }
 
     const remainingToPay = saldoPendienteFinal;
-    console.log(`[LOG-COMPLETAR] Saldo Pendiente: ${remainingToPay}`);
 
     if (remainingToPay < 0) {
       toast.error(
         `Error: Hay un sobrante de ${formatCurrency(Math.abs(remainingToPay))}.`
       );
-      console.log("[LOG-COMPLETAR] FLUJO DETENIDO: Sobrante detectado.");
       return;
     }
 
@@ -309,10 +301,6 @@ const BookingSheet: React.FC<BookingSheetProps> = ({
         players[0];
 
       if (mainPlayer) {
-        // --- FLUJO ÚNICO Y CORRECTO ---
-        console.log(
-          `[LOG-COMPLETAR] (Flujo Unificado) Asignando ${remainingToPay} a jugador ID: ${mainPlayer.id}`
-        );
         try {
           const amountInPesos = remainingToPay / 100;
           await handlePaymentSubmit({
@@ -327,7 +315,6 @@ const BookingSheet: React.FC<BookingSheetProps> = ({
           return;
         }
       } else {
-        // --- CASO 2 (AHORA ES UN ERROR) ---
         // Si llegamos aquí, es un estado inconsistente:
         // Se debe pagar (remainingToPay > 0) pero no hay a quién asignarle el pago.
         console.error(
@@ -337,16 +324,14 @@ const BookingSheet: React.FC<BookingSheetProps> = ({
         toast.error(
           "Error: No hay ningún jugador en la reserva a quien asignarle el pago."
         );
-        return; // Detiene la ejecución
+        return;
       }
     }
 
-    // 2. MARCAR LA RESERVA COMO COMPLETADA
-    // (Solo se ejecuta si el pago fue exitoso o si remainingToPay era 0)
+    // 2. MARCAR LA RESERVA COMO COMPLETADA (Solo se ejecuta si el pago fue exitoso o si remainingToPay era 0)
     console.log(
       `[LOG-COMPLETAR] (Flujo unificado) Llamando a onUpdateStatus para Booking ID: ${booking.id}`
     );
-    // Ya no pasamos 'remainingToPay' aquí
     onUpdateStatus(booking.id, "COMPLETADO", loadingToastId);
     console.log("[LOG-COMPLETAR] FLUJO FINALIZADO CON ÉXITO.");
   };
@@ -359,7 +344,6 @@ const BookingSheet: React.FC<BookingSheetProps> = ({
         <SheetContent className="flex flex-col w-full sm:max-w-lg">
           <SheetHeader className="p-4 border-b">
             <SheetTitle>
-              {/* Usamos tus variables para poner el título dinámicamente */}
               {isViewingExisting ? "Detalles de la Reserva" : "Nueva Reserva"}
             </SheetTitle>
             <SheetDescription>

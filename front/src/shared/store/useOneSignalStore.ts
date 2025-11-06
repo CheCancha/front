@@ -1,4 +1,3 @@
-// front/src/shared/stores/useOneSignalStore.ts
 import { create } from 'zustand';
 
 interface OneSignalState {
@@ -9,13 +8,10 @@ interface OneSignalState {
   promptForPush: () => void;
 }
 
-// Crea el store
 export const useOneSignalStore = create<OneSignalState>((set) => ({
-  // --- ESTADO INICIAL ---
   isSubscribed: false,
   isLoading: true, 
 
-  // --- ACCIONES ---
   setIsSubscribed: (status) => set({ isSubscribed: status }),
   setIsLoading: (loading) => set({ isLoading: loading }),
   
@@ -30,7 +26,6 @@ export const useOneSignalStore = create<OneSignalState>((set) => ({
         try {
             
             const permissionResult = await window.OneSignal.Notifications.requestPermission();
-            
             console.log(`✅ [PROMPT LOG] Resultado de la solicitud nativa: ${permissionResult}`);
 
         } catch (error) {

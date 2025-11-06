@@ -17,8 +17,6 @@ import {
 import { toast } from "react-hot-toast";
 import { Spinner } from "@/shared/components/ui/Spinner";
 
-// ⚠️ Usar el MISMO schema que la API para consistencia
-// (Puedes moverlo a un archivo compartido si prefieres)
 const onboardSchema = z.object({
   managerName: z.string().min(3, "Nombre requerido"),
   managerEmail: z.string().email("Email inválido"),
@@ -32,7 +30,7 @@ const onboardSchema = z.object({
 type OnboardValues = z.infer<typeof onboardSchema>;
 
 interface QuickCreateComplexFormProps {
-  onSuccess?: () => void; // Callback opcional para refrescar la lista
+  onSuccess?: () => void;
 }
 
 export const QuickCreateComplexForm: React.FC<QuickCreateComplexFormProps> = ({ onSuccess }) => {
@@ -46,7 +44,7 @@ export const QuickCreateComplexForm: React.FC<QuickCreateComplexFormProps> = ({ 
   } = useForm<OnboardValues>({
     resolver: zodResolver(onboardSchema),
     defaultValues: {
-      plan: SubscriptionPlan.BASE, // O el plan por defecto que quieras
+      plan: SubscriptionPlan.BASE,
     },
   });
 
@@ -66,14 +64,8 @@ export const QuickCreateComplexForm: React.FC<QuickCreateComplexFormProps> = ({ 
       }
       
       toast.success(result.message || "Complejo creado con éxito!");
-      reset(); // Limpiar formulario
-      if (onSuccess) onSuccess(); // Llamar al callback si existe
-
-      // Opcional: Mostrar la URL de seteo de contraseña en la consola del navegador del Admin
-      if (result.setPasswordUrlForAdminDebug) {
-        console.log("URL para setear contraseña (Debug):", result.setPasswordUrlForAdminDebug);
-        // Podrías incluso mostrarla en un modal pequeño si falla el envío de email
-      }
+      reset();
+      if (onSuccess) onSuccess(); 
 
     } catch (error: unknown) {
       console.error("Error en Quick Create:", error);
@@ -106,10 +98,8 @@ export const QuickCreateComplexForm: React.FC<QuickCreateComplexFormProps> = ({ 
               <Select onValueChange={field.onChange} value={field.value}>
                 <SelectTrigger><SelectValue placeholder="Seleccionar plan..." /></SelectTrigger>
                 <SelectContent>
-                  {/* Mapear sobre los valores del Enum SubscriptionPlan */}
                   {Object.values(SubscriptionPlan).map(planValue => (
                     <SelectItem key={planValue} value={planValue}>
-                      {/* Aquí podrías tener un mapeo a nombres más amigables si quieres */}
                       {planValue} 
                     </SelectItem>
                   ))}

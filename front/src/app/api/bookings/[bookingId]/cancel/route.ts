@@ -183,9 +183,9 @@ export async function POST(
       };
 
       try {
-        console.log(
-          `[CANCEL NOTIF] Intentando enviar push a ${targetPlayerId}...`
-        );
+        // console.log(
+        //   `[CANCEL NOTIF] Intentando enviar push a ${targetPlayerId}...`
+        // );
         const oneSignalResponse = await fetch(
           "https://onesignal.com/api/v1/notifications",
           {
@@ -200,9 +200,9 @@ export async function POST(
         const responseBody = await oneSignalResponse.text();
 
         if (oneSignalResponse.ok) {
-          console.log(
-            `✅ [CANCEL NOTIF] Push enviado con éxito a ${targetPlayerId}.`
-          );
+          // console.log(
+          //   `✅ [CANCEL NOTIF] Push enviado con éxito a ${targetPlayerId}.`
+          // );
           await db.notification.create({
             data: {
               userId: targetUserId,
@@ -211,19 +211,19 @@ export async function POST(
               url: notificationPayload.web_url,
             },
           });
-          console.log(
-            `✅ [CANCEL NOTIF] Notificación interna guardada para ${targetUserId}.`
-          );
+          // console.log(
+          //   `✅ [CANCEL NOTIF] Notificación interna guardada para ${targetUserId}.`
+          // );
         } else {
           console.error(
             `❌ [CANCEL NOTIF] Error OneSignal (${oneSignalResponse.status}): ${responseBody}`
           );
         }
       } catch (pushError) {
-        console.error(
-          "❌ [CANCEL NOTIF] Error en fetch a OneSignal:",
-          pushError
-        );
+        // console.error(
+        //   "❌ [CANCEL NOTIF] Error en fetch a OneSignal:",
+        //   pushError
+        // );
       }
     } else {
       console.log(

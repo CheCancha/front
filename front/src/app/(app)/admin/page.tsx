@@ -7,7 +7,7 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
-} from "../../../shared/components/ui/tabs";
+} from "@/shared/components/ui/tabs";
 import { FileText, Building, Users } from "lucide-react";
 
 export const dynamic = 'force-dynamic';

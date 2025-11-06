@@ -40,7 +40,7 @@ function getMercadoPagoCredentials(complex: {
   mp_public_key: string | null;
 }) {
   if (complex.mp_access_token && complex.mp_public_key) {
-    console.log("Usando credenciales de producción del complejo.");
+    // console.log("Usando credenciales de producción del complejo.");
     const secretKey = process.env.ENCRYPTION_KEY;
     if (!secretKey) throw new Error("ENCRYPTION_KEY no está definida.");
 
@@ -50,7 +50,7 @@ function getMercadoPagoCredentials(complex: {
     return { accessToken, publicKey: complex.mp_public_key };
   }
 
-  console.log("Usando credenciales de prueba (fallback).");
+  // console.log("Usando credenciales de prueba (fallback).");
   const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
   const publicKey = process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY;
 
@@ -249,9 +249,9 @@ export async function POST(req: Request) {
     const preferenceClient = getMercadoPagoPreferenceClient(accessToken);
 
     const notificationUrl = `${baseURL}/api/webhooks/mercado-pago`;
-    console.log(
-      `[create-preference] URL de Notificación que se enviará a Mercado Pago: "${notificationUrl}"`
-    );
+    // console.log(
+    //   `[create-preference] URL de Notificación que se enviará a Mercado Pago: "${notificationUrl}"`
+    // );
 
     const formattedDateForMP = format(
       new Date(`${bookingData.date}T00:00:00`),

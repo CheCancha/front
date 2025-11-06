@@ -241,11 +241,6 @@ export function AbonoManagmentPanel({
       endMinute
     ).padStart(2, "0")}`;
 
-    console.log(
-      `[Log 1 - Panel de Abono] Enviando al API (en pesos):`,
-      Number(newPrice)
-    );
-
     try {
       const creationPromises = newDays.map((dayIndex) => {
         return fetch("/api/fixed-slots", {

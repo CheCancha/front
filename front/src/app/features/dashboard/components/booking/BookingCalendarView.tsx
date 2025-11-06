@@ -72,7 +72,6 @@ export const BookingCalendarView: React.FC<BookingCalendarViewProps> = ({
         <div className="sticky top-0 left-0 bg-white z-20 flex items-center justify-center p-2 border-b border-r">
           <button
             onClick={() => {
-              console.log("Clic en Botón + (Hijo)");
               onOpenNewBookingSheet();
             }}
             disabled={filteredCourts.length === 0}

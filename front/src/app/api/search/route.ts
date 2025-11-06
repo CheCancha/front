@@ -172,7 +172,6 @@ function findNextAvailableSlots(
       minute
     ).padStart(2, "0")}`;
 
-    // Revisar cada cancha para ver si está libre en ESTE slot
     for (const court of complex.courts) {
       if (availableSlotsResult.length >= count) break; // Salir si ya llenamos
 

@@ -39,7 +39,7 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
-} from "../../../../../shared/components/ui/tabs";
+} from "@/shared/components/ui/tabs";
 import {
   ComplexWithCourts,
   CalendarEvent,
@@ -323,9 +323,9 @@ export default function BookingCalendarPage() {
     loadingToastId?: string,
     finalPaymentAmount?: number
   ) => {
-    console.log(
-      `[LOG-EXECUTE] Iniciando. BookingID: ${bookingId}, Status: ${status}, PagoFinal: ${finalPaymentAmount}`
-    );
+    // console.log(
+    //   `[LOG-EXECUTE] Iniciando. BookingID: ${bookingId}, Status: ${status}, PagoFinal: ${finalPaymentAmount}`
+    // );
 
     try {
       const body: {
@@ -340,7 +340,7 @@ export default function BookingCalendarPage() {
         finalPaymentAmount > 0
       ) {
         body.depositPaid = finalPaymentAmount;
-        console.log("[LOG-EXECUTE] Añadiendo pago final al body:", body);
+        // console.log("[LOG-EXECUTE] Añadiendo pago final al body:", body);
       }
 
       const response = await fetch(`/api/complex/${complexId}/bookings`, {
@@ -407,9 +407,9 @@ export default function BookingCalendarPage() {
   };
 
   const handleWeekSlotClick = (courtId: string, time: string, date: Date) => {
-    console.log(
-      `[page.tsx] Clic en grilla semanal: ${courtId}, ${time}, ${date}`
-    );
+    // console.log(
+    //   `[page.tsx] Clic en grilla semanal: ${courtId}, ${time}, ${date}`
+    // );
 
     // 1. Actualizamos la fecha principal a la del día seleccionado
     setCurrentDate(startOfDay(date));

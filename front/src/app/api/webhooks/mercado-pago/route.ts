@@ -88,8 +88,6 @@ export async function POST(req: NextRequest) {
     }
     console.log("Firma del Webhook verificada exitosamente.");
 
-    // --- ROUTER INTELIGENTE DE WEBHOOKS ---
-
     // 1. LÓGICA PARA PAGOS DE RESERVAS
     if (body.type === "payment" && body.data?.id && body.user_id) {
       console.log(`Webhook recibido: Procesando pago de reserva ${body.data.id}`);

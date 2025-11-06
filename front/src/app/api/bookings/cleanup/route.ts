@@ -12,8 +12,6 @@ export async function POST(req: Request) {
 
     const fiveMinutesAgo = subMinutes(new Date(), 5);
 
-    console.log("--- INICIANDO TAREA DE LIMPIEZA ---");
-    console.log("Hora actual del servidor (new Date()):", new Date());
     console.log("Buscando reservas PENDIENTES creadas antes de:", fiveMinutesAgo);
 
     const { count } = await db.booking.updateMany({

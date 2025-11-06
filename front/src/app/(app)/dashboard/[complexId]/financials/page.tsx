@@ -125,10 +125,10 @@ export default function FinancialsPage() {
       paymentMethod: PaymentMethod;
     }) => {
       
-      console.log(
-        `[Log 2 - FinancialsPage] handleAddExpense RECIBIÓ (en pesos):`,
-        formData.amount
-      );
+      // console.log(
+      //   `[Log 2 - FinancialsPage] handleAddExpense RECIBIÓ (en pesos):`,
+      //   formData.amount
+      // );
 
       setIsSubmitting(true);
       try {

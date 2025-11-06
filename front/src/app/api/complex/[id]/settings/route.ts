@@ -86,17 +86,14 @@ export async function PUT(
     await db.complex.update({
       where: { id: id },
       data: {
-        // 3. Aplicamos el resto de basicInfo
         ...restOfBasicInfo,
         slug: newSlug,
 
-        // 4. Aplicamos los otros campos (horarios, etc.)
         openHour: general?.openHour,
         closeHour: general?.closeHour,
         amenities: { set: amenities.connect },
         courts: { create: courts.create },
 
-        // 5. Aplicamos la lógica de teléfonos que hicimos para la otra API
         contactPhones: {
           deleteMany: {},
           create: contactPhones
@@ -109,19 +106,15 @@ export async function PUT(
       },
     });
 
-    console.log(`✅ [SETTINGS_PUT] Se intentó actualizar 'onboardingCompleted' a 'true' para el complejo: ${id}`);
-
     // LOG DE VERIFICACIÓN FINAL: Volvemos a leer el valor desde la BD
     const updatedComplex = await db.complex.findUnique({
         where: { id },
         select: { onboardingCompleted: true }
     });
-    console.log("✅ [SETTINGS_PUT] Verificación post-actualización. El valor en la BD ahora es:", updatedComplex?.onboardingCompleted);
 
     return NextResponse.json({ message: "Configuración guardada exitosamente" });
 
   } catch (error) {
-    console.error("❌ [SETTINGS_PUT] Error en el endpoint:", error);
     return new NextResponse("Error interno del servidor", { status: 500 });
   }
 }
