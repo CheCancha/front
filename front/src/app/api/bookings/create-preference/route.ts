@@ -267,7 +267,7 @@ export async function POST(req: Request) {
             description: `Turno para ${court.name} el ${formattedDateForMP} a las ${bookingData.time}hs`,
             quantity: 1,
             currency_id: "ARS",
-            unit_price: bookingData.depositAmount,
+            unit_price: bookingData.depositAmount / 100,
           },
         ],
         external_reference: pendingBooking.id,
