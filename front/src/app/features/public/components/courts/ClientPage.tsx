@@ -65,6 +65,29 @@ export const ComplexHeader = ({
   </section>
 );
 
+
+
+const formatHour = (hourString: string | null | undefined): string => {
+  if (!hourString) return "";
+  try {
+    const [hour, minutes] = hourString.split(":");
+    const hourNum = parseInt(hour, 10);
+
+    if (isNaN(hourNum)) return hourString;
+
+    // Si la hora es 24 o más, es transnoche
+    if (hourNum >= 24) {
+      const nextDayHour = String(hourNum % 24).padStart(2, "0");
+      return `${nextDayHour}:${minutes}`;
+    }
+
+    return hourString; // Devuelve "12:30" tal cual
+  } catch (e) {
+    return hourString;
+  }
+};
+
+
 const generateWeeklySchedule = (complex: ComplexProfileData) => {
   const schedule = [];
   const dayOrder: {
@@ -82,21 +105,21 @@ const generateWeeklySchedule = (complex: ComplexProfileData) => {
   ];
 
   for (const day of dayOrder) {
-    const openHour = complex.schedule?.[day.openKey];
-    const closeHour = complex.schedule?.[day.closeKey];
+    const openHour = complex.schedule?.[day.openKey]; 
+    const closeHour = complex.schedule?.[day.closeKey]; 
 
-    let hoursString = "Cerrado";
+    let hoursString = "Cerrado";
 
-    if (typeof openHour === "string" && typeof closeHour === "string") {
-      const formattedOpen = formatHourSafely(openHour);
-      const formattedClose = formatHourSafely(closeHour);
+    if (typeof openHour === "string" && typeof closeHour === "string") {
+      const formattedOpen = formatHour(openHour); 
+      const formattedClose = formatHour(closeHour); 
 
-      hoursString = `${formattedOpen} - ${formattedClose}`;
-    }
+      hoursString = `${formattedOpen} - ${formattedClose}`;
+    }
 
-    schedule.push({ day: day.name, hours: hoursString });
-  }
-  return schedule;
+    schedule.push({ day: day.name, hours: hoursString });
+  }
+  return schedule;
 };
 
 const InfoItem = ({
@@ -259,6 +282,7 @@ export function ClientPage({ complex }: { complex: ComplexProfileData }) {
                   ))}
                 </ul>
               </div>
+              
             </div>
           </div>
 

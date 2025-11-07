@@ -227,6 +227,7 @@ const MobileBookingWidget: React.FC<BookingWidgetProps> = ({
 
   const selectedPriceRule = useMemo(() => {
     if (!selectedTime || !selectedCourt) return null;
+
     const [hour, minute] = selectedTime.split(":").map(Number);
     const selectedTimeInMinutes = hour * 60 + minute;
 

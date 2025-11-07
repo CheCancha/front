@@ -5,7 +5,7 @@ import { z } from "zod";
 import { addDays } from "date-fns";
 import { formatInTimeZone, toDate } from "date-fns-tz";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 const searchSchema = z.object({
   city: z.string().optional(),
@@ -15,6 +15,19 @@ const searchSchema = z.object({
 });
 
 const ARGENTINA_TIME_ZONE = "America/Argentina/Buenos_Aires";
+
+const parseMinutesFromString = (hourString: unknown): number | undefined => {
+  if (typeof hourString !== "string" || !hourString.includes(":")) {
+    return undefined;
+  }
+  try {
+    const [hour, minute] = hourString.split(":").map(Number);
+    if (isNaN(hour) || isNaN(minute)) return undefined;
+    return hour * 60 + minute;
+  } catch (e) {
+    return undefined;
+  }
+};
 
 type ComplexWithCourtsAndBookings = Prisma.ComplexGetPayload<{
   include: {
@@ -45,23 +58,21 @@ type AvailableSlot = {
 
 function getPriceRuleForTime(
   court: { priceRules: PriceRule[] },
-  timeString: string
+  timeInMinutes: number // <-- Ahora recibe minutos (ej: 750)
 ): PriceRule | { price: number; depositAmount: number } {
-  
-  
-  const [hour] = timeString.split(":").map(Number);
-
   if (court.priceRules && court.priceRules.length > 0) {
     const rule = court.priceRules.find(
-      (r) => hour >= r.startTime && hour < r.endTime
+      (r) => timeInMinutes >= r.startTime && timeInMinutes < r.endTime // ej: 750 >= 750
     );
-    
+
     if (rule) {
       return rule;
     }
   }
 
-  console.warn(`  -> [getPriceRuleForTime] No se encontró regla para ${timeString}. Devolviendo precio 0.`);
+  console.warn(
+    `  -> [getPriceRuleForTime] No se encontró regla para ${timeInMinutes} (min). Devolviendo precio 0.`
+  );
   return { price: 0, depositAmount: 0 };
 }
 
@@ -100,39 +111,43 @@ function findNextAvailableSlots(
   const openKey = `${key}Open` as keyof Schedule;
   const closeKey = `${key}Close` as keyof Schedule;
 
-  // 1. Leemos los horarios como STRINGS
-  const openHourString = schedule[openKey] as string | null;
-  const closeHourString = schedule[closeKey] as string | null;
+  // Leemos "12:30" y lo convertimos a 750
+  const openMinutes = parseMinutesFromString(schedule[openKey] as string | null);
+  let closeMinutes = parseMinutesFromString(
+    schedule[closeKey] as string | null
+  );
 
-  // 2. Chequeamos si el día está cerrado
-  if (openHourString == null || closeHourString == null) {
+  // Fallback si no hay horario
+  if (openMinutes == null || closeMinutes == null) {
     console.warn(`[${complex.name}] Día cerrado, no hay horarios.`);
-    return []; 
-  }
-
-  // 3. Parseamos el STRING a NÚMERO (ej: "12:00" -> 12)
-  const openHour = parseInt(openHourString.split(":")[0], 10);
-  const closeHour = parseInt(closeHourString.split(":")[0], 10);
-  
-  // 4. Chequeo de seguridad por si el parseo falla
-  if (isNaN(openHour) || isNaN(closeHour)) {
-     console.error(`[${complex.name}] Horarios inválidos: ${openHourString}, ${closeHourString}`);
-     return [];
+    return [];
   }
 
-  // Ahora el resto de la función usará 'openHour' y 'closeHour' como NÚMEROS
-  const timeInterval = complex.timeSlotInterval || 30;
-  const totalSlotsInDay = (closeHour - openHour) * (60 / timeInterval);
+  // Lógica de transnoche
+  if (closeMinutes < openMinutes) {
+    closeMinutes += 1440; // ej: 180 (3:00) + 1440 = 1620 (27:00)
+  }
+
+  const timeInterval = complex.timeSlotInterval || 30;
+  const totalSlotsInDay = Math.floor(
+    (closeMinutes - openMinutes) / timeInterval
+  );
+
+  if (totalSlotsInDay <= 0) {
+    console.warn(`[${complex.name}] TotalSlots es 0 o negativo.`);
+    return [];
+  }
 
   const availabilityMap = new Map<string, boolean[]>();
   complex.courts.forEach((court) => {
     const courtSlots = new Array(totalSlotsInDay).fill(true);
 
     court.bookings?.forEach((booking) => {
-      const startIdx =
-        (booking.startTime * 60 + (booking.startMinute || 0) - openHour * 60) /
-        timeInterval;
+      // 'startTime' y 'startMinute' de la BD (ej: 12 y 30)
+      const bookingStartMinutes =
+        booking.startTime * 60 + (booking.startMinute || 0);
 
+      const startIdx = (bookingStartMinutes - openMinutes) / timeInterval;
       const slotsToBook = court.slotDurationMinutes / timeInterval;
 
       for (let i = 0; i < slotsToBook; i++) {
@@ -145,44 +160,40 @@ function findNextAvailableSlots(
     availabilityMap.set(court.id, courtSlots);
   });
 
-  // 2. Encontrar los próximos 'count' slots disponibles
   const availableSlotsResult: AvailableSlot[] = [];
 
   // Calcular minuto inicial (como antes)
   const startTimeInMinutes = isToday
     ? Math.max(
-        openHour * 60,
+        openMinutes,
         Math.ceil(currentTimeInMinutes / timeInterval) * timeInterval
       )
-    : openHour * 60;
+    : openMinutes;
 
-  const closingTimeInMinutes = closeHour * 60;
+  const closingTimeInMinutes = closeMinutes;
 
-  // Iterar por cada POSIBLE slot de inicio
   for (
     let timeInMinutes = startTimeInMinutes;
     timeInMinutes < closingTimeInMinutes;
     timeInMinutes += timeInterval
   ) {
-    if (availableSlotsResult.length >= count) break; // Ya encontramos los que necesitamos
+    if (availableSlotsResult.length >= count) break;
 
     const hour = Math.floor(timeInMinutes / 60);
     const minute = timeInMinutes % 60;
     const timeString = `${String(hour).padStart(2, "0")}:${String(
       minute
-    ).padStart(2, "0")}`;
+    ).padStart(2, "0")}`; // "12:30"
 
     for (const court of complex.courts) {
-      if (availableSlotsResult.length >= count) break; // Salir si ya llenamos
+      if (availableSlotsResult.length >= count) break;
 
       const courtAvailability = availabilityMap.get(court.id);
       if (!courtAvailability) continue;
 
-      // Calcular cuántos slots necesita esta cancha y el índice actual
       const slotsNeeded = court.slotDurationMinutes / timeInterval;
-      const currentSlotIndex = (timeInMinutes - openHour * 60) / timeInterval;
+      const currentSlotIndex = (timeInMinutes - openMinutes) / timeInterval;
 
-      // Verificar si hay suficientes slots CONSECUTIVOS libres
       let canBook = true;
       if (timeInMinutes + court.slotDurationMinutes > closingTimeInMinutes) {
         canBook = false;
@@ -200,9 +211,10 @@ function findNextAvailableSlots(
       }
 
       if (canBook) {
-        const priceRule = getPriceRuleForTime(court, timeString);
-        if (!priceRule) {
-            continue; 
+        const priceRule = getPriceRuleForTime(court, timeInMinutes);
+
+        if (!priceRule || priceRule.price <= 0) {
+          continue;
         }
 
         const cleanCourtData: CourtInfo = {
@@ -249,17 +261,6 @@ export async function GET(req: NextRequest) {
     const searchDateStart = date
       ? toDate(`${date}T00:00:00`, { timeZone: ARGENTINA_TIME_ZONE })
       : null;
-
-    // const bookingsInclude = searchDateStart
-    //   ? {
-    //       where: {
-    //         date: {
-    //           gte: searchDateStart,
-    //           lt: addDays(searchDateStart, 1),
-    //         },
-    //       },
-    //     }
-    //   : true;
 
     const whereClause: Prisma.ComplexWhereInput = {
       onboardingCompleted: true,
