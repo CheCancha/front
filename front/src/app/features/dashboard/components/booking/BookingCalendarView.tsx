@@ -98,9 +98,10 @@ export const BookingCalendarView: React.FC<BookingCalendarViewProps> = ({
             </div>
             {filteredCourts.map((court) => {
               const courtEvents = eventsByCourt.get(court.id) || [];
-              const slotStartMinutes =
-                parseInt(time.split(":")[0]) * 60 +
-                parseInt(time.split(":")[1]);
+
+              // 'time' es "12:30", lo convertimos a 750
+              const [hour, minute] = time.split(":").map(Number);
+              const slotStartMinutes = hour * 60 + minute;
 
               // 1. Renderizar Evento si existe
               const eventStartingNow = courtEvents.find((e) => {
@@ -212,7 +213,9 @@ export const BookingCalendarView: React.FC<BookingCalendarViewProps> = ({
               const slotHour = parseInt(time.split(":")[0]);
 
               const hasPriceRule = court.priceRules.some(
-                (rule) => slotHour >= rule.startTime && slotHour < rule.endTime
+                (rule) =>
+                  slotStartMinutes >= rule.startTime && 
+                  slotStartMinutes < rule.endTime 
               );
 
               const isEnabled = !past && !isSlotCovered && hasPriceRule;
@@ -254,9 +257,8 @@ export const BookingCalendarView: React.FC<BookingCalendarViewProps> = ({
     );
   }
 
-  
   // --- VISTA SEMANAL (ACTUALIZADA) ---
- if (view === "week") {
+  if (view === "week") {
     return (
       <div className="border-t">
         <div
@@ -268,7 +270,7 @@ export const BookingCalendarView: React.FC<BookingCalendarViewProps> = ({
           {/* Header: Esquina vacía + Días de la semana */}
           <div className="sticky top-0 left-0 bg-white z-20 flex items-center justify-center p-2 border-b border-r">
             <button
-              onClick={() => onOpenNewBookingSheet()} 
+              onClick={() => onOpenNewBookingSheet()}
               disabled={filteredCourts.length === 0}
               className="flex items-center justify-center w-full h-full text-sm font-semibold text-white bg-black hover:bg-brand-dark rounded-md cursor-pointer disabled:bg-gray-400 disabled:cursor-not-allowed"
               title="Añadir nueva reserva"
@@ -306,31 +308,32 @@ export const BookingCalendarView: React.FC<BookingCalendarViewProps> = ({
                     className="relative border-b border-l border-brand-dark/30 min-h-[6rem] flex flex-col"
                   >
                     {filteredCourts.map((court, index, arr) => {
-                      
                       // 1. Encontrar evento (si existe)
                       const eventForThisSlot = allEvents.find(
                         (e) =>
-                          e.court.id === court.id && 
-                          isSameDay(new Date(e.date), day) && 
+                          e.court.id === court.id &&
+                          isSameDay(new Date(e.date), day) &&
                           `${String(e.startTime).padStart(2, "0")}:${String(
                             e.startMinute ?? 0
-                          ).padStart(2, "0")}` === time 
+                          ).padStart(2, "0")}` === time
                       );
 
                       // 2. Determinar si el slot vacío está habilitado
                       const now = new Date();
-                      const slotDateTime = new Date(day);
-                      const [hour, minute] = time.split(":").map(Number);
-                      slotDateTime.setHours(hour, minute, 59, 999);
-                      const past = slotDateTime < now;
-                      const slotHour = parseInt(time.split(":")[0]);
-                      const hasPriceRule = court.priceRules.some(
-                        (rule) =>
-                          slotHour >= rule.startTime && slotHour < rule.endTime
-                      );
+                    const slotDateTime = new Date(day);
+                    const [hour, minute] = time.split(":").map(Number);
+                    slotDateTime.setHours(hour, minute, 59, 999);
+                    const past = slotDateTime < now;
+
+                    const slotStartMinutes = hour * 60 + minute; 
+
+                    const hasPriceRule = court.priceRules.some(
+                      (rule) =>
+                        slotStartMinutes >= rule.startTime &&
+                        slotStartMinutes < rule.endTime
+                    );
                       const isEnabled = !past && hasPriceRule;
 
-                      // Separador (no añadir después del último)
                       const separator =
                         index < arr.length - 1
                           ? "border-b border-gray-200"
@@ -366,8 +369,7 @@ export const BookingCalendarView: React.FC<BookingCalendarViewProps> = ({
                           <button
                             key={court.id}
                             onClick={() =>
-                              isEnabled &&
-                              onWeekSlotClick(court.id, time, day)
+                              isEnabled && onWeekSlotClick(court.id, time, day)
                             }
                             disabled={!isEnabled}
                             className={cn(

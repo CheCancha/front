@@ -20,7 +20,7 @@ type ChartData = {
 
 const formatYAxis = (tickItem: number) => {
   if (tickItem === 0) return "$0";
-  return `$${(tickItem / 1000).toLocaleString("es-AR")}k`;
+  return `$${(tickItem / 100000).toLocaleString("es-AR")}k`;
 };
 
 const formatTooltipValue = (value: number) => {

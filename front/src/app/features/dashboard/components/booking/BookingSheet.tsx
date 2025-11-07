@@ -293,7 +293,6 @@ const BookingSheet: React.FC<BookingSheetProps> = ({
     );
 
     if (remainingToPay > 0) {
-      console.log("[LOG-COMPLETAR] INICIANDO PAGO FINAL.");
 
       const mainPlayer =
         players.find((p) => p.userId === booking.userId) ||
@@ -329,9 +328,6 @@ const BookingSheet: React.FC<BookingSheetProps> = ({
     }
 
     // 2. MARCAR LA RESERVA COMO COMPLETADA (Solo se ejecuta si el pago fue exitoso o si remainingToPay era 0)
-    console.log(
-      `[LOG-COMPLETAR] (Flujo unificado) Llamando a onUpdateStatus para Booking ID: ${booking.id}`
-    );
     onUpdateStatus(booking.id, "COMPLETADO", loadingToastId);
     console.log("[LOG-COMPLETAR] FLUJO FINALIZADO CON ÉXITO.");
   };

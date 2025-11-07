@@ -386,9 +386,7 @@ export async function POST(
 
       const [hour, minute] = fixedSlot.startTime.split(":").map(Number);
 
-      
       const newBooking = await db.$transaction(async (tx) => {
-
         const priceInCents = (fixedSlot.price || 0) * 100;
 
         const createdBooking = await tx.booking.create({
@@ -433,28 +431,42 @@ export async function POST(
       );
     }
 
-    const bookingDateUtc = toDate(
-      `${date}T${time.length === 5 ? `${time}:00` : time}`,
-      { timeZone: ARGENTINA_TIME_ZONE }
-    );
+    const [hour, minute] = time.split(":").map(Number);
+    const bookingDateBase = toDate(`${date}T00:00:00`, {
+      timeZone: ARGENTINA_TIME_ZONE,
+    });
+    bookingDateBase.setHours(hour);
+    bookingDateBase.setMinutes(minute);
 
-    if (isBefore(bookingDateUtc, new Date())) {
+    const finalBookingDateTime = bookingDateBase;
+
+    const nowInArgentina = toDate(new Date(), {
+      timeZone: ARGENTINA_TIME_ZONE,
+    });
+
+    if (isBefore(finalBookingDateTime, nowInArgentina)) {
       return NextResponse.json(
         {
           message: "No se pueden crear reservas en horarios pasados.",
           debug: {
-            bookingUtc: bookingDateUtc.toISOString(),
-            nowUtc: new Date().toISOString(),
+            bookingUtc: finalBookingDateTime.toISOString(),
+            nowUtc: nowInArgentina.toISOString(),
             timeZone: ARGENTINA_TIME_ZONE,
           },
         },
-        {
-          status: 400,
-        }
+        { status: 400 }
       );
     }
 
-    const [hour, minute] = time.split(":").map(Number);
+    // 3.  Mantenemos la lógica original para guardar en la BD
+    //    Tu app espera que la "fecha lógica" sea Nov 6 y la hora 24:30.
+    const bookingDateUtc = toDate(`${date}T00:00:00`, {
+      timeZone: ARGENTINA_TIME_ZONE,
+    });
+    const [hourToSave, minuteToSave] = time.split(":").map(Number);
+
+    // El resto de tu lógica de 'bookingStartMinutes' (que usa 1470) está BIEN
+    const bookingStartMinutes = hourToSave * 60 + minuteToSave;
 
     const court = await db.court.findUnique({
       where: { id: courtId },
@@ -468,8 +480,13 @@ export async function POST(
     }
 
     const applicableRule = court.priceRules.find(
-      (rule) => hour >= rule.startTime && hour < rule.endTime
+      (rule) =>
+        // Comparamos minutos (750) con minutos (ej: 750 >= 750 && 750 < 840)
+        // rule.startTime y rule.endTime AHORA son Ints en minutos (720, 750, etc.)
+        bookingStartMinutes >= rule.startTime &&
+        bookingStartMinutes < rule.endTime
     );
+
     if (!applicableRule) {
       return NextResponse.json(
         { message: `No hay un precio configurado para las ${time} hs.` },
@@ -586,7 +603,7 @@ export async function POST(
       }
     }
 
-    const totalPriceInCents = (applicableRule.price || 0);
+    const totalPriceInCents = applicableRule.price || 0;
     const amountPaidInCents = (depositPaid || 0) * 100;
 
     const newBooking = await db.$transaction(async (tx) => {
@@ -596,8 +613,8 @@ export async function POST(
           guestName,
           guestPhone,
           date: bookingDateUtc,
-          startTime: hour,
-          startMinute: minute,
+          startTime: hourToSave,
+          startMinute: minuteToSave,
           totalPrice: totalPriceInCents,
           depositAmount: 0,
           depositPaid: amountPaidInCents,

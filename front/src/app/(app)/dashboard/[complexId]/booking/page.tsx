@@ -75,13 +75,20 @@ const CalendarSkeleton = () => (
   </div>
 );
 
-const parseHour = (hourString: string | null | undefined): number | null => {
-  if (typeof hourString !== "string") return null;
-  try {
-    return parseInt(hourString.split(":")[0], 10);
-  } catch {
-    return null;
+const parseHour = (hourString: string | number | null | undefined
+): number | null => {
+  if (typeof hourString === "number") return hourString;
+  
+  if (typeof hourString === "string" && hourString.includes(":")) {
+    try {
+      const [hour, minute] = hourString.split(":").map(Number);
+      if (isNaN(hour) || isNaN(minute)) return null;
+      return hour * 60 + minute;
+    } catch {
+      return null;
+    }
   }
+  return null;
 };
 
 // --- PÁGINA PRINCIPAL "CEREBRO" ---
@@ -122,9 +129,9 @@ export default function BookingCalendarPage() {
     );
   }, [events]);
 
-  const { dayOpenHour, dayCloseHour } = useMemo(() => {
+  const { dayOpenMinutes, dayCloseMinutes } = useMemo(() => {
     if (!complex?.schedule) {
-      return { dayOpenHour: 9, dayCloseHour: 23 };
+      return { dayOpenMinutes: 9 * 60, dayCloseMinutes: 23 * 60 };
     }
     const dayIndex = getDay(currentDate);
     const dayKeys = [
@@ -139,24 +146,26 @@ export default function BookingCalendarPage() {
     const dayKey = dayKeys[dayIndex];
     const openKey = `${dayKey}Open` as keyof Schedule;
     const closeKey = `${dayKey}Close` as keyof Schedule;
-    const openString = complex.schedule[openKey];
+
+    const openString = complex.schedule[openKey]; 
     const closeString = complex.schedule[closeKey];
-    const open = parseHour(openString) ?? 9;
-    const close = parseHour(closeString) ?? 23;
-    return { dayOpenHour: open, dayCloseHour: close };
+
+    const open = parseHour(openString) ?? 9 * 60; 
+    const close = parseHour(closeString) ?? 23 * 60;
+
+    return { dayOpenMinutes: open, dayCloseMinutes: close };
   }, [complex, currentDate]);
 
   const timeSlots = useMemo(() => {
     if (!complex) return [];
     const slots = [];
-    const open = dayOpenHour;
-    const close = dayCloseHour;
-    const interval = complex.timeSlotInterval || 30;
+    const openMinutes = dayOpenMinutes;
+    const closeMinutes = dayCloseMinutes; 
+    const interval = complex.timeSlotInterval || 30; 
 
-    let currentMinutes = open * 60;
-    const endMinutes = close * 60;
+    let currentMinutes = openMinutes;
 
-    while (currentMinutes < endMinutes) {
+    while (currentMinutes < closeMinutes) {
       const hours = Math.floor(currentMinutes / 60);
       const minutes = currentMinutes % 60;
       slots.push(
@@ -165,7 +174,7 @@ export default function BookingCalendarPage() {
       currentMinutes += interval;
     }
     return slots;
-  }, [complex, dayOpenHour, dayCloseHour]);
+  }, [complex, dayOpenMinutes, dayCloseMinutes]);
 
   const isPast = (time: string) => {
     const today = startOfDay(new Date());
@@ -407,9 +416,9 @@ export default function BookingCalendarPage() {
   };
 
   const handleWeekSlotClick = (courtId: string, time: string, date: Date) => {
-    // console.log(
-    //   `[page.tsx] Clic en grilla semanal: ${courtId}, ${time}, ${date}`
-    // );
+    console.log(
+      `[page.tsx] Clic en grilla semanal: ${courtId}, ${time}, ${date}`
+    );
 
     // 1. Actualizamos la fecha principal a la del día seleccionado
     setCurrentDate(startOfDay(date));

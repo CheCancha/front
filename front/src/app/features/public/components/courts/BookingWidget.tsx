@@ -184,9 +184,9 @@ const MobileBookingWidget: React.FC<BookingWidgetProps> = ({
 }) => {
   const [selectedCourt, setSelectedCourt] =
     useState<CourtWithPriceRules | null>(club.courts[0] || null);
-    const [validStartTimes, setValidStartTimes] = useState<ValidStartTime[]>([]);
-    const [isAvailabilityLoading, setIsAvailabilityLoading] = useState(true);
-    const [selectedTime, setSelectedTime] = useState<string | null>(null);
+  const [validStartTimes, setValidStartTimes] = useState<ValidStartTime[]>([]);
+  const [isAvailabilityLoading, setIsAvailabilityLoading] = useState(true);
+  const [selectedTime, setSelectedTime] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchAvailability = async () => {
@@ -203,7 +203,6 @@ const MobileBookingWidget: React.FC<BookingWidgetProps> = ({
         const data: ValidStartTime[] = await response.json();
         setValidStartTimes(data);
       } catch (error) {
-        console.error("Failed to fetch availability", error);
         setValidStartTimes([]);
       } finally {
         setIsAvailabilityLoading(false);
@@ -228,10 +227,16 @@ const MobileBookingWidget: React.FC<BookingWidgetProps> = ({
 
   const selectedPriceRule = useMemo(() => {
     if (!selectedTime || !selectedCourt) return null;
-    const [hour] = selectedTime.split(":").map(Number);
-    return selectedCourt.priceRules.find(
-      (rule) => hour >= rule.startTime && hour < rule.endTime
+    const [hour, minute] = selectedTime.split(":").map(Number);
+    const selectedTimeInMinutes = hour * 60 + minute;
+
+    const rule = selectedCourt.priceRules.find(
+      (rule) =>
+        selectedTimeInMinutes >= rule.startTime &&
+        selectedTimeInMinutes < rule.endTime
     );
+
+    return rule;
   }, [selectedTime, selectedCourt]);
 
   if (!selectedCourt) {
@@ -346,7 +351,6 @@ const DesktopBookingWidget: React.FC<BookingWidgetProps> = ({
         const data: ValidStartTime[] = await response.json();
         setValidStartTimes(data);
       } catch (error) {
-        console.error("Failed to fetch availability", error);
         setValidStartTimes([]);
       } finally {
         setIsAvailabilityLoading(false);

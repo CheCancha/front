@@ -6,8 +6,6 @@ import { CourtWithRelations, NewCourt } from "@/shared/entities/complex/types";
 import { Sport } from "@prisma/client";
 import {
   durationOptions,
-  // --- ELIMINADO ---
-  // hoursOptions,
 } from "@/shared/constants/dashboard-settings";
 import {
   Select,
@@ -20,14 +18,17 @@ import {
 } from "@/shared/components/ui/select";
 import { Input } from "@/shared/components/ui/inputshadcn";
 
-const priceHoursOptions = Array.from({ length: 30 }, (_, i) => {
-  let label = `${String(i).padStart(2, "0")}:00`;
-  if (i >= 24) {
-    const nextDayHour = String(i % 24).padStart(2, "0");
-    label = `${nextDayHour}:00`;
-  }
+const priceHoursOptions = Array.from({ length: 60 }, (_, i) => {
+  const totalMinutes = i * 30;
+  const hour = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+
+  const displayHour = String(hour % 24).padStart(2, "0");
+  const displayMinutes = String(minutes).padStart(2, "0");
+  const label = `${displayHour}:${displayMinutes}`;
+
   return {
-    value: i, 
+    value: totalMinutes,
     label: label,
   };
 });
@@ -62,23 +63,29 @@ export const CourtFormRow = ({
   const groupedHours = [
     {
       label: "Madrugada",
-      options: priceHoursOptions.filter((h) => h.value >= 0 && h.value <= 6),
+      options: priceHoursOptions.filter((h) => h.value < 420),
     },
     {
       label: "Mañana",
-      options: priceHoursOptions.filter((h) => h.value >= 7 && h.value <= 12),
+      options: priceHoursOptions.filter(
+        (h) => h.value >= 420 && h.value < 780
+      ),
     },
     {
       label: "Tarde",
-      options: priceHoursOptions.filter((h) => h.value >= 13 && h.value <= 19),
+      options: priceHoursOptions.filter(
+        (h) => h.value >= 780 && h.value < 1200
+      ), 
     },
     {
       label: "Noche",
-      options: priceHoursOptions.filter((h) => h.value >= 20 && h.value <= 23),
+      options: priceHoursOptions.filter(
+        (h) => h.value >= 1200 && h.value < 1440
+      ),
     },
     {
       label: "Transnoche (Día Siguiente)",
-      options: priceHoursOptions.filter((h) => h.value >= 24),
+      options: priceHoursOptions.filter((h) => h.value >= 1440),
     },
   ];
 

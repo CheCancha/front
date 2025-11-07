@@ -100,7 +100,7 @@ export default function RootLayout({
         <GoogleAnalytics />
         <SmoothScroller />
         <Toaster 
-          position="top-center"
+          position="bottom-center"
           toastOptions={{
             duration: 3000,
           }}
