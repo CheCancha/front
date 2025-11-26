@@ -1,3 +1,5 @@
+import Footer from "@/shared/components/Footer";
+import Navbar from "@/shared/components/Navbar";
 import React from "react";
 
 export default function AuthLayout({
@@ -7,7 +9,9 @@ export default function AuthLayout({
 }) {
   return (
     <>
+      <Navbar />
       {children}
+      <Footer />
     </>
   );
 }

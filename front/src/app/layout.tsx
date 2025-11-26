@@ -7,6 +7,7 @@ import { Suspense } from "react";
 import { SearchStateInitializer } from "@/shared/components/SearchStateInitializer";
 import Script from "next/script";
 import { Toaster } from "react-hot-toast";
+import PWAInstallBanner from "@/shared/components/PWAInstallBanner";
 
 export const metadata: Metadata = {
   title: {
@@ -105,6 +106,7 @@ export default function RootLayout({
             duration: 3000,
           }}
         />
+        <PWAInstallBanner />
         <Providers>{children}</Providers>
       </body>
     </html>
