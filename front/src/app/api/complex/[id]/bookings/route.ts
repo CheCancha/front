@@ -27,6 +27,7 @@ export async function GET(
       const nowArgentina = toDate(new Date(), {
         timeZone: ARGENTINA_TIME_ZONE,
       });
+
       const todayArgentina = startOfDay(nowArgentina);
 
       const currentHour = nowArgentina.getHours();
@@ -199,7 +200,9 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // BLOQUE 1: SEGURIDAD Y CONTEXTO
     const { id: complexId } = await params;
+    
     const session = await getServerSession(authOptions);
     if (!session?.user?.id || session.user.role !== "MANAGER") {
       return new NextResponse("No autorizado", { status: 401 });
@@ -207,7 +210,7 @@ export async function POST(
 
     const body = await req.json();
 
-    // --- LÓGICA PARA CREAR UN BLOQUEO (BlockedSlot) ---
+    // BLOQUE 2: bloqueo o reserva
     if (body.isBlockedSlot === true) {
       const { courtId, date, startTime, endTime, reason } = body;
 
@@ -223,6 +226,7 @@ export async function POST(
       });
       const startOfBlockDayUtc = startOfDay(blockDateUtc);
 
+      // NORMALIZACIÓN DE HORAS
       const [startHour, startMinute] = startTime.split(":").map(Number);
       const [endHour, endMinute] = endTime.split(":").map(Number);
 
@@ -236,8 +240,8 @@ export async function POST(
         );
       }
 
-      //   VALIDACIÓN DE SOLAPAMIENTO PARA BLOQUEO
-      // 1. Chequear contra Bookings existentes
+      //  BLOQUE 3: VALIDACIÓN DE SOLAPAMIENTO PARA BLOQUEO
+      // 1
       const existingBookings = await db.booking.findMany({
         where: {
           courtId,
@@ -251,10 +255,8 @@ export async function POST(
       });
 
       const overlappingBooking = existingBookings.find((booking) => {
-        const existingStartMinutes =
-          booking.startTime * 60 + (booking.startMinute || 0);
-        const existingEndMinutes =
-          existingStartMinutes + booking.court.slotDurationMinutes;
+        const existingStartMinutes = booking.startTime * 60 + (booking.startMinute || 0);
+        const existingEndMinutes = existingStartMinutes + booking.court.slotDurationMinutes;
         return (
           newBlockStartMinutes < existingEndMinutes &&
           newBlockEndMinutes > existingStartMinutes
@@ -272,7 +274,7 @@ export async function POST(
         );
       }
 
-      // 2. Chequear contra otros Bloqueos (BlockedSlot)
+      // 2
       const existingBlocks = await db.blockedSlot.findMany({
         where: {
           courtId,
@@ -307,7 +309,7 @@ export async function POST(
         );
       }
 
-      // 3. Chequear contra Abonos (FixedSlot)
+      // 3
       const dayOfWeek = getDay(blockDateUtc);
       const matchingFixedSlotRules = await db.fixedSlot.findMany({
         where: {
@@ -354,7 +356,6 @@ export async function POST(
       return NextResponse.json(newBlockedSlot, { status: 201 });
     }
 
-    // --- LÓGICA PARA CREAR UNA RESERVA ---
     const {
       courtId,
       guestName,
@@ -366,7 +367,7 @@ export async function POST(
       paymentMethod,
     } = body;
 
-    // --- LÓGICA PARA CREAR RESERVA DE ABONO (desde FixedSlot) ---
+    // --- LÓGICA PARA CREAR RESERVA DE ABONO ---
     if (body.fixedSlotId) {
       const fixedSlot = await db.fixedSlot.findUnique({
         where: { id: body.fixedSlotId },
@@ -405,7 +406,6 @@ export async function POST(
           },
         });
 
-        // Crear el jugador principal asociado al abono
         await tx.bookingPlayer.create({
           data: {
             bookingId: createdBooking.id,
@@ -435,6 +435,7 @@ export async function POST(
     const bookingDateBase = toDate(`${date}T00:00:00`, {
       timeZone: ARGENTINA_TIME_ZONE,
     });
+
     bookingDateBase.setHours(hour);
     bookingDateBase.setMinutes(minute);
 
@@ -458,14 +459,12 @@ export async function POST(
       );
     }
 
-    // 3.  Mantenemos la lógica original para guardar en la BD
-    //    Tu app espera que la "fecha lógica" sea Nov 6 y la hora 24:30.
+    // 3.  Mantenemos la lógica original para guardar en la BD la "fecha lógica" que es Nov 6 y la hora 24:30.
     const bookingDateUtc = toDate(`${date}T00:00:00`, {
       timeZone: ARGENTINA_TIME_ZONE,
     });
     const [hourToSave, minuteToSave] = time.split(":").map(Number);
 
-    // El resto de tu lógica de 'bookingStartMinutes' (que usa 1470) está BIEN
     const bookingStartMinutes = hourToSave * 60 + minuteToSave;
 
     const court = await db.court.findUnique({
@@ -481,8 +480,6 @@ export async function POST(
 
     const applicableRule = court.priceRules.find(
       (rule) =>
-        // Comparamos minutos (750) con minutos (ej: 750 >= 750 && 750 < 840)
-        // rule.startTime y rule.endTime AHORA son Ints en minutos (720, 750, etc.)
         bookingStartMinutes >= rule.startTime &&
         bookingStartMinutes < rule.endTime
     );
@@ -497,11 +494,12 @@ export async function POST(
     const startOfBookingDayUtc = toDate(`${date}T00:00:00`, {
       timeZone: ARGENTINA_TIME_ZONE,
     });
-    const endOfBookingDayUtc = toDate(`${date}T23:59:59.999`, {
-      timeZone: ARGENTINA_TIME_ZONE,
-    });
+    // const endOfBookingDayUtc = toDate(`${date}T23:59:59.999`, {
+    //   timeZone: ARGENTINA_TIME_ZONE,
+    // });
 
     const newBookingStartMinutes = hour * 60 + minute;
+
     const newBookingEndMinutes =
       newBookingStartMinutes + court.slotDurationMinutes;
 
@@ -521,8 +519,10 @@ export async function POST(
     const isOverlappingBooking = existingBookings.some((existingBooking) => {
       const existingStartMinutes =
         existingBooking.startTime * 60 + (existingBooking.startMinute || 0);
+
       const existingEndMinutes =
         existingStartMinutes + existingBooking.court.slotDurationMinutes;
+
       return (
         newBookingStartMinutes < existingEndMinutes &&
         newBookingEndMinutes > existingStartMinutes
@@ -606,7 +606,9 @@ export async function POST(
     const totalPriceInCents = applicableRule.price || 0;
     const amountPaidInCents = (depositPaid || 0) * 100;
 
+    // BLOQUE 4: ACID
     const newBooking = await db.$transaction(async (tx) => {
+      // PASO 1: Crear la Reserva
       const createdBooking = await tx.booking.create({
         data: {
           courtId,
@@ -624,7 +626,7 @@ export async function POST(
         },
       });
 
-      // 4. CREAR BOOKING PLAYER PARA EL CLIENTE PRINCIPAL
+      // PASO 2: Registrar al Jugador
       const player = await tx.bookingPlayer.create({
         data: {
           bookingId: createdBooking.id,
@@ -636,7 +638,7 @@ export async function POST(
         },
       });
 
-      // 5. CREAR TRANSACCIÓN DE CAJA
+      // PASO 3: Crear Transacción de Caja
       if (amountPaidInCents > 0 && paymentMethod) {
         await tx.transaction.create({
           data: {

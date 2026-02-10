@@ -1,4 +1,3 @@
-// src/shared/components/ui/Buttons.tsx
 "use client";
 
 import React from "react";

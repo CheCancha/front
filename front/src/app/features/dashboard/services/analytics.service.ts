@@ -98,7 +98,7 @@ const parseHour = (
     const [hour] = hourString.split(":");
     const hourNum = parseInt(hour, 10);
     return isNaN(hourNum) ? null : hourNum;
-  } catch (e) {
+  } catch (_e) {
     return null;
   }
 };

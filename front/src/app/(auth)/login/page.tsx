@@ -1,10 +1,6 @@
-"use client";
-
 import Image from "next/image";
 import Link from "next/link";
 import { LoginForm } from "@/app/features/auth/components/AuthForms";
-import Navbar from "@/shared/components/Navbar";
-import Footer from "@/shared/components/Footer";
 
 export default function LoginPage() {
   return (
@@ -22,7 +18,6 @@ export default function LoginPage() {
               />
             </Link>
           </div>
-
           <LoginForm />
         </div>
       </main>

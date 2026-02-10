@@ -1,5 +1,3 @@
-//front\src\shared\components\ui\Input.tsx
-
 "use client";
 
 import React, { useState } from "react";

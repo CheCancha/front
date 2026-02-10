@@ -40,7 +40,6 @@ function getMercadoPagoCredentials(complex: {
   mp_public_key: string | null;
 }) {
   if (complex.mp_access_token && complex.mp_public_key) {
-    // console.log("Usando credenciales de producción del complejo.");
     const secretKey = process.env.ENCRYPTION_KEY;
     if (!secretKey) throw new Error("ENCRYPTION_KEY no está definida.");
 
@@ -50,7 +49,6 @@ function getMercadoPagoCredentials(complex: {
     return { accessToken, publicKey: complex.mp_public_key };
   }
 
-  // console.log("Usando credenciales de prueba (fallback).");
   const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
   const publicKey = process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY;
 

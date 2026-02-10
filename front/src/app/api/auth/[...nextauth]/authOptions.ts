@@ -4,7 +4,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import { normalizePhoneNumber } from "@/shared/lib/utils";
 import { db } from "@/shared/lib/db";
-import bcrypt from "bcrypt";
+import { supabase } from "@/lib/supabase";
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(db),
@@ -24,42 +24,46 @@ export const authOptions: NextAuthOptions = {
         if (!credentials?.login || !credentials?.password) return null;
 
         const { login, password } = credentials;
+        let targetEmail = login.toLowerCase();
 
-        const isEmail = login.includes("@");
-
-        let user;
-        if (isEmail) {
-          user = await db.user.findUnique({
-            where: { email: login.toLowerCase() },
-            include: { managedComplex: { select: { id: true } } },
-          });
-        } else {
+        if (!login.includes("@")) {
           const normalizedPhone = normalizePhoneNumber(login);
-          user = await db.user.findUnique({
+          const userRow = await db.user.findUnique({
             where: { phone: normalizedPhone },
-            include: { managedComplex: { select: { id: true } } },
+            select: { email: true },
           });
+
+          if (!userRow) return null;
+          targetEmail = userRow.email;
         }
 
-        if (!user || !user.hashedPassword) return null;
+        // 2. Intentar Login en el motor central (Supabase)
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: targetEmail,
+          password: password,
+        });
 
-        const passwordMatch = await bcrypt.compare(
-          password,
-          user.hashedPassword
-        );
-        if (!passwordMatch) return null;
+        if (error || !data.user) return null;
+
+        // 3. Traer los datos de tu tabla User (Roles, Complejos, etc.)
+        const dbUser = await db.user.findUnique({
+          where: { id: data.user.id },
+          include: { managedComplex: { select: { id: true } } },
+        });
+
+        if (!dbUser) return null;
 
         return {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          image: user.image,
-          role: user.role,
-          complexId: user.managedComplex?.id || null,
+          id: dbUser.id,
+          name: dbUser.name,
+          email: dbUser.email,
+          role: dbUser.role,
+          complexId: dbUser.managedComplex?.id || null,
         };
       },
     }),
   ],
+
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
