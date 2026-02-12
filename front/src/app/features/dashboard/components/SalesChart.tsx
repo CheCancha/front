@@ -71,7 +71,7 @@ const WeekSelector = ({
             "px-3 py-2 text-sm font-medium transition-colors shrink-0",
             selectedWeek === index
               ? "border-b-2 border-[#fe4321] text-[#fe4321]"
-              : "text-gray-500 hover:text-gray-700"
+              : "text-gray-500 hover:text-gray-700",
           )}
         >
           Semana {index + 1}
@@ -92,15 +92,17 @@ export function SalesChart({ complexId }: { complexId: string }) {
   // --- FUNCIÓN DE FORMATEO CORREGIDA ---
   // 1. Usamos ValueType | undefined para cumplir con Recharts
   const formatValue = (value: ValueType | undefined) => {
-    // 2. Guardia de tipo: Si no es número, devolvemos string vacío
     if (typeof value !== "number") return "";
+
+    // IMPORTANTE: Dividir por 100 para convertir centavos a pesos
+    const amountInPesos = value / 100;
 
     return new Intl.NumberFormat("es-AR", {
       style: "currency",
       currency: "ARS",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
-    }).format(value); // Asumo que el valor ya viene correcto, si viene en centavos divide por 100
+    }).format(amountInPesos);
   };
 
   useEffect(() => {
@@ -133,7 +135,7 @@ export function SalesChart({ complexId }: { complexId: string }) {
       const { start, end } = getDatesFromRange();
       try {
         const res = await fetch(
-          `/api/complex/${complexId}/analytics?startDate=${start}&endDate=${end}`
+          `/api/complex/${complexId}/analytics?startDate=${start}&endDate=${end}`,
         );
         if (!res.ok) {
           throw new Error("No se pudo cargar el reporte de ingresos.");
@@ -143,7 +145,7 @@ export function SalesChart({ complexId }: { complexId: string }) {
           (d) => ({
             name: d.name,
             total: d.balance,
-          })
+          }),
         );
 
         if (dateRange === "Este Mes") {
@@ -159,7 +161,7 @@ export function SalesChart({ complexId }: { complexId: string }) {
         }
       } catch (err) {
         setError(
-          err instanceof Error ? err.message : "Ocurrió un error desconocido."
+          err instanceof Error ? err.message : "Ocurrió un error desconocido.",
         );
       } finally {
         setIsLoading(false);
@@ -183,7 +185,6 @@ export function SalesChart({ complexId }: { complexId: string }) {
     }
   }, [selectedWeek, monthlyData, dateRange]);
 
-
   if (isLoading) {
     return <SalesChartSkeleton />;
   }
@@ -203,8 +204,8 @@ export function SalesChart({ complexId }: { complexId: string }) {
           <select
             value={dateRange}
             onChange={(e) => {
-                setDateRange(e.target.value);
-                setSelectedWeek(0); // Resetear semana al cambiar filtro
+              setDateRange(e.target.value);
+              setSelectedWeek(0); // Resetear semana al cambiar filtro
             }}
             className="appearance-none cursor-pointer bg-white border border-gray-300 rounded-lg py-2 pl-3 pr-8 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-brand-blue"
           >
@@ -240,24 +241,24 @@ export function SalesChart({ complexId }: { complexId: string }) {
               fontSize={12}
               tickLine={false}
               axisLine={false}
-              tickFormatter={(value) => `$${value / 1000}k`} // Ajustado divisor visual
+              // Dividimos por 100 para llegar a pesos, y luego por 1000 para la escala 'k'
+              tickFormatter={(value) => `$${(value / 100 / 1000).toFixed(0)}k`}
             />
             <Tooltip
-              cursor={{ fill: "rgba(254, 67, 33, 0.1)" }} // Color naranja suave
+              cursor={{ fill: "rgba(254, 67, 33, 0.1)" }}
               contentStyle={{
                 background: "white",
                 border: "1px solid #e2e8f0",
                 borderRadius: "0.75rem",
                 boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
               }}
-              // 3. AQUÍ ESTÁ EL CAMBIO CLAVE: Propiedad 'formatter'
               formatter={formatValue}
             />
-            <Bar 
-                dataKey="total" 
-                fill="#fe4321" 
-                radius={[4, 4, 0, 0]} 
-                name="Ingresos"
+            <Bar
+              dataKey="total"
+              fill="#fe4321"
+              radius={[4, 4, 0, 0]}
+              name="Balance Neto"
             />
           </BarChart>
         </ResponsiveContainer>

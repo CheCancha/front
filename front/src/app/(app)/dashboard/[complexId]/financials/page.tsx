@@ -1,6 +1,6 @@
 "use client";
 
-import { parseISO, format, startOfToday, endOfToday } from "date-fns";
+import { parseISO, format, startOfToday, endOfToday, startOfMonth } from "date-fns";
 import { AnalyticsFilters } from "@/app/features/dashboard/components/analytics/AnalyticsFilters";
 import React, { useState, useCallback, useEffect, useMemo } from "react";
 import { useParams, useSearchParams } from "next/navigation";
@@ -41,9 +41,10 @@ export default function FinancialsPage() {
 
   // --- LÓGICA DE FILTROS---
   const from = useMemo(() => {
-    const fromParam = searchParams.get("from");
-    return fromParam ? parseISO(fromParam) : startOfToday();
-  }, [searchParams]);
+  const fromParam = searchParams.get("from");
+  // Si no hay filtro manual, que cargue desde el 1ero del mes actual
+  return fromParam ? parseISO(fromParam) : startOfMonth(new Date());
+}, [searchParams]);
 
   const to = useMemo(() => {
     const toParam = searchParams.get("to");
@@ -135,7 +136,7 @@ export default function FinancialsPage() {
         const res = await fetch(`/api/complex/${complexId}/financials`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ // <-- Se envía 499000 (pesos)
+          body: JSON.stringify({
             ...formData,
             type: TransactionType.EGRESO,
           }),
