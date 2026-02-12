@@ -17,7 +17,7 @@ async function createSupabaseClient() {
       cookies: {
         get: (name) => cookieStore.get(name)?.value,
       },
-    }
+    },
   );
 }
 
@@ -55,12 +55,14 @@ export async function POST(req: NextRequest) {
         });
 
       if (error) {
-        throw new Error(`Error al subir la imagen a Supabase: ${error.message}`);
+        throw new Error(
+          `Error al subir la imagen a Supabase: ${error.message}`,
+        );
       }
-      
-      const { data: { publicUrl } } = supabase.storage
-        .from(SUPABASE_BUCKET)
-        .getPublicUrl(data.path);
+
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from(SUPABASE_BUCKET).getPublicUrl(data.path);
 
       updateData.image = publicUrl;
     }
@@ -76,12 +78,11 @@ export async function POST(req: NextRequest) {
       success: true,
       profileImageUrl: updatedUser.image,
     });
-    
   } catch (err) {
     console.error("[PROFILE_UPDATE_ERROR]", err);
     return NextResponse.json(
       { error: "No se pudo actualizar el perfil" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
