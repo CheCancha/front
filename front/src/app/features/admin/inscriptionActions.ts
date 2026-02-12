@@ -9,6 +9,7 @@ import { slugify } from "@/shared/lib/utils";
 import { add } from "date-fns";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/shared/lib/auth";
+import { normalizePhoneNumber } from "@/shared/lib/utils";
 
 // --- VALIDACIÓN DE SESIÓN DE ADMIN ---
 const ensureAdmin = async () => {
@@ -71,6 +72,19 @@ export async function approveInscription(
     }
     
     const normalizedComplexName = inscription.complexName.trim().toLowerCase();
+    
+    const baseSlug = slugify(inscription.complexName);
+    const existingComplexSlug = await db.complex.findUnique({
+        where: { slug: baseSlug }
+    });
+    
+    if (existingComplexSlug) {
+         return {
+            success: false,
+            error: `Ya existe un complejo con la URL generada: ${baseSlug}. Modifica el nombre del complejo.`,
+        };
+    }
+
     const existingComplexByName = await db.complex.findFirst({
         where: { 
             name: {
@@ -90,13 +104,46 @@ export async function approveInscription(
     const plan = getPlanEnumFromString(inscription.selectedPlan);
     const trialEndsAt = add(new Date(), { days: 90 });
 
-    let user = await db.user.findUnique({
-      where: { email: inscription.ownerEmail },
+    // --- CORRECCIÓN DE USUARIOS (NORMALIZACIÓN Y BÚSQUEDA DUAL) ---
+    
+    const normalizedPhone = normalizePhoneNumber(inscription.ownerPhone);
+    const lowerEmail = inscription.ownerEmail.toLowerCase();
+
+    // Buscamos usuario por Email O Teléfono
+    let user = await db.user.findFirst({
+      where: {
+        OR: [
+            { email: lowerEmail },
+            { phone: normalizedPhone }
+        ]
+      },
     });
+
+    // Validación de conflictos
+    if (user) {
+        // Conflicto A: El teléfono ya existe en otro email
+        if (user.phone === normalizedPhone && user.email !== lowerEmail) {
+            return { 
+                success: false, 
+                error: `El teléfono ${normalizedPhone} ya está registrado en la cuenta: ${user.email}.` 
+            };
+        }
+
+        // Conflicto B: El email ya existe con otro teléfono
+        if (user.email === lowerEmail && user.phone !== normalizedPhone) {
+            return {
+                success: false,
+                error: `El email ${lowerEmail} ya existe, pero tiene el teléfono ${user.phone} asociado. Verifica los datos.`
+            };
+        }
+        
+        // Si coincide todo (o no hay conflicto bloqueante), usamos este usuario.
+    }
 
     let isNewUser = false;
     let temporaryPassword: string | null = null;
 
+    // Si NO existe, lo creamos
     if (!user) {
       isNewUser = true;
       temporaryPassword = Math.random().toString(36).slice(-8);
@@ -105,8 +152,8 @@ export async function approveInscription(
       user = await db.user.create({
         data: {
           name: inscription.ownerName,
-          email: inscription.ownerEmail,
-          phone: inscription.ownerPhone,
+          email: lowerEmail, // Usar minusculas
+          phone: normalizedPhone, // Usar normalizado
           hashedPassword,
           role: Role.MANAGER,
         },
@@ -120,14 +167,14 @@ export async function approveInscription(
     if (existingComplexForManager) {
       return {
         success: false,
-        error: `El usuario ${inscription.ownerEmail} ya tiene asignado el complejo "${existingComplexForManager.name}".`,
+        error: `El usuario ${lowerEmail} ya tiene asignado el complejo "${existingComplexForManager.name}".`,
       };
     }
 
     await db.complex.create({
       data: {
         name: inscription.complexName.trim(),
-        slug: slugify(inscription.complexName),
+        slug: baseSlug, // Usamos el slug base validado
         address: inscription.address,
         city: inscription.city,
         province: inscription.province,
@@ -167,11 +214,11 @@ export async function approveInscription(
       success: true,
       message: `Complejo '${inscription.complexName}' aprobado correctamente.`,
     };
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error al aprobar la inscripción:", error);
     return {
       success: false,
-      error: "No se pudo aprobar la solicitud. Revisa la consola del servidor.",
+      error: error instanceof Error ? error.message : "No se pudo aprobar la solicitud. Revisa la consola del servidor.",
     };
   }
 }

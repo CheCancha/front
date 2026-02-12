@@ -464,7 +464,7 @@ export default function BookingModal({
                               if (couponError) setCouponError(null);
                             }}
                             placeholder="Ingresá tu código"
-                            className="flex-grow block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm"
+                            className="grow block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm"
                           />
                           <Button
                             onClick={handleApplyCoupon}

@@ -294,7 +294,7 @@ export const BookingCalendarView: React.FC<BookingCalendarViewProps> = ({
           {timeSlots.map((time) => (
             <React.Fragment key={time}>
               {/* Columna de Hora */}
-              <div className="sticky left-0 text-right text-xs font-mono text-gray-500 pr-2 border-r flex items-center justify-end bg-white z-10 min-h-[6rem]">
+              <div className="sticky left-0 text-right text-xs font-mono text-gray-500 pr-2 border-r flex items-center justify-end bg-white z-10 min-h-24">
                 {formatHour(time)}
               </div>
 
@@ -305,7 +305,7 @@ export const BookingCalendarView: React.FC<BookingCalendarViewProps> = ({
                 return (
                   <div
                     key={cellKey}
-                    className="relative border-b border-l border-brand-dark/30 min-h-[6rem] flex flex-col"
+                    className="relative border-b border-l border-brand-dark/30 min-h-24 flex flex-col"
                   >
                     {filteredCourts.map((court, index, arr) => {
                       // 1. Encontrar evento (si existe)
@@ -373,7 +373,7 @@ export const BookingCalendarView: React.FC<BookingCalendarViewProps> = ({
                             }
                             disabled={!isEnabled}
                             className={cn(
-                              "flex-1 min-h-[2rem] rounded-none flex items-center justify-center transition-colors",
+                              "flex-1 min-h-8 rounded-none flex items-center justify-center transition-colors",
                               isEnabled
                                 ? "text-gray-400 hover:bg-gray-100 hover:text-gray-600 cursor-pointer group"
                                 : "bg-gray-50 text-gray-300 cursor-not-allowed",

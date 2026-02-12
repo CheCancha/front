@@ -3,7 +3,7 @@ import { type NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import { db } from "@/shared/lib/db";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import { normalizePhoneNumber } from "@/shared/lib/utils";
 
 export const authOptions: NextAuthOptions = {

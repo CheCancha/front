@@ -7,7 +7,7 @@ export function OnboardingPrompt({ complexId }: { complexId: string }) {
   return (
     <div className="mb-6 flex items-center gap-4 rounded-lg border border-yellow-300 bg-yellow-50 p-4">
       <AlertCircle className="h-6 w-6 text-yellow-600" />
-      <div className="flex-grow">
+      <div className="grow">
         <h3 className="font-semibold text-yellow-800">
           ¡Bienvenido! Termina de configurar tu complejo
         </h3>

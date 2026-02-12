@@ -11,6 +11,8 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
+type ValueType = number | string | Array<number | string>;
+
 type ChartData = {
   name: string;
   ingresos: number;
@@ -33,6 +35,14 @@ const formatTooltipValue = (value: number) => {
 };
 
 export function RevenueBarChart({ data }: { data: ChartData[] }) {
+
+  const formatTooltip = (value: ValueType | undefined) => {
+    if (typeof value !== "number") {
+      return "";
+    }
+    return formatTooltipValue(value);
+  };
+  
   return (
     <ResponsiveContainer width="100%" height={320}>
       <BarChart
@@ -42,7 +52,7 @@ export function RevenueBarChart({ data }: { data: ChartData[] }) {
         <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
         <XAxis dataKey="name" fontSize={12} />
         <YAxis tickFormatter={formatYAxis} fontSize={12} />
-        <Tooltip formatter={formatTooltipValue} />
+        <Tooltip formatter={formatTooltip}  />
         <Legend />
         <Bar
           dataKey="ingresos"

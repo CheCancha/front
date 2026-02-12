@@ -18,7 +18,6 @@ import type {
   Schedule,
 } from "@/app/(public)/canchas/[slug]/page";
 import { ImageCarousel } from "./ImageCarousel";
-import { formatHourSafely } from "@/shared/helper/formatHour";
 
 const Map = dynamic(
   () => import("@/app/features/public/components/courts/Map"),
@@ -47,7 +46,7 @@ export const ComplexHeader = ({
 }) => (
   <section className="relative mb-2 md:mb-12 rounded-2xl overflow-hidden h-64 md:h-96">
     <ImageCarousel images={images} />
-    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+    <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent" />
     <div className="absolute bottom-6 left-6 z-10">
       <h1
         className="text-4xl md:text-5xl font-bold text-white"

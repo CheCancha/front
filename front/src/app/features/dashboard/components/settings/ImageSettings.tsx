@@ -102,7 +102,7 @@ export default function ImageSettings({
     <div className="space-y-8">
       <div>
         <h3 className="text-lg font-switzer font-semibold">Imagen de Portada</h3>
-        <div className="mt-4 w-full aspect-[16/7] relative rounded-lg bg-gray-100 flex items-center justify-center border overflow-hidden">
+        <div className="mt-4 w-full aspect-16/7 relative rounded-lg bg-gray-100 flex items-center justify-center border overflow-hidden">
           {primaryImage ? (
             <img src={primaryImage.url} alt="Imagen de portada" className="absolute inset-0 w-full h-full object-cover" />
           ) : (
@@ -120,10 +120,10 @@ export default function ImageSettings({
             <ul className="space-y-3">
               {data.images.map((image) => (
                 <li key={image.id} className="flex items-center gap-4 bg-white p-2 border rounded-lg shadow-sm">
-                  <div className="w-16 h-16 relative rounded-md overflow-hidden bg-gray-100 flex-shrink-0">
+                  <div className="w-16 h-16 relative rounded-md overflow-hidden bg-gray-100 shrink-0">
                     <img src={image.url} alt="Miniatura" className="absolute inset-0 w-full h-full object-cover" />
                   </div>
-                  <div className="flex-grow text-sm text-gray-600 truncate" title={image.url}>{image.url.split("/").pop()}</div>
+                  <div className="grow text-sm text-gray-600 truncate" title={image.url}>{image.url.split("/").pop()}</div>
                   <div className="flex items-center gap-2">
                     <button type="button" onClick={() => setPrimaryImage(image.id)} disabled={image.isPrimary} title="Marcar como portada"
                       className={`p-2 rounded-full transition-colors cursor-pointer ${image.isPrimary ? "bg-amber-400 text-white cursor-default" : "bg-gray-200 hover:bg-amber-400 hover:text-white"}`}>
@@ -150,10 +150,10 @@ export default function ImageSettings({
              <ul className="space-y-3 mt-3">
               {imagesMarkedForDeletion.map((image) => (
                 <li key={image.id} className="flex items-center gap-4 bg-red-50 p-2 border border-red-200 rounded-lg shadow-sm">
-                  <div className="w-16 h-16 relative rounded-md overflow-hidden bg-gray-100 flex-shrink-0 opacity-60">
+                  <div className="w-16 h-16 relative rounded-md overflow-hidden bg-gray-100 shrink-0 opacity-60">
                     <img src={image.url} alt="Miniatura a eliminar" className="absolute inset-0 w-full h-full object-cover" />
                   </div>
-                  <div className="flex-grow text-sm text-red-700 truncate" title={image.url}>{image.url.split("/").pop()}</div>
+                  <div className="grow text-sm text-red-700 truncate" title={image.url}>{image.url.split("/").pop()}</div>
                   <button type="button" onClick={() => onRestoreImage(image.id)} title="Restaurar imagen"
                       className="p-2 rounded-full bg-gray-200 text-gray-600 hover:bg-gray-300 transition-colors">
                       <RotateCcw className="w-5 h-5" />

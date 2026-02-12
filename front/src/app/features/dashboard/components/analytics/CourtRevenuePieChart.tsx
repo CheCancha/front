@@ -9,6 +9,8 @@ import {
   Legend,
 } from "recharts";
 
+type ValueType = number | string | Array<number | string>;
+
 type ChartData = {
   name: string;
   value: number;
@@ -24,7 +26,13 @@ const COLORS = [
 ];
 
 export function CourtRevenuePieChart({ data }: { data: ChartData[] }) {
-  const formatTooltip = (value: number) => {
+  
+  const formatTooltip = (value: ValueType | undefined) => {
+    
+    if (typeof value !== "number") {
+      return ""; 
+    }
+
     return new Intl.NumberFormat("es-AR", {
       style: "currency",
       currency: "ARS",

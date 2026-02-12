@@ -22,12 +22,15 @@ import { cn } from "@/shared/lib/utils";
 import { AnalyticsData } from "@/app/features/dashboard/services/analytics.service";
 
 // --- TIPOS ---
+// Definimos el tipo que Recharts espera recibir
+type ValueType = number | string | Array<number | string>;
+
 type ChartData = {
   name: string;
   total: number;
 };
 
-// --- COMPONENTES AUXILIARES ---
+// ... (SalesChartSkeleton y NoDataMessage se mantienen igual) ...
 const SalesChartSkeleton = () => (
   <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm animate-pulse">
     <div className="flex justify-between mb-4">
@@ -48,7 +51,7 @@ const NoDataMessage = () => (
   </div>
 );
 
-// --- COMPONENTE  ---
+// ... (WeekSelector se mantiene igual) ...
 const WeekSelector = ({
   numberOfWeeks,
   selectedWeek,
@@ -67,7 +70,7 @@ const WeekSelector = ({
           className={cn(
             "px-3 py-2 text-sm font-medium transition-colors shrink-0",
             selectedWeek === index
-              ? "border-b-2 border-#fe4321 text-#ff0000" //brand-orange
+              ? "border-b-2 border-[#fe4321] text-[#fe4321]"
               : "text-gray-500 hover:text-gray-700"
           )}
         >
@@ -78,7 +81,6 @@ const WeekSelector = ({
   </div>
 );
 
-// --- COMPONENTE PRINCIPAL ---
 export function SalesChart({ complexId }: { complexId: string }) {
   const [monthlyData, setMonthlyData] = useState<ChartData[]>([]);
   const [displayedData, setDisplayedData] = useState<ChartData[]>([]);
@@ -86,6 +88,20 @@ export function SalesChart({ complexId }: { complexId: string }) {
   const [error, setError] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState("Este Mes");
   const [selectedWeek, setSelectedWeek] = useState(0);
+
+  // --- FUNCIÓN DE FORMATEO CORREGIDA ---
+  // 1. Usamos ValueType | undefined para cumplir con Recharts
+  const formatValue = (value: ValueType | undefined) => {
+    // 2. Guardia de tipo: Si no es número, devolvemos string vacío
+    if (typeof value !== "number") return "";
+
+    return new Intl.NumberFormat("es-AR", {
+      style: "currency",
+      currency: "ARS",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(value); // Asumo que el valor ya viene correcto, si viene en centavos divide por 100
+  };
 
   useEffect(() => {
     if (!complexId) {
@@ -132,8 +148,11 @@ export function SalesChart({ complexId }: { complexId: string }) {
 
         if (dateRange === "Este Mes") {
           setMonthlyData(chartData);
-          const currentWeekIndex = getWeekOfMonth(new Date()) - 1;
+          // Calcular semana actual aproximada
+          const currentWeekIndex = Math.max(0, getWeekOfMonth(new Date()) - 1);
           setSelectedWeek(currentWeekIndex);
+          // Inicializar displayedData con la semana actual para evitar flash vacío
+          // ... lógica de paginación se ejecutará en el siguiente useEffect
         } else {
           setDisplayedData(chartData);
           setMonthlyData([]);
@@ -150,20 +169,20 @@ export function SalesChart({ complexId }: { complexId: string }) {
     fetchSalesData();
   }, [complexId, dateRange]);
 
-  useEffect(() => {
-    if (dateRange === "Este Mes" && monthlyData.length > 0) {
-      const weeks: ChartData[][] = [];
-      for (let i = 0; i < monthlyData.length; i += 7) {
-        weeks.push(monthlyData.slice(i, i + 7));
-      }
-      setDisplayedData(weeks[selectedWeek] || []);
-    }
-  }, [selectedWeek, monthlyData, dateRange]);
-
+  // Lógica de paginación semanal
   const numberOfWeeks = useMemo(() => {
     if (dateRange !== "Este Mes" || monthlyData.length === 0) return 0;
     return Math.ceil(monthlyData.length / 7);
   }, [monthlyData, dateRange]);
+
+  useEffect(() => {
+    if (dateRange === "Este Mes" && monthlyData.length > 0) {
+      const start = selectedWeek * 7;
+      const end = start + 7;
+      setDisplayedData(monthlyData.slice(start, end));
+    }
+  }, [selectedWeek, monthlyData, dateRange]);
+
 
   if (isLoading) {
     return <SalesChartSkeleton />;
@@ -183,7 +202,10 @@ export function SalesChart({ complexId }: { complexId: string }) {
         <div className="relative">
           <select
             value={dateRange}
-            onChange={(e) => setDateRange(e.target.value)}
+            onChange={(e) => {
+                setDateRange(e.target.value);
+                setSelectedWeek(0); // Resetear semana al cambiar filtro
+            }}
             className="appearance-none cursor-pointer bg-white border border-gray-300 rounded-lg py-2 pl-3 pr-8 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-brand-blue"
           >
             <option>Este Mes</option>
@@ -218,26 +240,25 @@ export function SalesChart({ complexId }: { complexId: string }) {
               fontSize={12}
               tickLine={false}
               axisLine={false}
-              tickFormatter={(value) => `$${value / 100000}k`}
+              tickFormatter={(value) => `$${value / 1000}k`} // Ajustado divisor visual
             />
             <Tooltip
-              cursor={{ fill: "rgba(239, 246, 255, 0.5)" }}
+              cursor={{ fill: "rgba(254, 67, 33, 0.1)" }} // Color naranja suave
               contentStyle={{
                 background: "white",
                 border: "1px solid #e2e8f0",
                 borderRadius: "0.75rem",
+                boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
               }}
-              formatter={(value: number) =>
-                new Intl.NumberFormat("es-AR", {
-                  style: "currency",
-                  currency: "ARS",
-                  minimumFractionDigits: 0,
-                  maximumFractionDigits: 0,
-                }).format(value / 100)
-              }
+              // 3. AQUÍ ESTÁ EL CAMBIO CLAVE: Propiedad 'formatter'
+              formatter={formatValue}
             />
-            <Bar dataKey="total" fill="#fe4321" radius={[4, 4, 0, 0]} />{" "}
-            {/* //brand-orange */}
+            <Bar 
+                dataKey="total" 
+                fill="#fe4321" 
+                radius={[4, 4, 0, 0]} 
+                name="Ingresos"
+            />
           </BarChart>
         </ResponsiveContainer>
       ) : (

@@ -102,7 +102,7 @@ export default function MPButton({ complex }: MPButtonProps) {
         <img
           src="https://logospng.org/download/mercado-pago/logo-mercado-pago-256.png"
           alt="Mercado Pago Logo"
-          className="h-10 w-10 flex-shrink-0"
+          className="h-10 w-10 shrink"
         />
         <div className="flex-1">
           {isConnected ? (

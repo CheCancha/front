@@ -68,7 +68,21 @@ export default async function CustomersPage({
   const { complexId } = await params;
 
   const { complex, error } = await authorizeAndVerify(complexId);
-  if (error) return error;
+  
+  // 2. CORRECCIÓN AQUÍ:
+  // No podemos hacer 'return error' porque 'error' es un NextResponse.
+  if (error) {
+      // Opción A: Redirigir al usuario si no está autorizado
+      // redirect("/dashboard"); 
+      
+      // Opción B (Más segura para debug): Mostrar UI de error
+      return (
+        <div className="p-8 text-center text-red-500">
+            <h2 className="text-xl font-bold">Acceso no autorizado</h2>
+            <p>No tienes permisos para ver este complejo.</p>
+        </div>
+      );
+  }
 
   const customers = await getCustomerData(complexId);
 

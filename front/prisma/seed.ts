@@ -1,6 +1,6 @@
 // prisma/seed.ts
 import { PrismaClient, Role } from "@prisma/client";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import { normalizePhoneNumber } from "../src/shared/lib/utils";
 
 const prisma = new PrismaClient();

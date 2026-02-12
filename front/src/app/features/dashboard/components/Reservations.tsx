@@ -28,7 +28,7 @@ const ReservationsSkeleton = () => (
           <div className="h-4 bg-gray-200 rounded-md w-10/12 mx-auto"></div>
           <div className="h-4 bg-gray-200 rounded-md w-8/12 mx-auto mt-2"></div>
         </div>
-        <div className="flex-grow">
+        <div className="grow">
           <div className="h-4 bg-gray-200 rounded-md w-1/3"></div>
           <div className="h-3 bg-gray-200 rounded-md w-1/4 mt-2"></div>
         </div>
@@ -121,7 +121,7 @@ export function Reservations({ complexId }: { complexId: string }) {
       return <NoReservationsMessage />;
     }
     return (
-      <ul className="divide-y divide-gray-200 overflow-y-auto pr-2 flex-grow">
+      <ul className="divide-y divide-gray-200 overflow-y-auto pr-2 grow">
         {bookings.map((res) => (
           <li key={res.id} className="py-3 flex justify-between items-center">
             <div className="flex items-center gap-4">

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { memo, useCallback, useEffect, useState } from "react";
+import React, { memo } from "react";
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import {
@@ -65,7 +65,7 @@ const KpiCard = memo(
     <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center gap-4">
       <div
         className={cn(
-          "flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center",
+          "shrink-0 w-12 h-12 rounded-lg flex items-center justify-center",
           color || "bg-gray-100 text-gray-600"
         )}
       >
